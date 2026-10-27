@@ -441,6 +441,25 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .sky-body .d { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
 .sky-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
 .sky-actions .btn { padding: 6px 14px; }
+/* crosshairs */
+.xh-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.xh-stage { padding: 0; overflow: hidden; }
+#xhPreview { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; max-width: 100%; background: #101014; }
+.xh-stage-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--stroke); }
+.xh-stage-bar .fps-opts { margin-top: 0; }
+.xh-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.xh-styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+.xh-style { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px 8px; background: var(--card); border: 1px solid var(--stroke); border-radius: 10px;
+  color: var(--fg-2); font: inherit; font-size: 12px; line-height: 1.25; text-align: center; cursor: pointer; transition: background-color .12s, border-color .12s, color .12s; }
+.xh-style:hover { background: var(--card-hi); color: var(--white); }
+.xh-style[aria-checked="true"] { border-color: rgba(var(--accent-rgb),.6); background: var(--accent-soft); color: var(--accent); }
+.xh-style canvas { width: 40px; height: 40px; border-radius: 6px; background: #0e0e11; }
+.xh-tune { display: flex; flex-direction: column; gap: 14px; }
+.xh-colors { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#xhColor { width: 36px; height: 30px; padding: 0 2px; border: 1px solid var(--stroke); border-radius: 8px; background: transparent; cursor: pointer; }
+.xh-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); cursor: pointer; }
+.xh-check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+@media (max-width: 900px) { .xh-layout { grid-template-columns: minmax(0, 1fr); } }
 .sky-installed { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--accent); padding: 6px 0; }
 .sky-installed .ico { width: 16px; height: 16px; }
 .sky-actions .spacer { flex: 1; }
@@ -602,6 +621,7 @@ html.native.shown .window { opacity: 1; }
     <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></symbol>
     <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.2 2.2"/><path d="M9.5 2.5h5"/></symbol>
     <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6 4.75 4.75 0 0 1 17.25 19Z"/></symbol>
+    <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z"/></symbol>
@@ -651,6 +671,7 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="profiles"><svg class="ico"><use href="#i-users"/></svg><span class="lbl">Profiles</span></button>
           <button class="nav-item" data-page="playtime"><svg class="ico"><use href="#i-timer"/></svg><span class="lbl">Playtime</span></button>
           <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span><span class="badge beta">Beta</span></button>
+          <button class="nav-item" data-page="crosshairs"><svg class="ico"><use href="#i-crosshair"/></svg><span class="lbl">Crosshairs</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
@@ -749,6 +770,45 @@ html.native.shown .window { opacity: 1; }
         </div>
         <div class="sky-grid" id="skyGrid"></div>
         <p class="sky-help">To import a sky, choose its six images (PNG, JPG or BMP) or six .tex/.dds textures at once. Name them so the side is at the end: _bk, _dn, _ft, _lf, _rt and _up, or _back, _down, _front, _left, _right and _up.</p>
+      </section>
+
+      <!-- CROSSHAIRS -->
+      <section class="page" id="page-crosshairs">
+        <h1>Crosshairs <span class="badge beta">Beta</span></h1>
+        <p class="sub">Replace the cursor Roblox shows over the game and the crosshair in Shift Lock and first person. Your choice is applied to Keystrap's copy of Roblox on every launch. Games that set their own cursor keep theirs.</p>
+        <div class="xh-layout">
+          <div class="card xh-stage">
+            <canvas id="xhPreview" width="960" height="540" role="img" aria-label="Crosshair preview"></canvas>
+            <div class="xh-stage-bar">
+              <div class="fps-opts" id="xhBgs" role="radiogroup" aria-label="Preview background">
+                <button class="seg" data-bg="sky" role="radio">Sky</button>
+                <button class="seg" data-bg="dark" role="radio">Dark</button>
+                <button class="seg" data-bg="light" role="radio">Light</button>
+              </div>
+              <div class="sky-status" id="xhStatus" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="xh-side">
+            <h2 class="sec">Style</h2>
+            <div class="xh-styles" id="xhStyles" role="radiogroup" aria-label="Crosshair style"></div>
+            <div class="xh-tune" id="xhTune">
+              <h2 class="sec">Color</h2>
+              <div class="xh-colors">
+                <div class="swatches" id="xhSwatches" role="radiogroup" aria-label="Crosshair color"></div>
+                <input type="color" id="xhColor" aria-label="Custom crosshair color">
+              </div>
+              <h2 class="sec">Size</h2>
+              <div class="fps-opts" id="xhSizes" role="radiogroup" aria-label="Crosshair size">
+                <button class="seg" data-size="s" role="radio">Small</button>
+                <button class="seg" data-size="m" role="radio">Medium</button>
+                <button class="seg" data-size="l" role="radio">Large</button>
+              </div>
+              <label class="xh-check"><input type="checkbox" id="xhOutline"><span>Dark outline, so it shows on bright skies</span></label>
+            </div>
+            <div><button class="btn" id="xhImport"><svg class="ico"><use href="#i-plus"/></svg>Import .png or .cur</button></div>
+            <p class="sky-help">Roblox centers the image on the mouse, so the middle of your image is where you aim. Images bigger than 64 pixels are scaled down to fit.</p>
+          </div>
+        </div>
       </section>
 
       <!-- FLAGS -->
@@ -1121,8 +1181,8 @@ const I18N_ES = {
     'Added': 'Añadido', 'Fixed': 'Corregido', 'Changed': 'Cambiado', 'Got it': 'Entendido',
     'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.': 'Keystrap en español: elige Español en la página Idioma y todo cambia al instante, incluidos los menús, los diálogos y los mensajes.',
     'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.': 'Cada actualización de Keystrap se anuncia en el canal de novedades del Discord de Keystrap.',
-    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Flags, Language, ToS, Support, About, Settings.':
-      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Flags, Idioma, Términos, Soporte, Acerca de, Ajustes.',
+    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, Support, About, Settings.':
+      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Miras, Flags, Idioma, Términos, Soporte, Acerca de, Ajustes.',
     'Custom Skies is marked Beta, and the Anime Sunset and Vaporwave Synth presets are gone. If you had one picked, Roblox\'s own sky comes back.':
       'Cielos personalizados está en Beta, y los cielos Anime Sunset y Vaporwave Synth ya no están. Si tenías uno elegido, vuelve el cielo de Roblox.',
     '"Experiences" are now called "Games" everywhere.':'Las "Experiencias" ahora se llaman "Juegos" en todas partes.',
@@ -1132,6 +1192,32 @@ const I18N_ES = {
       'El actualizador solo instala versiones publicadas de verdad, y muestra las notas de la versión que instala en vez de las anteriores.',
     'Playtime\'s total time, games and sessions count every game you\'ve played again, not just the top 10.':
       'El tiempo total, los juegos y las sesiones de Tiempo de juego vuelven a contar todos los juegos que has jugado, no solo los 10 primeros.',
+    'Crosshairs': 'Miras',
+    'Replace the cursor Roblox shows over the game and the crosshair in Shift Lock and first person. Your choice is applied to Keystrap\'s copy of Roblox on every launch. Games that set their own cursor keep theirs.':
+      'Cambia el cursor que Roblox muestra sobre el juego y la mira en Shift Lock y primera persona. Tu elección se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cursor mantienen el suyo.',
+    'Crosshair preview': 'Vista previa de la mira', 'Preview background': 'Fondo de la vista previa', 'Dark': 'Oscuro', 'Light': 'Claro',
+    'Style': 'Estilo', 'Crosshair style': 'Estilo de mira', 'Dot': 'Punto', 'Cross': 'Cruz', 'Cross and dot': 'Cruz y punto',
+    'Circle': 'Círculo', 'Circle and dot': 'Círculo y punto', 'Your image': 'Tu imagen',
+    'Crosshair color': 'Color de la mira', 'Custom crosshair color': 'Color personalizado de la mira',
+    'White': 'Blanco', 'Cyan': 'Cian', 'Pink': 'Rosa', 'Yellow': 'Amarillo',
+    'Size': 'Tamaño', 'Crosshair size': 'Tamaño de la mira', 'Small': 'Pequeña', 'Medium': 'Mediana', 'Large': 'Grande',
+    'Dark outline, so it shows on bright skies': 'Contorno oscuro, para que se vea en cielos claros',
+    'Import .png or .cur': 'Importar .png o .cur',
+    'Roblox centers the image on the mouse, so the middle of your image is where you aim. Images bigger than 64 pixels are scaled down to fit.':
+      'Roblox centra la imagen en el ratón, así que el centro de tu imagen es donde apuntas. Las imágenes de más de 64 píxeles se reducen para que quepan.',
+    'Saving…': 'Guardando…',
+    'Saved. Roblox uses it the next time it starts.': 'Guardada. Roblox la usará la próxima vez que se inicie.',
+    'Saved. Restart Roblox to see it.': 'Guardada. Reinicia Roblox para verla.',
+    'Roblox\'s own crosshair is back.': 'Vuelve la mira de Roblox.',
+    'Roblox\'s own crosshair is back. Restart Roblox to see it.': 'Vuelve la mira de Roblox. Reinicia Roblox para verla.',
+    'Roblox is using its cursor files. Close Roblox, then try again.': 'Roblox está usando sus archivos de cursor. Cierra Roblox y vuelve a intentarlo.',
+    'Keystrap couldn\'t save that crosshair. Details are in the log.': 'Keystrap no pudo guardar esa mira. Los detalles están en el registro.',
+    'That isn\'t a cursor or icon file Keystrap can read.': 'Ese no es un archivo de cursor o icono que Keystrap pueda leer.',
+    'Keystrap couldn\'t read that file. Use a .png, .cur or .ico image.': 'Keystrap no pudo leer ese archivo. Usa una imagen .png, .cur o .ico.',
+    'Preview only: the Keystrap app puts your crosshair into Roblox.': 'Solo vista previa: la app de Keystrap pone tu mira en Roblox.',
+    'Importing works in the Keystrap app.': 'La importación funciona en la app de Keystrap.',
+    'Crosshairs: pick a style, color and size, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.':
+      'Miras: elige un estilo, un color y un tamaño, o importa tu propio .png o .cur, y Keystrap lo pone en Roblox en cada inicio.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
     'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
@@ -1216,7 +1302,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.0.11';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.0.12';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1230,10 +1316,11 @@ const I18N_ES = {
     Added: [
       'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
       'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.',
+      'Crosshairs: pick a style, color and size, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.',
       'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.'
     ],
     Changed: [
-      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Flags, Language, ToS, Support, About, Settings.',
+      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, Support, About, Settings.',
       '"Experiences" are now called "Games" everywhere.',
       'Playtime shows only your 10 most played games. The totals still count every game.',
       'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.',
@@ -1263,7 +1350,8 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT },
+      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+        crosshair: { style: 'default', color: '#ffffff', size: 'm', outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
         { name: 'DFIntCSGLevelOfDetailSwitchingDistance', value: '0', on: true },
@@ -1277,6 +1365,9 @@ const I18N_ES = {
     if (!s || typeof s !== 'object' || !Array.isArray(s.profiles) || !s.profiles.length) return d;
     s.settings = Object.assign({}, d.settings, s.settings || {});
     s.settings.accent = normHex(s.settings.accent) || DEFAULT_ACCENT;
+    const xh = s.settings.crosshair = Object.assign({}, d.settings.crosshair, s.settings.crosshair || {});
+    xh.color = normHex(xh.color) || '#ffffff';
+    if (!XH_STYLES.some(x => x[0] === xh.style) || (xh.style === 'image' && !xh.image)) xh.style = 'default';
     s.profiles.forEach(p => {
       p.id = p.id || uid(); p.name = String(p.name || 'Profile'); p.color = (p.color | 0) % COLORS.length;
       p.hex = normHex(p.hex);   // custom colour, or null to use the preset
@@ -1407,6 +1498,18 @@ const I18N_ES = {
         if (launching) toast('Roblox is already starting. Try the Play button again in a moment.');
         else startLaunch(msg.link);
         break;
+      case 'crosshair-default':
+        env.xhDefault = msg.image || null;
+        if (state) renderCrosshairs();
+        break;
+      case 'crosshair-saved':
+        if (!msg.ok) { xhStatus(msg.message, true); break; }
+        xhStatus(state.settings.crosshair.style === 'default'
+          ? (msg.robloxOpen ? 'Roblox\'s own crosshair is back. Restart Roblox to see it.' : 'Roblox\'s own crosshair is back.')
+          : (msg.robloxOpen ? 'Saved. Restart Roblox to see it.' : 'Saved. Roblox uses it the next time it starts.'));
+        break;
+      case 'crosshair-imported': setCrosshair({ style: 'image', image: msg.image }); break;
+      case 'crosshair-import-error': xhStatus(msg.message, true); break;
       case 'skies':
         env.skies = msg.items || [];
         // An imported sky that was deleted elsewhere falls back to Roblox's.
@@ -1457,6 +1560,11 @@ const I18N_ES = {
 
   // ---------- custom skies ----------
   // Shown until the app sends real previews (and in the browser preview, which has no app behind it).
+  // Crosshairs: [id, name]. "default" is Roblox's own, and "image" only appears once one is imported.
+  const XH_STYLES = [['default', 'Roblox Default'], ['dot', 'Dot'], ['cross', 'Cross'], ['crossdot', 'Cross and dot'], ['circle', 'Circle'], ['circledot', 'Circle and dot'], ['tee', 'T'], ['image', 'Your image']];
+  const XH_COLORS = [['White', '#ffffff'], ['Cream', '#fffba6'], ['Green', '#4cff7a'], ['Cyan', '#4fe3ff'], ['Pink', '#ff6bd0'], ['Red', '#ff4a4a'], ['Yellow', '#ffe14a']];
+  const XH_SCALE = { s: 0.75, m: 1, l: 1.35 };
+
   const SKY_FALLBACK = [
     ['default', 'Roblox Default', 'The sky Roblox ships with.', 'linear-gradient(#5b8fd6, #a9cdf0 60%, #8a8f96 60%)'],
     ['galaxy-night', 'Galaxy Night', 'Deep violet night with a dense star field.', 'linear-gradient(#05040f, #1b1342 55%, #2a1d5c 62%, #07060f 62%)'],
@@ -2461,8 +2569,132 @@ const I18N_ES = {
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
 
+  // ---------- crosshairs ----------
+  // The page draws the crosshair itself, so the preview is exactly what Roblox gets. The app is sent two PNGs:
+  // 64px for the cursor over the game, 32px for Shift Lock and first person.
+  const xhImages = {};
+  function xhImage(src) {
+    if (!src) return null;
+    let img = xhImages[src];
+    if (!img) { img = xhImages[src] = new Image(); img.onload = () => renderCrosshairs(); img.src = src; }
+    return img.complete && img.naturalWidth ? img : null;
+  }
+  function xhLoaded(src) {
+    return new Promise(done => {
+      if (!src || xhImage(src)) return done();
+      xhImages[src].addEventListener('load', done, { once: true });
+      xhImages[src].addEventListener('error', done, { once: true });
+    });
+  }
+  // Draws crosshair c centred on (x, y), at the size Roblox shows it from a px-square image.
+  function drawCrosshair(ctx, c, x, y, px) {
+    if (c.style === 'default' || c.style === 'image') {
+      const img = xhImage(c.style === 'image' ? c.image : env.xhDefault);
+      if (img) { ctx.imageSmoothingEnabled = px !== 64; ctx.drawImage(img, x - px / 2, y - px / 2, px, px); }
+      return;
+    }
+    const u = px / 64 * (XH_SCALE[c.size] || 1);
+    const gap = 4 * u, arm = 9 * u, width = Math.max(1, 2.5 * u), dot = Math.max(1, 2.2 * u), ring = 9 * u;
+    const lines = [];
+    if (c.style === 'cross' || c.style === 'crossdot' || c.style === 'tee') {
+      if (c.style !== 'tee') lines.push([0, -gap, 0, -gap - arm]);
+      lines.push([0, gap, 0, gap + arm], [-gap, 0, -gap - arm, 0], [gap, 0, gap + arm, 0]);
+    }
+    const hasDot = c.style === 'dot' || c.style === 'crossdot' || c.style === 'circledot';
+    const hasRing = c.style === 'circle' || c.style === 'circledot';
+    // The outline is the same shape drawn first, a little wider and a little longer.
+    const pass = (color, extra) => {
+      ctx.strokeStyle = ctx.fillStyle = color;
+      ctx.lineWidth = width + extra * 2;
+      ctx.lineCap = 'butt';
+      lines.forEach(l => {
+        const dx = Math.sign(l[2] - l[0]), dy = Math.sign(l[3] - l[1]);
+        ctx.beginPath(); ctx.moveTo(x + l[0] - dx * extra, y + l[1] - dy * extra); ctx.lineTo(x + l[2] + dx * extra, y + l[3] + dy * extra); ctx.stroke();
+      });
+      if (hasRing) { ctx.beginPath(); ctx.arc(x, y, ring, 0, Math.PI * 2); ctx.stroke(); }
+      if (hasDot) { ctx.beginPath(); ctx.arc(x, y, dot + extra, 0, Math.PI * 2); ctx.fill(); }
+    };
+    if (c.outline) pass('rgba(0,0,0,.85)', Math.max(1, u));
+    pass(c.color, 0);
+  }
+  function crosshairPng(c, px) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    drawCrosshair(cv.getContext('2d'), c, px / 2, px / 2, px);
+    return cv.toDataURL('image/png').split(',')[1];
+  }
+
+  function drawCrosshairPreview() {
+    const cv = $('#xhPreview'), ctx = cv.getContext('2d'), w = cv.width, h = cv.height;
+    const bg = env.xhBg || 'sky';
+    ctx.clearRect(0, 0, w, h);
+    const sky = env.skies && env.skies.find(s => s.id === 'default');
+    const skyImg = bg === 'sky' && sky && xhImage(sky.preview);
+    if (skyImg) {
+      const k = Math.max(w / skyImg.naturalWidth, h / skyImg.naturalHeight);
+      ctx.drawImage(skyImg, (w - skyImg.naturalWidth * k) / 2, (h - skyImg.naturalHeight * k) / 2, skyImg.naturalWidth * k, skyImg.naturalHeight * k);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      if (bg === 'sky') { g.addColorStop(0, '#5b8fd6'); g.addColorStop(.6, '#a9cdf0'); g.addColorStop(.6, '#8a8f96'); g.addColorStop(1, '#6f747b'); }
+      else if (bg === 'light') { g.addColorStop(0, '#f2f2f5'); g.addColorStop(1, '#d9d9df'); }
+      else { g.addColorStop(0, '#16161a'); g.addColorStop(1, '#0c0c0f'); }
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
+    // Drawn at the size it has on screen in Roblox: 64 CSS pixels.
+    const k = cv.clientWidth ? w / cv.clientWidth : 2;
+    drawCrosshair(ctx, state.settings.crosshair, w / 2, h / 2, 64 * k);
+  }
+  new ResizeObserver(() => { if (state) drawCrosshairPreview(); }).observe($('#xhPreview'));
+
+  function renderCrosshairs() {
+    const c = state.settings.crosshair;
+    const styles = XH_STYLES.filter(s => s[0] !== 'image' || c.image);
+    $('#xhStyles').innerHTML = styles.map(s =>
+      '<button class="xh-style" role="radio" data-style="' + s[0] + '" aria-checked="' + (c.style === s[0]) + '"><canvas width="80" height="80" aria-hidden="true"></canvas><span>' + esc(s[1]) + '</span></button>').join('');
+    $$('#xhStyles canvas').forEach((cv, i) => drawCrosshair(cv.getContext('2d'), Object.assign({}, c, { style: styles[i][0] }), 40, 40, 80));
+    $('#xhSwatches').innerHTML = XH_COLORS.map(x =>
+      '<button class="swatch" role="radio" data-hex="' + x[1] + '" aria-label="' + x[0] + '" title="' + x[0] + '" aria-checked="' + (c.color === x[1]) + '" style="background:' + x[1] + '"></button>').join('');
+    $('#xhColor').value = c.color;
+    $$('#xhSizes .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.size === c.size)));
+    $$('#xhBgs .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.bg === (env.xhBg || 'sky'))));
+    $('#xhOutline').checked = !!c.outline;
+    $('#xhTune').hidden = c.style === 'default' || c.style === 'image';   // color and size only change drawn styles
+    drawCrosshairPreview();
+  }
+  function xhStatus(text, isError) {
+    const el = $('#xhStatus');
+    el.textContent = text || '';
+    el.classList.toggle('err', !!isError);
+  }
+  let xhTimer;
+  function setCrosshair(change) {
+    Object.assign(state.settings.crosshair, change);
+    save();
+    renderCrosshairs();
+    clearTimeout(xhTimer);
+    xhTimer = setTimeout(sendCrosshair, 350);   // dragging the color picker saves once it settles
+  }
+  async function sendCrosshair() {
+    const c = state.settings.crosshair;
+    if (!host) { xhStatus('Preview only: the Keystrap app puts your crosshair into Roblox.'); return; }
+    xhStatus('Saving…');
+    if (c.style === 'default') { host.postMessage({ type: 'crosshair-save' }); return; }
+    if (c.style === 'image') await xhLoaded(c.image);
+    host.postMessage({ type: 'crosshair-save', far: crosshairPng(c, 64), locked: crosshairPng(c, 32) });
+  }
+  $('#xhStyles').addEventListener('click', e => { const b = e.target.closest('[data-style]'); if (b) setCrosshair({ style: b.dataset.style }); });
+  $('#xhSwatches').addEventListener('click', e => { const b = e.target.closest('[data-hex]'); if (b) setCrosshair({ color: b.dataset.hex }); });
+  $('#xhColor').addEventListener('input', e => setCrosshair({ color: e.target.value }));
+  $('#xhSizes').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (b) setCrosshair({ size: b.dataset.size }); });
+  $('#xhOutline').addEventListener('change', e => setCrosshair({ outline: e.target.checked }));
+  $('#xhBgs').addEventListener('click', e => { const b = e.target.closest('[data-bg]'); if (b) { env.xhBg = b.dataset.bg; renderCrosshairs(); } });
+  $('#xhImport').addEventListener('click', () => {
+    if (host) host.postMessage({ type: 'crosshair-import' });
+    else xhStatus('Importing works in the Keystrap app.');
+  });
+
   // ---------- boot ----------
-  function renderAll() { renderPlay(); renderProfiles(); renderFlags(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); }
+  function renderAll() { renderPlay(); renderProfiles(); renderFlags(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); renderCrosshairs(); }
   function start() {
     $('#titleVer').textContent = APP_VERSION;
     let tab = '';

@@ -1150,6 +1150,136 @@ namespace Keystrap
         }
     }
 
+    // Custom Crosshairs: Roblox draws its in-game cursor from two images in each version folder, ArrowFarCursor.png
+    // (64px, the cursor over the game world) and MouseLockedCursor.png (32px, the crosshair in Shift Lock and first
+    // person). The page draws the chosen crosshair at both sizes and Keystrap keeps them in its data folder. Every launch
+    // copies them over Roblox's, which are backed up once per version and put back for Roblox's own crosshair.
+    // Roblox centres the image on the mouse. Games that set their own mouse icon keep theirs.
+    static class Crosshairs
+    {
+        public static readonly string Dir = Path.Combine(Paths.Data, "Crosshair");
+        const string BackupFolder = @"content\textures\keystrap-original-cursors";
+        static readonly object gate = new object();
+
+        class Target
+        {
+            public string Name, PathInVersion;
+            public int Size;
+            public Target(string name, string path, int size) { Name = name; PathInVersion = path; Size = size; }
+        }
+
+        static readonly Target[] Targets =
+        {
+            new Target("ArrowFarCursor.png", @"content\textures\Cursors\KeyboardMouse\ArrowFarCursor.png", 64),
+            new Target("MouseLockedCursor.png", @"content\textures\MouseLockedCursor.png", 32),
+        };
+
+        static bool IsCustom { get { return Targets.All(t => File.Exists(Path.Combine(Dir, t.Name))); } }
+
+        // Keeps the page's two PNGs (base64, 64px and 32px) as the crosshair to use, or clears it when either is null.
+        public static void Save(string far, string locked)
+        {
+            lock (gate)
+            {
+                if (far == null || locked == null)
+                {
+                    if (Directory.Exists(Dir)) Directory.Delete(Dir, true);
+                    return;
+                }
+                Directory.CreateDirectory(Dir);
+                WritePng(Targets[0], far);
+                WritePng(Targets[1], locked);
+            }
+        }
+
+        static void WritePng(Target t, string base64)
+        {
+            byte[] bytes = Convert.FromBase64String(base64);
+            using (var ms = new MemoryStream(bytes))
+            using (Image img = Image.FromStream(ms))
+                if (img.Width != t.Size || img.Height != t.Size) throw new InvalidDataException(t.Name + " should be " + t.Size + "px square.");
+            string path = Path.Combine(Dir, t.Name), temp = path + ".tmp";
+            File.WriteAllBytes(temp, bytes);
+            if (File.Exists(path)) File.Delete(path);
+            File.Move(temp, path);
+        }
+
+        // Puts the saved crosshair into a Roblox version folder, or Roblox's own back when none is saved.
+        public static void ApplyTo(string versionDir)
+        {
+            lock (gate)
+            {
+                string backup = Path.Combine(versionDir, BackupFolder);
+                bool custom = IsCustom;
+                if (!custom && !Directory.Exists(backup)) return;   // nothing has been replaced in this version
+                foreach (Target t in Targets)
+                {
+                    string target = Path.Combine(versionDir, t.PathInVersion);
+                    if (!File.Exists(target)) { Log.Write("This Roblox version has no " + t.PathInVersion + "; skipped"); continue; }
+                    string original = Path.Combine(backup, t.Name);
+                    if (custom && !File.Exists(original))
+                    {
+                        Directory.CreateDirectory(backup);
+                        File.Copy(target, original);
+                    }
+                    string source = custom ? Path.Combine(Dir, t.Name) : original;
+                    if (File.Exists(source)) File.Copy(source, target, true);
+                }
+                Log.Write((custom ? "Applied the custom crosshair to " : "Put Roblox's own crosshair back in ") + versionDir);
+            }
+        }
+
+        // Roblox's own crosshair from a version folder (its backup, if a custom one is in place), as a data URI.
+        public static string DefaultImage(string versionDir)
+        {
+            if (versionDir == null) return null;
+            string file = Path.Combine(versionDir, BackupFolder, Targets[0].Name);
+            if (!File.Exists(file)) file = Path.Combine(versionDir, Targets[0].PathInVersion);
+            return File.Exists(file) ? "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes(file)) : null;
+        }
+
+        // Turns a .png, .cur or .ico file into a 64px PNG with the image centred, as a data URI for the page.
+        // Small images keep their own size and stay sharp; bigger ones are scaled down to fit.
+        public static string Import(string file)
+        {
+            using (Bitmap source = Load(file))
+            using (var bmp = new Bitmap(64, 64, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+            {
+                double k = Math.Min(1.0, Math.Min(64.0 / source.Width, 64.0 / source.Height));
+                int w = Math.Max(1, (int)Math.Round(source.Width * k)), h = Math.Max(1, (int)Math.Round(source.Height * k));
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.InterpolationMode = k < 1 ? System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic : System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                    g.DrawImage(source, new Rectangle((64 - w) / 2, (64 - h) / 2, w, h));
+                }
+                using (var ms = new MemoryStream())
+                {
+                    bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                    return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+                }
+            }
+        }
+
+        // A .cur file is an .ico file with type 2 in its header; Windows' Icon class reads it once that says 1.
+        static Bitmap Load(string file)
+        {
+            string ext = Path.GetExtension(file).ToLowerInvariant();
+            if (ext == ".cur" || ext == ".ico")
+            {
+                byte[] bytes = File.ReadAllBytes(file);
+                if (bytes.Length < 6 || bytes[0] != 0 || bytes[1] != 0 || (bytes[2] != 1 && bytes[2] != 2) || bytes[3] != 0)
+                    throw new InvalidOperationException("That isn't a cursor or icon file Keystrap can read.");
+                bytes[2] = 1;
+                using (var ms = new MemoryStream(bytes))
+                using (var icon = new Icon(ms, 64, 64))
+                    return icon.ToBitmap();
+            }
+            using (Image img = Image.FromFile(file))
+                return new Bitmap(img);
+        }
+    }
+
     // Roblox's public web APIs answer 429 (Too Many Requests) when a PC asks too often. Every Keystrap lookup goes through
     // RobloxApi: a 429 is retried after the wait Roblox asks for (Retry-After), or after 1, 2 and 4 seconds when it doesn't
     // say, and a host that's still limiting is left alone until its wait is over, so Keystrap never adds to the block.
@@ -2932,6 +3062,12 @@ namespace Keystrap
                 case "sky-import":
                     ImportSky();
                     break;
+                case "crosshair-save":
+                    SaveCrosshairAsync(msg.ContainsKey("far") ? msg["far"] as string : null, msg.ContainsKey("locked") ? msg["locked"] as string : null);
+                    break;
+                case "crosshair-import":
+                    ImportCrosshair();
+                    break;
                 case "sky-delete":
                     try { Skies.Delete(msg["id"] as string); }
                     catch (Exception ex) { Log.Write("Deleting a sky failed: " + ex.Message); Toast("Couldn't delete that sky. Details are in the log."); }
@@ -3095,6 +3231,74 @@ namespace Keystrap
             }
         }
 
+        // ---------- Custom Crosshairs ----------
+
+        // Roblox's own crosshair, for the page's "Roblox Default" card and preview.
+        async void SendCrosshairDefaultAsync()
+        {
+            try
+            {
+                string dir = InstalledDir();
+                string image = await Task.Run(() => Crosshairs.DefaultImage(dir));
+                Post(new Dictionary<string, object> { { "type", "crosshair-default" }, { "image", image } });
+            }
+            catch (Exception ex) { Log.Write("Reading Roblox's crosshair failed: " + ex.Message); }
+        }
+
+        // The page sends the crosshair drawn at 64px and 32px (or neither, for Roblox's own); it's kept and put into
+        // the installed Roblox straight away.
+        async void SaveCrosshairAsync(string far, string locked)
+        {
+            try
+            {
+                string dir = InstalledDir();
+                await Task.Run(() =>
+                {
+                    Crosshairs.Save(far, locked);
+                    if (dir != null) Crosshairs.ApplyTo(dir);
+                });
+                Process[] running = Process.GetProcessesByName("RobloxPlayerBeta");
+                bool robloxOpen = running.Length > 0;
+                foreach (Process p in running) p.Dispose();
+                Post(new Dictionary<string, object> { { "type", "crosshair-saved" }, { "ok", true }, { "robloxOpen", robloxOpen } });
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Saving the crosshair failed: " + ex);
+                string message = ex is IOException || ex is UnauthorizedAccessException ? "Roblox is using its cursor files. Close Roblox, then try again."
+                    : "Keystrap couldn't save that crosshair. Details are in the log.";
+                Post(new Dictionary<string, object> { { "type", "crosshair-saved" }, { "ok", false }, { "message", message } });
+            }
+        }
+
+        void ImportCrosshair()
+        {
+            string file;
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = "Choose a crosshair image";
+                dlg.Filter = "Crosshair images|*.png;*.cur;*.ico|All files|*.*";
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                file = dlg.FileName;
+            }
+            ImportCrosshairAsync(file);
+        }
+
+        async void ImportCrosshairAsync(string file)
+        {
+            try
+            {
+                string image = await Task.Run(() => Crosshairs.Import(file));
+                Post(new Dictionary<string, object> { { "type", "crosshair-imported" }, { "image", image } });
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Importing a crosshair failed: " + ex.Message);
+                string message = ex is InvalidOperationException ? ex.Message : "Keystrap couldn't read that file. Use a .png, .cur or .ico image.";
+                Post(new Dictionary<string, object> { { "type", "crosshair-import-error" }, { "message", message } });
+            }
+        }
+
         // A second Keystrap start (usually a Play button on roblox.com) sent us its link, or asked to be shown.
         void OnLinkHandoff(string message)
         {
@@ -3197,6 +3401,7 @@ namespace Keystrap
             if (pendingLink != null) { Post(new Dictionary<string, object> { { "type", "launch-link" }, { "link", pendingLink } }); pendingLink = null; }
             if (playtimeReady) Post(playtime.Snapshot());
             SendSkiesAsync();
+            SendCrosshairDefaultAsync();
             SendVersionsSizeAsync();
             CheckRobloxAsync();
         }
@@ -3409,6 +3614,14 @@ namespace Keystrap
                         Log.Write("Applying the sky failed: " + ex.Message);
                         Toast("Keystrap couldn't apply your custom sky, so Roblox starts with its usual sky.");
                     }
+                }
+
+                // The saved crosshair (or Roblox's own), re-applied every launch for the same reason as the sky.
+                try { await Task.Run(() => Crosshairs.ApplyTo(dir)); }
+                catch (Exception ex)
+                {
+                    Log.Write("Applying the crosshair failed: " + ex.Message);
+                    Toast("Keystrap couldn't apply your crosshair, so Roblox starts with its usual one.");
                 }
 
                 ReportProgress("Applying flags…", 0.96);
