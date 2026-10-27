@@ -1166,6 +1166,83 @@ namespace Keystrap
         }
     }
 
+    // Roblox's public web APIs answer 429 (Too Many Requests) when a PC asks too often. Every Keystrap lookup goes through
+    // RobloxApi: a 429 is retried after the wait Roblox asks for (Retry-After), or after 1, 2 and 4 seconds when it doesn't
+    // say, and a host that's still limiting is left alone until its wait is over, so Keystrap never adds to the block.
+    class RateLimitedException : Exception
+    {
+        public readonly TimeSpan Wait;
+
+        public RateLimitedException(string host, TimeSpan wait)
+            : base("Roblox is getting too many requests from this PC. Wait " + RobloxApi.Describe(wait) + ", then try again.")
+        {
+            Wait = wait;
+            Data["host"] = host;
+        }
+    }
+
+    static class RobloxApi
+    {
+        const int Attempts = 4;                                          // the first try and three retries
+        static readonly TimeSpan MaxWait = TimeSpan.FromSeconds(30);     // a longer wait isn't sat through; the caller is told
+        static readonly Dictionary<string, DateTime> blockedUntil = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+
+        public static async Task<string> GetStringAsync(HttpClient http, string url)
+        {
+            string host = new Uri(url).Host;
+            TimeSpan left = BlockedFor(host);
+            if (left > TimeSpan.Zero) throw new RateLimitedException(host, left);
+
+            for (int attempt = 1; ; attempt++)
+            {
+                TimeSpan wait;
+                using (HttpResponseMessage resp = await http.GetAsync(url))
+                {
+                    if ((int)resp.StatusCode != 429)
+                    {
+                        resp.EnsureSuccessStatusCode();
+                        return await resp.Content.ReadAsStringAsync();
+                    }
+                    wait = RetryAfter(resp) ?? TimeSpan.FromSeconds(1 << (attempt - 1));
+                }
+                lock (blockedUntil) blockedUntil[host] = DateTime.UtcNow + wait;
+                bool retry = attempt < Attempts && wait <= MaxWait;
+                Log.Write(host + " is rate limiting Keystrap (429)" + (retry ? "; retrying in " + Describe(wait) : "; giving up for " + Describe(wait)));
+                if (!retry) throw new RateLimitedException(host, wait);
+                await Task.Delay(wait);
+            }
+        }
+
+        // "45 seconds", "3 minutes": rounded up, so the wait shown is never too short.
+        public static string Describe(TimeSpan wait)
+        {
+            int s = Math.Max(1, (int)Math.Ceiling(wait.TotalSeconds));
+            if (s < 120) return s + (s == 1 ? " second" : " seconds");
+            return (int)Math.Ceiling(s / 60.0) + " minutes";
+        }
+
+        static TimeSpan BlockedFor(string host)
+        {
+            DateTime until;
+            lock (blockedUntil)
+                return blockedUntil.TryGetValue(host, out until) && until > DateTime.UtcNow ? until - DateTime.UtcNow : TimeSpan.Zero;
+        }
+
+        // Retry-After is either a number of seconds or a date.
+        static TimeSpan? RetryAfter(HttpResponseMessage resp)
+        {
+            var header = resp.Headers.RetryAfter;
+            if (header == null) return null;
+            if (header.Delta.HasValue) return header.Delta.Value;
+            if (header.Date.HasValue)
+            {
+                TimeSpan until = header.Date.Value - DateTimeOffset.UtcNow;
+                return until > TimeSpan.Zero ? until : TimeSpan.Zero;
+            }
+            return null;
+        }
+    }
+
     // Creator name and icon for an experience, from Roblox's public APIs, cached per universe.
     static class RobloxGames
     {
@@ -1198,7 +1275,7 @@ namespace Keystrap
             var json = new JavaScriptSerializer();
             try
             {
-                var g = json.Deserialize<Dictionary<string, object>>(await http.GetStringAsync("https://games.roblox.com/v1/games?universeIds=" + universe));
+                var g = json.Deserialize<Dictionary<string, object>>(await RobloxApi.GetStringAsync(http, "https://games.roblox.com/v1/games?universeIds=" + universe));
                 var game = g.ContainsKey("data") && g["data"] is ArrayList && ((ArrayList)g["data"]).Count > 0 ? ((ArrayList)g["data"])[0] as Dictionary<string, object> : null;
                 var creator = game != null && game.ContainsKey("creator") ? game["creator"] as Dictionary<string, object> : null;
                 if (creator != null && creator.ContainsKey("name")) info.Creator = creator["name"] as string;
@@ -1206,7 +1283,7 @@ namespace Keystrap
             catch (Exception ex) { Log.Write("Couldn't look up the creator of universe " + universe + ": " + ex.Message); }
             try
             {
-                var t = json.Deserialize<Dictionary<string, object>>(await http.GetStringAsync(
+                var t = json.Deserialize<Dictionary<string, object>>(await RobloxApi.GetStringAsync(http,
                     "https://thumbnails.roblox.com/v1/games/icons?universeIds=" + universe + "&size=512x512&format=Png&isCircular=false"));
                 var img = t.ContainsKey("data") && t["data"] is ArrayList && ((ArrayList)t["data"]).Count > 0 ? ((ArrayList)t["data"])[0] as Dictionary<string, object> : null;
                 if (img != null && img.ContainsKey("imageUrl")) info.Icon = img["imageUrl"] as string;
@@ -1490,7 +1567,7 @@ namespace Keystrap
         {
             try
             {
-                string json = await http.GetStringAsync("https://clientsettings.roblox.com/v2/client-version/WindowsPlayer");
+                string json = await RobloxApi.GetStringAsync(http, "https://clientsettings.roblox.com/v2/client-version/WindowsPlayer");
                 var d = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(json);
                 var v = new RobloxVersion();
                 v.Version = (string)d["version"];
@@ -1502,7 +1579,7 @@ namespace Keystrap
                 Log.Write("clientsettings.roblox.com lookup failed (" + ex.Message + "), trying setup.rbxcdn.com/versionGuid");
             }
             // Fallback: the older plain-text endpoint (C# 5 can't await inside catch).
-            string guid = (await http.GetStringAsync(Cdn + "versionGuid")).Trim();
+            string guid = (await RobloxApi.GetStringAsync(http, Cdn + "versionGuid")).Trim();
             if (!guid.StartsWith("version-")) throw new InvalidDataException("Roblox returned an unexpected version: " + guid);
             var fallback = new RobloxVersion();
             fallback.Guid = guid;
@@ -2269,7 +2346,7 @@ namespace Keystrap
                 if (universe == 0)
                 {
                     var u = json.Deserialize<Dictionary<string, object>>(
-                        await http.GetStringAsync("https://apis.roblox.com/universes/v1/places/" + place + "/universe"));
+                        await RobloxApi.GetStringAsync(http, "https://apis.roblox.com/universes/v1/places/" + place + "/universe"));
                     object id;
                     if (!u.TryGetValue("universeId", out id) || id == null) return;
                     universe = Convert.ToInt64(id, CultureInfo.InvariantCulture);
@@ -2278,7 +2355,7 @@ namespace Keystrap
                 if (!titles.ContainsKey("u" + universe))
                 {
                     var g = json.Deserialize<Dictionary<string, object>>(
-                        await http.GetStringAsync("https://games.roblox.com/v1/games?universeIds=" + universe));
+                        await RobloxApi.GetStringAsync(http, "https://games.roblox.com/v1/games?universeIds=" + universe));
                     var data = g.ContainsKey("data") ? g["data"] as ArrayList : null;
                     var game = data != null && data.Count > 0 ? data[0] as Dictionary<string, object> : null;
                     string name = game != null && game.ContainsKey("name") ? game["name"] as string : null;
@@ -3318,11 +3395,21 @@ namespace Keystrap
 
                 ReportProgress("Checking for Roblox updates…", 0.02);
                 RobloxVersion latest = null;
+                RateLimitedException limited = null;
                 try { latest = await Bootstrapper.GetLatestAsync(); }
-                catch (Exception ex) { Log.Write("Version check failed, using the installed copy: " + ex.Message); }
+                catch (Exception ex)
+                {
+                    Log.Write("Version check failed, using the installed copy: " + ex.Message);
+                    limited = ex as RateLimitedException;
+                }
                 RobloxVersion version = latest ?? Bootstrapper.GetInstalled();
                 if (version == null)
+                {
+                    if (limited != null) throw limited;
                     throw new InvalidOperationException("Couldn't reach Roblox to download it. Check your internet connection and try again.");
+                }
+                if (limited != null)
+                    Toast("Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.");
 
                 string dir = await Task.Run(() => Bootstrapper.InstallAsync(version, ReportProgress));
 
@@ -3365,6 +3452,14 @@ namespace Keystrap
             catch (Exception ex)
             {
                 Log.Write("Launch failed: " + ex);
+                var limited = ex as RateLimitedException;
+                if (limited != null)
+                {
+                    // The page locks the Launch button for the wait, so retrying can't make the block longer.
+                    Post(new Dictionary<string, object> { { "type", "launch-error" }, { "message", limited.Message },
+                        { "retryAfter", (int)Math.Ceiling(limited.Wait.TotalSeconds) } });
+                    return;
+                }
                 string text = ex is HttpRequestException || ex is WebException || ex is TaskCanceledException
                     ? "Couldn't download Roblox. Check your internet connection and try again."
                     : ex is IOException || ex is UnauthorizedAccessException

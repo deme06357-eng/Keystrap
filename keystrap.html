@@ -1126,6 +1126,8 @@ const I18N_ES = {
     'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.',
     'Settings now sits at the bottom of the sidebar.': 'Ajustes ahora está al final de la barra lateral.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
+    'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
+    'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
     'When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.':
       'Cuando Keystrap abre la pantalla de inicio de Roblox, Roblox empieza a 60 FPS para que tu GPU vaya en silencio. Los enlaces de juegos de roblox.com siguen usando tu opción de Desbloquear FPS. Roblox solo lee esto al iniciarse, así que un juego al que entres desde la pantalla de inicio se queda en 60 FPS hasta que vuelvas a iniciarlo.',
     'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.':
@@ -1146,6 +1148,10 @@ const I18N_ES = {
     [/^Match monitor \((\d+) Hz\)$/, (tr, n) => 'Igual al monitor (' + n + ' Hz)'],
     [/^Capped at your monitor's refresh rate, (\d+) FPS\.$/, (tr, n) => 'Limitado a la frecuencia de tu monitor, ' + n + ' FPS.'],
     [/^Capped at (\d+) FPS\.$/, (tr, n) => 'Limitado a ' + n + ' FPS.'],
+    [/^Try again in (\d+) s$/, (tr, n) => 'Reintenta en ' + n + ' s'],
+    [/^Roblox is still limiting requests\. Try again in (\d+) s\.$/, (tr, n) => 'Roblox sigue limitando las solicitudes. Reintenta en ' + n + ' s.'],
+    [/^Roblox is getting too many requests from this PC\. Wait (\d+) (second|seconds|minutes), then try again\.$/, (tr, n, unit) =>
+      'Roblox está recibiendo demasiadas solicitudes desde este PC. Espera ' + n + ' ' + ({ second: 'segundo', seconds: 'segundos', minutes: 'minutos' })[unit] + ' y vuelve a intentarlo.'],
     [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
       ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
       ': ' + (on === 'on' ? 'activado' : 'desactivado')],
@@ -1203,7 +1209,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.7';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.8';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1223,7 +1229,8 @@ const I18N_ES = {
     ],
     Fixed: [
       'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
-      'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.'
+      'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.',
+      'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.'
     ]
   };
 
@@ -1374,7 +1381,10 @@ const I18N_ES = {
         break;
       case 'launch-progress': if (launching) setProgress(msg.text, msg.pct); break;
       case 'launch-done': launchFinished(null, msg); break;
-      case 'launch-error': launchFinished(msg.message || 'Roblox could not be started.'); break;
+      case 'launch-error':
+        launchFinished(msg.message || 'Roblox could not be started.');
+        if (msg.retryAfter > 0) startCooldown(msg.retryAfter);
+        break;
       case 'launch-link':
         // A Play button on roblox.com: launch straight away with the active profile.
         if (!state) break;
@@ -1639,8 +1649,28 @@ const I18N_ES = {
     if (on) $('#officialBtn').hidden = true;
   }
   // link: the roblox-player: link from a Play button on roblox.com (passed to Roblox unchanged), or nothing for the Roblox app home.
+  // Roblox answered "too many requests": the Launch button stays locked, counting down, until its wait is over.
+  let cooldownUntil = 0, cooldownTimer = null;
+  function cooldownLeft() { return Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000)); }
+  function startCooldown(seconds) {
+    cooldownUntil = Date.now() + seconds * 1000;
+    clearInterval(cooldownTimer);
+    const tick = () => {
+      const left = cooldownLeft();
+      if (left > 0) { $('#launchBtn').disabled = true; $('#launchLabel').textContent = 'Try again in ' + left + ' s'; return; }
+      clearInterval(cooldownTimer); cooldownTimer = null;
+      if (!launching) setLaunching(false);
+    };
+    tick();
+    cooldownTimer = setInterval(tick, 500);
+  }
   function startLaunch(link) {
     if (launching) return;
+    if (cooldownLeft() > 0) {
+      const st = $('#launchStatus');
+      st.textContent = 'Roblox is still limiting requests. Try again in ' + cooldownLeft() + ' s.'; st.classList.add('err');
+      return;
+    }
     const p = activeProfile();
     setLaunching(true);
     setProgress(typeof link === 'string' ? 'Joining from the Roblox website…' : 'Starting…', 0.02);
