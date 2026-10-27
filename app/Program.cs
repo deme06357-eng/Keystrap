@@ -1662,6 +1662,26 @@ namespace Keystrap
             Log.Write("Wrote " + flags.Count + " flags to ClientAppSettings.json");
         }
 
+        // Roblox's in-game Maximum Frame Rate (60, 144, 240...) caps the game on top of DFIntTaskSchedulerTargetFps, so
+        // Unlock FPS sets it back to -1 ("not set") in Roblox's own settings file. Never throws; Roblox may be rewriting it.
+        public static void ClearFramerateCap()
+        {
+            try
+            {
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox");
+                if (!Directory.Exists(folder)) return;
+                foreach (string file in Directory.GetFiles(folder, "GlobalBasicSettings_*.xml"))
+                {
+                    string xml = File.ReadAllText(file);
+                    string fixedXml = Regex.Replace(xml, @"(<int name=""FramerateCap"">)\d+(</int>)", "${1}-1${2}");
+                    if (fixedXml == xml) continue;
+                    File.WriteAllText(file, fixedXml);
+                    Log.Write("Cleared Roblox's in-game frame rate cap in " + Path.GetFileName(file));
+                }
+            }
+            catch (Exception ex) { Log.Write("Couldn't clear Roblox's in-game frame rate cap: " + ex.Message); }
+        }
+
         // link: the website's roblox-player:/roblox: link, passed through unchanged; null opens the Roblox app home.
         public static Process Start(string dir, string link)
         {
@@ -3245,6 +3265,7 @@ namespace Keystrap
                     flags[FpsFlag] = (target > 0 ? target : UncappedFps).ToString(CultureInfo.InvariantCulture);
                     Log.Write("Unlock FPS: " + (target > 0 ? "capped at " + target : "uncapped"));
                 }
+                if (Bool(msg, "unlockFps")) Bootstrapper.ClearFramerateCap();
 
                 ReportProgress("Checking for Roblox updates…", 0.02);
                 RobloxVersion latest = null;
