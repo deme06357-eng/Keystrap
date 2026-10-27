@@ -1122,11 +1122,15 @@ const I18N_ES = {
     'Data folder': 'Carpeta de datos', 'License': 'Licencia', 'What\'s new': 'Novedades',
     'Added': 'Añadido', 'Fixed': 'Corregido', 'Changed': 'Cambiado', 'Got it': 'Entendido',
     'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.': 'Keystrap en español: elige Español en la página Idioma y todo cambia al instante, incluidos los menús, los diálogos y los mensajes.',
-    'Your language is remembered the next time you open Keystrap.': 'Tu idioma se recuerda la próxima vez que abras Keystrap.',
-    'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.',
-    'Settings now sits at the bottom of the sidebar.': 'Ajustes ahora está al final de la barra lateral.',
+    'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.': 'Cada actualización de Keystrap se anuncia en el canal de novedades del Discord de Keystrap.',
+    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Flags, Language, ToS, Support, About, Settings.':
+      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Flags, Idioma, Términos, Soporte, Acerca de, Ajustes.',
+    '"Experiences" are now called "Games" everywhere.': 'Las "Experiencias" ahora se llaman "Juegos" en todas partes.',
+    'Playtime shows only your 10 most played games. The totals still count every game.': 'Tiempo de juego muestra solo tus 10 juegos más jugados. Los totales siguen contando todos los juegos.',
+    'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.': 'La línea "Inspired by Bloxstrap" ya no está: Keystrap es un launcher propio.',
+    'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.':
+      'El actualizador solo instala versiones publicadas de verdad, y muestra las notas de la versión que instala en vez de las anteriores.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
-    'The updater shows what\'s new in the version it\'s installing, and only that version.': 'El actualizador muestra las novedades de la versión que está instalando, y solo de esa versión.',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
     'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
     'When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.':
@@ -1218,21 +1222,25 @@ const I18N_ES = {
   const COLORS = [['#fffcc7', '#fffba6'], ['#6ee7b7', '#3b9fd6'], ['#c4b5fd', '#818cf8'], ['#fda4af', '#fb7185'], ['#fdba74', '#f59e0b'], ['#e5e7eb', '#9ca3af']];
   // [name in the language itself, English name, code once it's translated]
   const LANGS = [['English', 'English', 'en'], ['Español', 'Spanish', 'es'],['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
+  // What's new in this release: shown once after an update, and any time from About. Every line also needs its Spanish
+  // version in I18N_ES.strings, or it stays in English there.
   const CHANGELOG = {
     Added: [
       'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
-      'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.'
+      'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.',
+      'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.'
     ],
     Changed: [
-      'Your language is remembered the next time you open Keystrap.',
-      'The Language page shows which languages are complete.',
-      'Settings now sits at the bottom of the sidebar.',
-      'The updater shows what\'s new in the version it\'s installing, and only that version.'
+      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Flags, Language, ToS, Support, About, Settings.',
+      '"Experiences" are now called "Games" everywhere.',
+      'Playtime shows only your 10 most played games. The totals still count every game.',
+      'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.'
     ],
     Fixed: [
       'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
       'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.',
-      'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.'
+      'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.',
+      'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.'
     ]
   };
 
