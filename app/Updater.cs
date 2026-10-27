@@ -83,10 +83,59 @@ namespace Keystrap.Updater
 
     class Release
     {
-        public string Version;      // tag, e.g. "v2"
+        public string Version;      // tag, e.g. "v1.0.8"
         public string AssetName;    // Keystrap.zip (the whole folder) or Keystrap.exe
         public string AssetSource;  // URL or local file path
         public long Size;
+        public string Notes;        // this release's own Markdown text from GitHub, or null
+    }
+
+    // Turns one release's Markdown text into a few plain lines for the updater card. Only that release is shown:
+    // GitHub's generated extras (the "Full Changelog" compare link, "by @someone in #12" credits, the "New
+    // Contributors" list) are dropped, so the card never pulls in the history between versions.
+    static class ReleaseNotes
+    {
+        public class Line { public string Text; public bool Heading, Bullet; }
+
+        const int MaxLines = 9;
+        static readonly System.Text.RegularExpressions.Regex Link = new System.Text.RegularExpressions.Regex(@"\[([^\]]+)\]\([^)]*\)");
+        static readonly System.Text.RegularExpressions.Regex Credit = new System.Text.RegularExpressions.Regex(@"\s+by @[\w-]+(\s+in\s+\S+)?\s*$");
+        static readonly System.Text.RegularExpressions.Regex Url = new System.Text.RegularExpressions.Regex(@"<?https?://\S+");
+
+        public static List<Line> Parse(string markdown)
+        {
+            var lines = new List<Line>();
+            if (string.IsNullOrWhiteSpace(markdown)) return lines;
+            bool skipping = false;   // inside "New Contributors"
+            foreach (string raw in markdown.Replace("\r\n", "\n").Split('\n'))
+            {
+                string s = raw.Trim();
+                if (s.Length == 0 || s.StartsWith("<!--") || s.StartsWith("---")) continue;
+                var line = new Line();
+                if (s.StartsWith("#")) { line.Heading = true; s = s.TrimStart('#').Trim(); skipping = false; }
+                else if (s.StartsWith("- ") || s.StartsWith("* ") || s.StartsWith("+ ")) { line.Bullet = true; s = s.Substring(2).Trim(); }
+
+                if (line.Heading && s.Equals("New Contributors", StringComparison.OrdinalIgnoreCase)) { skipping = true; continue; }
+                if (skipping || s.IndexOf("Full Changelog", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                if (line.Heading && s.Equals("What's Changed", StringComparison.OrdinalIgnoreCase)) continue;   // the card has its own title
+
+                s = Link.Replace(s, "$1");
+                s = Credit.Replace(s, "");
+                s = Url.Replace(s, "");
+                s = s.Replace("**", "").Replace("__", "").Replace("`", "").Trim();
+                if (s.Length == 0) continue;
+                line.Text = s;
+                lines.Add(line);
+            }
+            // A heading with nothing under it says nothing.
+            lines = lines.Where((l, i) => !l.Heading || (i + 1 < lines.Count && !lines[i + 1].Heading)).ToList();
+            if (lines.Count > MaxLines)
+            {
+                lines = lines.Take(MaxLines - 1).ToList();
+                lines.Add(new Line { Text = "More on the releases page." });
+            }
+            return lines;
+        }
     }
 
     static class Versions
@@ -146,7 +195,10 @@ namespace Keystrap.Updater
         readonly Options options;
         readonly Grid root = new Grid();
         readonly Border card;
+        readonly FrameworkElement logo;
         readonly TextBlock title, status, versionTag;
+        readonly Border notesBox;
+        readonly StackPanel notesLines;
         readonly Border progressFill;
         readonly ScaleTransform progressScale = new ScaleTransform(0, 1);
         readonly TranslateTransform indeterminate = new TranslateTransform();
@@ -171,7 +223,7 @@ namespace Keystrap.Updater
             try { Icon = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location).Handle, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions()); } catch { }
 
             // ----- card: everything centred in one narrow column, top to bottom -----
-            var logo = Logo(84);
+            logo = Logo(84);
             logo.HorizontalAlignment = HorizontalAlignment.Center;
             logo.Margin = new Thickness(0, 0, 0, 20);
 
@@ -180,6 +232,17 @@ namespace Keystrap.Updater
             {
                 FontFamily = new FontFamily("Cascadia Mono, Consolas"), FontSize = 12, Foreground = B(Fg3),
                 HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 6, 0, 0),
+            };
+
+            // The new release's notes, left-aligned in a quiet box under the version line. Hidden until there is a
+            // newer release; a long body scrolls inside the box instead of pushing the card's layout around.
+            notesLines = new StackPanel();
+            notesBox = new Border
+            {
+                Width = 280, Margin = new Thickness(0, 16, 0, 0), Padding = new Thickness(14, 10, 14, 10),
+                CornerRadius = new CornerRadius(8), Background = B(Card), BorderBrush = B(Stroke), BorderThickness = new Thickness(1),
+                HorizontalAlignment = HorizontalAlignment.Center, Visibility = Visibility.Collapsed,
+                Child = new ScrollViewer { MaxHeight = 150, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, Focusable = false, Content = notesLines },
             };
 
             // Up to three lines, centred, so error messages are never cut off.
@@ -213,6 +276,7 @@ namespace Keystrap.Updater
             stack.Children.Add(logo);
             stack.Children.Add(title);
             stack.Children.Add(versionTag);
+            stack.Children.Add(notesBox);
             stack.Children.Add(status);
             stack.Children.Add(track);
             stack.Children.Add(errorButtons);
@@ -312,10 +376,52 @@ namespace Keystrap.Updater
                 new DoubleAnimation(Math.Max(0, Math.Min(1, fraction.Value)), TimeSpan.FromMilliseconds(180)));
         }
 
+        // The logo shrinks while notes are up, so the box gets the room instead of the card overflowing.
+        void SetNotesVisible(bool visible)
+        {
+            notesBox.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+            double scale = visible ? 56.0 / 84 : 1;
+            logo.LayoutTransform = new ScaleTransform(scale, scale);
+            logo.Margin = new Thickness(0, 0, 0, visible ? 12 : 20);
+        }
+
+        // Fills the notes box from one release; no notes, no box.
+        void ShowNotes(Release release)
+        {
+            notesLines.Children.Clear();
+            var lines = ReleaseNotes.Parse(release.Notes);
+            if (lines.Count == 0) { SetNotesVisible(false); return; }
+
+            notesLines.Children.Add(new TextBlock
+            {
+                Text = "WHAT'S NEW IN " + release.Version.ToUpperInvariant(), FontSize = 10.5, FontWeight = FontWeights.SemiBold,
+                Foreground = B(Fg3), Margin = new Thickness(0, 0, 0, 6),
+            });
+            foreach (var line in lines)
+            {
+                var text = new TextBlock
+                {
+                    Text = line.Text, FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, line.Heading ? 6 : 0, 0, 3),
+                    Foreground = B(line.Heading ? Fg : Fg2), FontWeight = line.Heading ? FontWeights.SemiBold : FontWeights.Normal,
+                };
+                if (!line.Bullet) { notesLines.Children.Add(text); continue; }
+                // A bullet keeps its wrapped lines indented under the text, not under the dot.
+                var row = new DockPanel { Margin = text.Margin };
+                text.Margin = new Thickness(0);
+                var dot = new TextBlock { Text = "•", FontSize = 12, Foreground = B(Fg3), Margin = new Thickness(0, 0, 7, 0) };
+                DockPanel.SetDock(dot, Dock.Left);
+                row.Children.Add(dot);
+                row.Children.Add(text);
+                notesLines.Children.Add(row);
+            }
+            SetNotesVisible(true);
+        }
+
         public void ShowError(string message)
         {
             busy = false;
             Progress(0);
+            SetNotesVisible(false);   // the error and its buttons need the room
             title.Text = "Update didn't finish";
             Status(message, Bad);
             errorButtons.Visibility = Visibility.Visible;
@@ -360,6 +466,7 @@ namespace Keystrap.Updater
         async Task RunAsync()
         {
             title.Text = "Updating Keystrap";
+            SetNotesVisible(false);
             try
             {
                 string current = CurrentVersion(KeystrapExe);
@@ -378,6 +485,7 @@ namespace Keystrap.Updater
                 }
 
                 versionTag.Text = current + "  →  " + release.Version;
+                ShowNotes(release);
                 string staged = await DownloadAsync(release);
 
                 // From here until the files are in place, closing the updater is blocked.
@@ -519,7 +627,11 @@ namespace Keystrap.Updater
         // One release, or null when it isn't one the updater should install.
         static Release ReadRelease(Dictionary<string, object> json, string source)
         {
-            var r = new Release { Version = json.ContainsKey("tag_name") ? json["tag_name"] as string : null };
+            var r = new Release
+            {
+                Version = json.ContainsKey("tag_name") ? json["tag_name"] as string : null,
+                Notes = json.ContainsKey("body") ? json["body"] as string : null,
+            };
             if (string.IsNullOrEmpty(r.Version) || !VersionTag.IsMatch(r.Version.Trim())) return null;
             if (true.Equals(json.ContainsKey("draft") ? json["draft"] : null) || true.Equals(json.ContainsKey("prerelease") ? json["prerelease"] : null)) return null;
             // DeserializeObject gives object[] for arrays, Deserialize<T> gives ArrayList; both are IEnumerable.

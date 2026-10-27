@@ -1126,6 +1126,7 @@ const I18N_ES = {
     'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.',
     'Settings now sits at the bottom of the sidebar.': 'Ajustes ahora está al final de la barra lateral.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
+    'The updater shows what\'s new in the version it\'s installing, and only that version.': 'El actualizador muestra las novedades de la versión que está instalando, y solo de esa versión.',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
     'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
     'When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.':
@@ -1209,7 +1210,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.0.8';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.0.9';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1225,7 +1226,8 @@ const I18N_ES = {
     Changed: [
       'Your language is remembered the next time you open Keystrap.',
       'The Language page shows which languages are complete.',
-      'Settings now sits at the bottom of the sidebar.'
+      'Settings now sits at the bottom of the sidebar.',
+      'The updater shows what\'s new in the version it\'s installing, and only that version.'
     ],
     Fixed: [
       'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
