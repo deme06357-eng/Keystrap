@@ -141,6 +141,11 @@ button { font: inherit; color: inherit; }
   color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(var(--accent-rgb),.22);
 }
 .badge.beta { color: var(--fg-2); background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+.badge.soon { color: var(--fg-3); background: transparent; border-color: rgba(255,255,255,.12); }
+.sky-soon { display: flex; align-items: center; gap: 14px; padding: 18px 20px; }
+.sky-soon > .ico { width: 28px; height: 28px; color: var(--fg-3); flex: none; }
+.sky-soon .t { font-weight: 600; }
+.sky-soon .d { color: var(--fg-3); font-size: 13px; margin-top: 2px; }
 .nav-item.is-soon .lbl { color: var(--fg-3); }
 .nav-item.is-soon:hover .lbl, .nav-item.is-soon[aria-current="page"] .lbl { color: var(--white); }
 
@@ -674,12 +679,11 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="play"><svg class="ico"><use href="#i-play"/></svg><span class="lbl">Play</span></button>
           <button class="nav-item" data-page="profiles"><svg class="ico"><use href="#i-users"/></svg><span class="lbl">Profiles</span></button>
           <button class="nav-item" data-page="playtime"><svg class="ico"><use href="#i-timer"/></svg><span class="lbl">Playtime</span></button>
-          <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span><span class="badge beta">Beta</span></button>
+          <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span><span class="badge beta" id="skiesNavBadge">Beta</span></button>
           <button class="nav-item" data-page="crosshairs"><svg class="ico"><use href="#i-crosshair"/></svg><span class="lbl">Crosshairs</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
-          <button class="nav-item" data-page="support"><svg class="ico"><use href="#i-headset"/></svg><span class="lbl">Support</span></button>
           <button class="nav-item" data-page="about"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
           <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-sliders"/></svg><span class="lbl">Settings</span></button>
         </nav>
@@ -766,8 +770,13 @@ html.native.shown .window { opacity: 1; }
 
       <!-- SKIES -->
       <section class="page" id="page-skies">
-        <h1>Custom Skies <span class="badge beta">Beta</span></h1>
+        <h1>Custom Skies <span class="badge beta" id="skiesBadge">Beta</span></h1>
         <p class="sub">Replace the sky Roblox uses by default. Your choice is applied to Keystrap's copy of Roblox on every launch. Games that set their own sky keep theirs.</p>
+        <div class="card sky-soon" id="skySoon" hidden>
+          <svg class="ico"><use href="#i-cloud"/></svg>
+          <div><div class="t">Custom Skies is coming soon</div>
+            <div class="d">It's still being finished. It unlocks in a future update, and until then Roblox keeps its own sky.</div></div>
+        </div>
         <div class="sky-bar">
           <div class="sky-status" id="skyStatus" aria-live="polite"></div>
           <button class="btn" id="skyImport"><svg class="ico"><use href="#i-plus"/></svg>Import custom sky</button>
@@ -779,7 +788,7 @@ html.native.shown .window { opacity: 1; }
       <!-- CROSSHAIRS -->
       <section class="page" id="page-crosshairs">
         <h1>Crosshairs <span class="badge beta">Beta</span></h1>
-        <p class="sub">Replace the cursor Roblox shows over the game and the crosshair in Shift Lock and first person. Your choice is applied to Keystrap's copy of Roblox on every launch. Games that set their own cursor keep theirs.</p>
+        <p class="sub">Use your crosshair for every Roblox mouse cursor: over the game, over buttons, in text boxes, while dragging, and in Shift Lock and first person. It's applied to Keystrap's copy of Roblox on every launch. Games that set their own cursor keep theirs.</p>
         <div class="xh-layout">
           <div class="card xh-stage">
             <canvas id="xhPreview" width="960" height="540" role="img" aria-label="Crosshair preview"></canvas>
@@ -1188,10 +1197,10 @@ const I18N_ES = {
     'Added': 'Añadido', 'Fixed': 'Corregido', 'Changed': 'Cambiado', 'Got it': 'Entendido',
     'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.': 'Keystrap en español: elige Español en la página Idioma y todo cambia al instante, incluidos los menús, los diálogos y los mensajes.',
     'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.': 'Cada actualización de Keystrap se anuncia en el canal de novedades del Discord de Keystrap.',
-    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, Support, About, Settings.':
-      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Miras, Flags, Idioma, Términos, Soporte, Acerca de, Ajustes.',
-    'Custom Skies is marked Beta, and the Anime Sunset and Vaporwave Synth presets are gone. If you had one picked, Roblox\'s own sky comes back.':
-      'Cielos personalizados está en Beta, y los cielos Anime Sunset y Vaporwave Synth ya no están. Si tenías uno elegido, vuelve el cielo de Roblox.',
+    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, About, Settings.':
+      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Miras, Flags, Idioma, Términos, Acerca de, Ajustes.',
+    'Custom Skies is coming soon: it\'s switched off while it\'s being finished, and Roblox keeps its own sky until then.':
+      'Cielos personalizados llegará pronto: está desactivado mientras se termina, y Roblox mantiene su propio cielo hasta entonces.',
     '"Experiences" are now called "Games" everywhere.':'Las "Experiencias" ahora se llaman "Juegos" en todas partes.',
     'Playtime shows only your 10 most played games. The totals still count every game.': 'Tiempo de juego muestra solo tus 10 juegos más jugados. Los totales siguen contando todos los juegos.',
     'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.': 'La línea "Inspired by Bloxstrap" ya no está: Keystrap es un launcher propio.',
@@ -1200,8 +1209,11 @@ const I18N_ES = {
     'Playtime\'s total time, games and sessions count every game you\'ve played again, not just the top 10.':
       'El tiempo total, los juegos y las sesiones de Tiempo de juego vuelven a contar todos los juegos que has jugado, no solo los 10 primeros.',
     'Crosshairs': 'Miras',
-    'Replace the cursor Roblox shows over the game and the crosshair in Shift Lock and first person. Your choice is applied to Keystrap\'s copy of Roblox on every launch. Games that set their own cursor keep theirs.':
-      'Cambia el cursor que Roblox muestra sobre el juego y la mira en Shift Lock y primera persona. Tu elección se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cursor mantienen el suyo.',
+    'Use your crosshair for every Roblox mouse cursor: over the game, over buttons, in text boxes, while dragging, and in Shift Lock and first person. It\'s applied to Keystrap\'s copy of Roblox on every launch. Games that set their own cursor keep theirs.':
+      'Usa tu mira para todos los cursores de Roblox: sobre el juego, sobre botones, en cuadros de texto, al arrastrar, y en Shift Lock y primera persona. Se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cursor mantienen el suyo.',
+    'Coming soon': 'Próximamente', 'Custom Skies is coming soon': 'Cielos personalizados llegará pronto',
+    'It\'s still being finished. It unlocks in a future update, and until then Roblox keeps its own sky.':
+      'Todavía se está terminando. Se desbloquea en una próxima actualización y, hasta entonces, Roblox mantiene su propio cielo.',
     'Crosshair preview': 'Vista previa de la mira', 'Preview background': 'Fondo de la vista previa', 'Dark': 'Oscuro', 'Light': 'Claro',
     'Style': 'Estilo', 'Crosshair style': 'Estilo de mira', 'Dot': 'Punto', 'Cross': 'Cruz', 'Cross and dot': 'Cruz y punto',
     'Circle': 'Círculo', 'Circle and dot': 'Círculo y punto', 'Your image': 'Tu imagen',
@@ -1223,8 +1235,8 @@ const I18N_ES = {
     'Keystrap couldn\'t read that file. Use a .png, .cur or .ico image.': 'Keystrap no pudo leer ese archivo. Usa una imagen .png, .cur o .ico.',
     'Preview only: the Keystrap app puts your crosshair into Roblox.': 'Solo vista previa: la app de Keystrap pone tu mira en Roblox.',
     'Importing works in the Keystrap app.': 'La importación funciona en la app de Keystrap.',
-    'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.':
-      'Miras: elige un estilo y un color, ajusta su tamaño entre el 50 % y el 200 %, o importa tu propio .png o .cur, y Keystrap lo pone en Roblox en cada inicio.',
+    'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap uses it for every Roblox mouse cursor on every launch.':
+      'Miras: elige un estilo y un color, ajusta su tamaño entre el 50 % y el 200 %, o importa tu propio .png o .cur, y Keystrap lo usa para todos los cursores de Roblox en cada inicio.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
     'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
@@ -1309,7 +1321,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.0';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.1';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1323,15 +1335,15 @@ const I18N_ES = {
     Added: [
       'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
       'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.',
-      'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.',
+      'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap uses it for every Roblox mouse cursor on every launch.',
       'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.'
     ],
     Changed: [
-      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, Support, About, Settings.',
+      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, About, Settings.',
       '"Experiences" are now called "Games" everywhere.',
       'Playtime shows only your 10 most played games. The totals still count every game.',
       'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.',
-      'Custom Skies is marked Beta, and the Anime Sunset and Vaporwave Synth presets are gone. If you had one picked, Roblox\'s own sky comes back.'
+      'Custom Skies is coming soon: it\'s switched off while it\'s being finished, and Roblox keeps its own sky until then.'
     ],
     Fixed: [
       'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
@@ -1485,6 +1497,7 @@ const I18N_ES = {
         env.dataDir = msg.dataDir || env.dataDir;
         env.versionsBytes = msg.versionsBytes;
         env.installed = msg.installed || null;
+        env.dev = !!msg.dev;   // Keystrap.exe --dev: developer tools, and features that aren't released yet
         $('#devWebhookRow').hidden = !msg.dev;
         start();
         break;
@@ -1590,7 +1603,18 @@ const I18N_ES = {
     el.textContent = text || '';
     el.classList.toggle('err', !!isError);
   }
+  // Custom Skies isn't released yet: it's open in developer mode (Keystrap.exe --dev) and "Coming soon" for everyone else.
+  function skiesUnlocked() { return !!env.dev; }
   function renderSkies() {
+    const open = skiesUnlocked();
+    for (const badge of [$('#skiesNavBadge'), $('#skiesBadge')]) {
+      badge.textContent = open ? 'Beta' : 'Coming soon';
+      badge.className = 'badge ' + (open ? 'beta' : 'soon');
+    }
+    $('[data-page="skies"]').classList.toggle('is-soon', !open);
+    $('#skySoon').hidden = open;
+    $('#page-skies .sky-bar').hidden = $('#skyGrid').hidden = $('#page-skies .sky-help').hidden = !open;
+    if (!open) return;
     const fallback = SKY_FALLBACK.map(f => ({ id: f[0], name: f[1], desc: f[2], custom: false, preview: null }));
     const list = env.skies && env.skies.length ? env.skies : fallback;
     const active = state.settings.sky;
@@ -1814,7 +1838,8 @@ const I18N_ES = {
     const flags = {};
     p.flags.forEach(f => { if (f.on) flags[f.name] = f.value; });
     host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: fpsTarget(), multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
-      menuCap: !!state.settings.menuCap60, link: typeof link === 'string' ? link : null, sky: state.settings.sky });
+      menuCap: !!state.settings.menuCap60, link: typeof link === 'string' ? link : null,
+      sky: skiesUnlocked() ? state.settings.sky : 'default' });   // locked: Roblox's own sky, even if one was picked before
   }
   function launchFinished(error) {
     setLaunching(false);

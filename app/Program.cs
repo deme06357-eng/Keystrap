@@ -1150,31 +1150,35 @@ namespace Keystrap
         }
     }
 
-    // Custom Crosshairs: Roblox draws its in-game cursor from two images in each version folder, ArrowFarCursor.png
-    // (64px, the cursor over the game world) and MouseLockedCursor.png (32px, the crosshair in Shift Lock and first
-    // person). The page draws the chosen crosshair at both sizes and Keystrap keeps them in its data folder. Every launch
-    // copies them over Roblox's, which are backed up once per version and put back for Roblox's own crosshair.
-    // Roblox centres the image on the mouse. Games that set their own mouse icon keep theirs.
+    // Custom Crosshairs: the page draws the chosen crosshair twice, 64px and 32px, and Keystrap keeps both in its data
+    // folder. Every launch turns them into each of Roblox's mouse cursors below, at that cursor's own size, after
+    // backing up Roblox's originals once per version; with no crosshair saved, the originals go back. Roblox draws
+    // each cursor centred on the mouse. Games that set their own mouse icon keep theirs.
     static class Crosshairs
     {
         public static readonly string Dir = Path.Combine(Paths.Data, "Crosshair");
-        const string BackupFolder = @"content\textures\keystrap-original-cursors";
+        const string BackupFolder = @"content\textures\keystrap-original-cursors";   // mirrors the paths below
+        const string FarFile = "ArrowFarCursor.png", LockedFile = "MouseLockedCursor.png";
         static readonly object gate = new object();
 
-        class Target
+        // Every mouse cursor Roblox shows players. Studio's building-tool cursors (Anchor, Weld and so on) stay as they are.
+        static readonly string[] Cursors =
         {
-            public string Name, PathInVersion;
-            public int Size;
-            public Target(string name, string path, int size) { Name = name; PathInVersion = path; Size = size; }
-        }
-
-        static readonly Target[] Targets =
-        {
-            new Target("ArrowFarCursor.png", @"content\textures\Cursors\KeyboardMouse\ArrowFarCursor.png", 64),
-            new Target("MouseLockedCursor.png", @"content\textures\MouseLockedCursor.png", 32),
+            @"content\textures\Cursors\KeyboardMouse\ArrowFarCursor.png",   // over the game world
+            @"content\textures\Cursors\KeyboardMouse\ArrowCursor.png",      // over buttons and things you can click
+            @"content\textures\Cursors\KeyboardMouse\IBeamCursor.png",      // over text boxes
+            @"content\textures\ArrowFarCursor.png",                          // older copies of the three above,
+            @"content\textures\ArrowCursor.png",                             // which Roblox still ships
+            @"content\textures\IBeamCursor.png",
+            @"content\textures\MouseLockedCursor.png",                       // Shift Lock and first person
+            @"content\textures\Cursors\DragDetector\HoverCursor.png",        // over things you can drag
+            @"content\textures\Cursors\DragDetector\ActivatedCursor.png",    // while dragging
         };
 
-        static bool IsCustom { get { return Targets.All(t => File.Exists(Path.Combine(Dir, t.Name))); } }
+        // Keystrap 1.0.12 and 1.0.13 backed up only these two, by file name alone, straight into the backup folder.
+        static readonly string[] FlatBackups = { Cursors[0], Cursors[6] };
+
+        static bool IsCustom { get { return File.Exists(Path.Combine(Dir, FarFile)) && File.Exists(Path.Combine(Dir, LockedFile)); } }
 
         // Keeps the page's two PNGs (base64, 64px and 32px) as the crosshair to use, or clears it when either is null.
         public static void Save(string far, string locked)
@@ -1187,24 +1191,24 @@ namespace Keystrap
                     return;
                 }
                 Directory.CreateDirectory(Dir);
-                WritePng(Targets[0], far);
-                WritePng(Targets[1], locked);
+                WritePng(FarFile, far, 64);
+                WritePng(LockedFile, locked, 32);
             }
         }
 
-        static void WritePng(Target t, string base64)
+        static void WritePng(string name, string base64, int size)
         {
             byte[] bytes = Convert.FromBase64String(base64);
             using (var ms = new MemoryStream(bytes))
             using (Image img = Image.FromStream(ms))
-                if (img.Width != t.Size || img.Height != t.Size) throw new InvalidDataException(t.Name + " should be " + t.Size + "px square.");
-            string path = Path.Combine(Dir, t.Name), temp = path + ".tmp";
+                if (img.Width != size || img.Height != size) throw new InvalidDataException(name + " should be " + size + "px square.");
+            string path = Path.Combine(Dir, name), temp = path + ".tmp";
             File.WriteAllBytes(temp, bytes);
             if (File.Exists(path)) File.Delete(path);
             File.Move(temp, path);
         }
 
-        // Puts the saved crosshair into a Roblox version folder, or Roblox's own back when none is saved.
+        // Puts the saved crosshair into every cursor of a Roblox version folder, or Roblox's own back when none is saved.
         public static void ApplyTo(string versionDir)
         {
             lock (gate)
@@ -1212,29 +1216,86 @@ namespace Keystrap
                 string backup = Path.Combine(versionDir, BackupFolder);
                 bool custom = IsCustom;
                 if (!custom && !Directory.Exists(backup)) return;   // nothing has been replaced in this version
-                foreach (Target t in Targets)
+                int done = 0;
+                foreach (string cursor in Cursors)
                 {
-                    string target = Path.Combine(versionDir, t.PathInVersion);
-                    if (!File.Exists(target)) { Log.Write("This Roblox version has no " + t.PathInVersion + "; skipped"); continue; }
-                    string original = Path.Combine(backup, t.Name);
+                    string target = Path.Combine(versionDir, cursor);
+                    if (!File.Exists(target)) continue;   // not every Roblox version has every cursor
+                    string original = OriginalOf(backup, cursor);
                     if (custom && !File.Exists(original))
                     {
-                        Directory.CreateDirectory(backup);
+                        Directory.CreateDirectory(Path.GetDirectoryName(original));
                         File.Copy(target, original);
                     }
-                    string source = custom ? Path.Combine(Dir, t.Name) : original;
-                    if (File.Exists(source)) File.Copy(source, target, true);
+                    if (!File.Exists(original)) continue;
+                    if (custom)
+                    {
+                        Size size = SizeOf(original);
+                        File.WriteAllBytes(target, Sized(Path.Combine(Dir, size.Width <= 32 && size.Height <= 32 ? LockedFile : FarFile), size));
+                    }
+                    else File.Copy(original, target, true);
+                    done++;
                 }
-                Log.Write((custom ? "Applied the custom crosshair to " : "Put Roblox's own crosshair back in ") + versionDir);
+                Log.Write((custom ? "Applied the custom crosshair to " : "Put Roblox's own cursors back in ") + done + " cursors in " + versionDir);
             }
         }
 
-        // Roblox's own crosshair from a version folder (its backup, if a custom one is in place), as a data URI.
+        // Where a cursor's original is kept, moving a backup from Keystrap 1.0.12 or 1.0.13 into place first.
+        static string OriginalOf(string backup, string cursor)
+        {
+            string original = Path.Combine(backup, cursor);
+            string flat = Path.Combine(backup, Path.GetFileName(cursor));
+            if (!File.Exists(original) && FlatBackups.Contains(cursor) && File.Exists(flat))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(original));
+                File.Move(flat, original);
+            }
+            return original;
+        }
+
+        static Size SizeOf(string file)
+        {
+            using (var ms = new MemoryStream(File.ReadAllBytes(file)))
+            using (Image img = Image.FromStream(ms))
+                return img.Size;
+        }
+
+        // A drawn crosshair as PNG bytes at a cursor's own size: unchanged when it already fits, otherwise scaled to fit
+        // and centred, so the middle of the crosshair stays on the mouse.
+        static byte[] Sized(string source, Size size)
+        {
+            byte[] bytes = File.ReadAllBytes(source);
+            using (var input = new MemoryStream(bytes))
+            using (var src = new Bitmap(input))
+            {
+                if (src.Size == size) return bytes;
+                using (var bmp = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                {
+                    double k = Math.Min((double)size.Width / src.Width, (double)size.Height / src.Height);
+                    int w = (int)Math.Round(src.Width * k), h = (int)Math.Round(src.Height * k);
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                        g.DrawImage(src, new Rectangle((size.Width - w) / 2, (size.Height - h) / 2, w, h));
+                    }
+                    using (var ms = new MemoryStream())
+                    {
+                        bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        return ms.ToArray();
+                    }
+                }
+            }
+        }
+
+        // Roblox's own cursor over the game world (its backup, if a custom one is in place), as a data URI.
         public static string DefaultImage(string versionDir)
         {
             if (versionDir == null) return null;
-            string file = Path.Combine(versionDir, BackupFolder, Targets[0].Name);
-            if (!File.Exists(file)) file = Path.Combine(versionDir, Targets[0].PathInVersion);
+            string backup = Path.Combine(versionDir, BackupFolder);
+            string file = Path.Combine(backup, Cursors[0]);
+            if (!File.Exists(file)) file = Path.Combine(backup, Path.GetFileName(Cursors[0]));   // a 1.0.12/1.0.13 backup
+            if (!File.Exists(file)) file = Path.Combine(versionDir, Cursors[0]);
             return File.Exists(file) ? "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes(file)) : null;
         }
 
