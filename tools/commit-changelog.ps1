@@ -42,7 +42,7 @@ try {
     if (-not $url) { throw 'secrets.json has no notificationsWebhook' }
     $versionFile = Join-Path $root 'version.txt'
     $raw = if (Test-Path $versionFile) { [regex]::Match((Get-Content $versionFile -TotalCount 1), 'v?([0-9.]+)').Groups[1].Value } else { '' }
-    # Shown as major.minor: "v1" or "1" reads 1.0, "1.3" stays 1.3.
+    # Shown as written ("1.0.8"); a bare "1" from an old version.txt reads 1.0.
     $version = if ($raw -match '\.') { $raw } elseif ($raw) { "$raw.0" } else { '?' }
 
     # Commits since the last one posted, oldest first (only the newest one on the very first run).

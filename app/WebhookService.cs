@@ -55,7 +55,7 @@ namespace Keystrap
         // One accent for every message: the thin bar on the embed's left edge.
         const int Accent = 0xFDE68A;
 
-        // Who is sending, for the User-Agent; each exe sets its own ("Keystrap v1", "Keystrap Updater v1").
+        // Who is sending, for the User-Agent; each exe sets its own ("Keystrap v1.0.8", "Keystrap Updater v1.0.8").
         public static string Source = "Keystrap";
 
         class Style
@@ -145,7 +145,7 @@ namespace Keystrap
 
         public static Task<bool> SendAsync(Notification n) { return SendAsync(n, TimeSpan.FromSeconds(15)); }
 
-        // "Keystrap Updater v1.1" -> "Keystrap-Updater/v1.1": a User-Agent product token can't contain spaces or extra slashes.
+        // "Keystrap Updater v1.0.8" -> "Keystrap-Updater/v1.0.8": a User-Agent product token can't contain spaces or extra slashes.
         public static string UserAgent()
         {
             string s = (Source ?? "Keystrap").Trim();

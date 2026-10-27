@@ -91,7 +91,7 @@ namespace Keystrap.Updater
 
     static class Versions
     {
-        // "v1.2" -> [1, 2]; anything unreadable counts as 0.
+        // "v1.0.10" -> [1, 0, 10], compared part by part, so 1.0.10 is newer than 1.0.9; anything unreadable counts as 0.
         static int[] Parts(string v)
         {
             v = (v ?? "").Trim().TrimStart('v', 'V');
@@ -475,7 +475,7 @@ namespace Keystrap.Updater
         static readonly System.Text.RegularExpressions.Regex VersionTag = new System.Text.RegularExpressions.Regex(@"^[vV]?\d+(\.\d+)*$");
 
         // Reads GitHub's release list (or one release, or a list, in the same shape from --manifest) and picks the
-        // highest version that is a real release: a tag like v1.1, not a draft or pre-release, with Keystrap.zip or
+        // highest version that is a real release: a tag like v1.0.8, not a draft or pre-release, with Keystrap.zip or
         // Keystrap.exe attached. Anything else on the releases page (a test release, a tag like "Key") is ignored.
         async Task<Release> GetLatestAsync()
         {
