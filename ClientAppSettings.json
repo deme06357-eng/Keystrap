@@ -1,0 +1,17 @@
+{
+  "FFlagDebugGraphicsPreferD3D11": true,
+  "FFlagHandleAltEnterFullscreenManually": false,
+  "DFFlagTextureQualityOverrideEnabled": true,
+  "DFIntTextureQualityOverride": 0,
+  "FIntDebugForceMSAASamples": 0,
+  "DFIntDebugFRMQualityLevelOverride": 1,
+  "FIntFRMMinGrassDistance": 0,
+  "FIntFRMMaxGrassDistance": 0,
+  "FIntGrassMovementReducedMotionFactor": 0,
+  "FFlagDebugSkyGray": true,
+  "DFFlagDisableDPIScale": true,
+  "DFIntCSGLevelOfDetailSwitchingDistance": 0,
+  "DFIntCSGLevelOfDetailSwitchingDistanceL12": 0,
+  "DFIntCSGLevelOfDetailSwitchingDistanceL23": 0,
+  "DFIntCSGLevelOfDetailSwitchingDistanceL34": 0
+}

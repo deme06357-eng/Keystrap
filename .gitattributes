@@ -1,0 +1,2 @@
+# Hooks are shell scripts: a Windows line ending in the first line stops them from running.
+.githooks/* text eol=lf

@@ -1,0 +1,2084 @@
+<meta charset="utf-8">
+<title>Keystrap Launcher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- Loaded without blocking: a render-blocking stylesheet from the internet held up the whole page (about 2 s on every
+     app start). Until it arrives, or if it never does, monospace text uses Cascadia Mono / Consolas. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<style>
+/* Layout: a single Fluent-style desktop window — title bar, fixed left nav, scrolling content pane. Dark only. */
+:root {
+  color-scheme: dark;
+  --desk: #0b0b0d;            /* page behind the window */
+  --mica: #1c1c1f;            /* window base (mica dark) */
+  --nav: #18181b;             /* sidebar */
+  --card: #26262a;            /* content cards */
+  --card-hi: #2e2e33;         /* card hover / inputs */
+  --stroke: #34343a;          /* hairlines */
+  --white: #ffffff;
+  --fg: #f2f2f4;
+  --fg-2: #b4b4bc;
+  --fg-3: #7c7c86;
+  /* Accent palette. updateAccentColor() rewrites all of these at runtime, so every accent-coloured
+     style must use them (rgba(var(--accent-rgb), a) for translucent tints) rather than a hex code. */
+  --accent: #fffcc7;          /* cream, gradient start */
+  --accent-2: #fffba6;        /* butter, gradient end */
+  --accent-rgb: 255,252,199;
+  --accent-2-rgb: 255,251,166;
+  --accent-soft: rgba(var(--accent-rgb),.12);
+  --on-accent: #1f1d10;
+  --on-accent-rgb: 31,29,16;
+  --good: #4cc38a;
+  --warn: #f2b84b;
+  --bad: #ff7a7a;
+  --f-ui: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r-win: 14px;
+  --r-card: 10px;
+  --r-ctl: 7px;
+}
+html, body { height: 100%; }
+body {
+  background: var(--desk);
+  color: var(--fg);
+  font-family: var(--f-ui);
+  font-size: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; }
+/* Keyboard focus: no outline ring. Focused controls get the same quiet highlight as hover plus a faint 1px edge,
+   so Tab still shows where you are without a bright border. */
+:focus-visible { outline: none; }
+:where(button, a, [tabindex], .radio):focus-visible { box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+
+/* thin overlay-style scrollbars, no arrow buttons */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,.24); }
+
+.ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- window ---------- */
+.window {
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  height: min(700px, 100%);
+  min-height: 560px;
+  background: var(--mica);
+  border: 1px solid var(--stroke);
+  border-radius: var(--r-win);
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.7);
+  display: grid;
+  grid-template-rows: 40px 1fr;
+  overflow: hidden;
+}
+.titlebar {
+  display: flex; align-items: center; gap: 10px;
+  padding-left: 14px;
+  background: var(--nav);
+  border-bottom: 1px solid var(--stroke);
+  user-select: none;
+}
+.titlebar .name { font-size: 12px; color: var(--fg-2); }
+.titlebar .ver { font: 11px var(--f-mono); color: var(--fg-3); }
+.titlebar .spacer { flex: 1; }
+.winctl { display: flex; height: 100%; }
+.winctl button {
+  width: 46px; height: 100%; border: 0; background: transparent; color: var(--fg-2);
+  display: grid; place-items: center; cursor: default; transition: background .12s, color .12s;
+}
+.winctl button:hover { background: var(--card-hi); color: var(--white); }
+.winctl button.close:hover { background: #c42b1c; color: #fff; }
+.winctl svg { width: 10px; height: 10px; }
+
+.body { display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
+
+/* ---------- sidebar ---------- */
+.sidebar {
+  background: var(--nav);
+  border-right: 1px solid var(--stroke);
+  display: flex; flex-direction: column;
+  padding: 20px 12px 12px;
+  min-height: 0;
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 20px 10px; }
+.brand svg { width: 36px; height: 36px; flex: none; }
+.brand .wm { font-family: var(--f-display); font-weight: 650; font-size: 19px; letter-spacing: -.01em; line-height: 1.1; }
+.brand .tag { font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+
+.nav-wrap { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.nav { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; flex: 1; min-height: 0; }
+.nav-item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 9px 10px 9px 18px; border: 0; border-radius: var(--r-ctl);
+  background: transparent; color: var(--fg-2); text-align: left; cursor: pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.nav-item:hover, .nav-item:focus-visible { background: rgba(255,255,255,.05); color: var(--white); }
+.nav-item[aria-current="page"] { background: rgba(255,255,255,.07); color: var(--white); }
+.nav-item .lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.indicator {
+  position: absolute; left: 5px; top: 0; width: 3px; height: 16px; border-radius: 3px;
+  background: var(--accent);
+  transition: transform .22s cubic-bezier(.3,.9,.3,1);
+  pointer-events: none; z-index: 1;
+}
+.badge {
+  font-size: 9.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 99px; white-space: nowrap;
+  color: var(--accent); background: var(--accent-soft); border: 1px solid rgba(var(--accent-rgb),.22);
+}
+.badge.beta { color: var(--fg-2); background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); }
+.nav-item.is-soon .lbl { color: var(--fg-3); }
+.nav-item.is-soon:hover .lbl, .nav-item.is-soon[aria-current="page"] .lbl { color: var(--white); }
+
+.side-foot {
+  margin-top: 10px; padding: 10px 12px; border-radius: var(--r-ctl);
+  background: rgba(255,255,255,.03); border: 1px solid var(--stroke);
+  display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--fg-2); line-height: 1.35;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fg-3); flex: none; }
+.dot.good { background: var(--good); box-shadow: 0 0 0 3px rgba(76,195,138,.18); }
+.dot.warn { background: var(--warn); box-shadow: 0 0 0 3px rgba(242,184,75,.18); }
+.dot.bad { background: var(--bad); }
+
+/* ---------- content ---------- */
+.content { overflow-y: auto; min-width: 0; padding: 28px 32px 32px; }
+.page { display: none; flex-direction: column; gap: 18px; max-width: 760px; }
+.page.active { display: flex; animation: in .16s ease-out both; }
+@keyframes in { from { opacity: .35; } to { opacity: 1; } }
+.page h1 { font-family: var(--f-display); font-size: 26px; font-weight: 650; margin: 0; letter-spacing: -.015em; display: flex; align-items: center; gap: 10px; }
+.page .sub { color: var(--fg-2); margin: -10px 0 4px; line-height: 1.5; max-width: 62ch; }
+h2.sec { font-size: 12px; font-weight: 600; color: var(--fg-2); margin: 8px 0 -6px; text-transform: uppercase; letter-spacing: .07em; }
+
+.card { background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card); padding: 16px 18px; }
+.rows { display: flex; flex-direction: column; gap: 4px; }
+.row {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card);
+  padding: 14px 18px; transition: background .12s;
+}
+.row:hover { background: var(--card-hi); }
+.row > .ico { color: var(--fg-2); }
+.row .txt { flex: 1; min-width: 0; }
+.row .t { font-weight: 550; display: flex; align-items: center; gap: 8px; }
+.row .d { color: var(--fg-3); font-size: 12.5px; margin-top: 2px; line-height: 1.45; overflow-wrap: anywhere; }
+
+/* play hero */
+.hero {
+  position: relative; overflow: hidden;
+  border-radius: 12px; border: 1px solid var(--stroke);
+  background: radial-gradient(120% 140% at 100% 0%, rgba(var(--accent-rgb),.13), transparent 55%), var(--card);
+  padding: 26px 26px 22px;
+  display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end;
+}
+.hero .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
+.hero h3 { font-family: var(--f-display); font-size: 30px; font-weight: 700; margin: 6px 0; letter-spacing: -.02em; }
+.hero p { margin: 0; color: var(--fg-2); line-height: 1.5; max-width: 46ch; }
+.hero .mark { position: absolute; right: -40px; top: -50px; width: 220px; height: 220px; opacity: .06; pointer-events: none; }
+.hero-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+  border: 1px solid var(--stroke); background: var(--card-hi); color: var(--fg);
+  border-radius: var(--r-ctl); padding: 8px 14px; font-weight: 550; cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { background: #38383e; color: var(--white); }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .6; cursor: default; transform: none; }
+.btn .ico { width: 16px; height: 16px; }
+.btn.primary { border: 0; color: var(--on-accent); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.btn.primary:hover { filter: brightness(1.05); color: var(--on-accent); }
+.btn.big { padding: 12px 22px; font-size: 15px; font-weight: 650; box-shadow: 0 8px 24px -10px rgba(var(--accent-2-rgb),.35); }
+.btn.big .ico { fill: currentColor; stroke: none; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--fg-2); }
+.btn.ghost:hover { background: rgba(255,255,255,.06); color: var(--white); }
+.btn.danger { color: var(--bad); }
+.btn.danger.armed { background: rgba(255,122,122,.14); border-color: rgba(255,122,122,.4); }
+.btn.icon { padding: 6px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.stat .k { font-size: 11.5px; color: var(--fg-3); }
+.stat .v { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat .v.mono { font-family: var(--f-mono); font-size: 12.5px; }
+.progress { height: 4px; background: var(--card-hi); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.progress > i { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: transform .25s linear; }
+.launch-status { font-size: 12.5px; color: var(--fg-2); margin-top: 8px; min-height: 1.4em; }
+.launch-status.err { color: var(--bad); }
+
+/* toggle */
+.switch { position: relative; display: inline-block; vertical-align: middle; width: 40px; height: 20px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; border-radius: 99px; border: 1px solid var(--fg-3); transition: background .15s, border-color .15s; }
+.switch span::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--fg-2); transition: transform .15s ease, background .15s;
+}
+.switch input:checked + span { background: var(--accent); border-color: var(--accent); }
+.switch input:checked + span::after { transform: translateX(20px); background: var(--on-accent); }
+.switch input:focus-visible + span { box-shadow: 0 0 0 3px rgba(255,255,255,.12); }
+
+.input, select {
+  background: var(--card-hi); border: 1px solid var(--stroke); color: var(--fg);
+  border-radius: var(--r-ctl); padding: 7px 10px; font: inherit; font-size: 13px; min-width: 0;
+}
+.input:focus, select:focus { outline: none; border-color: rgba(var(--accent-rgb),.45); }
+.input.bad { border-color: var(--bad); }
+select { color-scheme: dark; cursor: pointer; }
+option { background: var(--card); color: var(--fg); }
+textarea.input { width: 100%; resize: vertical; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.5; }
+
+/* profiles */
+.profiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+/* --pc / --pc-text come from each profile's own colour (profileVars), so the tint, border and chip follow it */
+.profile {
+  --pc: var(--accent-rgb); --pc-text: var(--accent);
+  cursor: pointer; display: flex; flex-direction: column; gap: 12px; transition: border-color .12s, background-color .12s; text-align: left;
+  background: linear-gradient(180deg, rgba(var(--pc),.12), rgba(var(--pc),0) 65%) var(--card);
+}
+.profile:hover { background-color: var(--card-hi); border-color: rgba(var(--pc),.3); }
+.profile.active { border-color: rgba(var(--pc),.6); }
+.profile .chip.on { background: rgba(var(--pc),.16); color: var(--pc-text); }
+.profile .top { display: flex; align-items: center; gap: 10px; }
+.profile .t { font-weight: 600; }
+.avatar { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: var(--on-accent); flex: none; }
+.profile .meta { font-size: 12px; color: var(--fg-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,.06); color: var(--fg-2); }
+.chip.on { background: var(--accent-soft); color: var(--accent); }
+.profile.add { border-style: dashed; align-items: center; justify-content: center; color: var(--fg-2); min-height: 104px; flex-direction: row; gap: 8px; background: var(--card); }
+.profile.add:hover { background: var(--card-hi); border-color: var(--stroke); }
+
+/* profile editor colour */
+.pe-head { display: flex; align-items: flex-start; gap: 14px; }
+.pe-head .field { flex: 1; min-width: 0; }
+.pe-avatar { width: 52px; height: 52px; border-radius: 12px; font-size: 20px; margin-top: 18px; transition: background .12s; }
+.pe-colors { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pe-custom { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.pe-custom .color-well.picked { outline: 2px solid var(--white); outline-offset: 2px; }
+.field .pe-custom .input.pe-hex { width: 96px; flex: none; font-family: var(--f-mono); text-transform: uppercase; }
+.cp.inline { position: static; width: 100%; margin-top: 10px; box-shadow: none; animation: none; }
+.cp.inline .cp-sv { height: 132px; }
+.profile.add:hover { color: var(--white); }
+
+/* flags */
+.flag-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.flag-tools .input[type="search"] { flex: 1; min-width: 160px; }
+.flag-head {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--fg-2);
+  background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card); padding: 6px 8px 6px 14px;
+}
+
+/* profile dropdown: flat text button, subtle white wash on hover */
+.dd { position: relative; }
+.dd-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 0; border-radius: 4px; padding: 6px 10px;
+  color: #ffffff; font: 600 13px/1.2 var(--f-ui); cursor: pointer;
+  transition: background-color .15s ease;
+}
+.dd-btn:hover, .dd-btn[aria-expanded="true"] { background: rgba(255,255,255,.1); }
+.dd-btn .chev { width: 14px; height: 14px; color: var(--fg-2); transition: transform .15s ease; }
+.dd-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.dd-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; min-width: 200px; max-height: 260px; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--stroke); border-radius: 8px; padding: 4px;
+  box-shadow: 0 12px 32px -8px rgba(0,0,0,.6);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dd-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: transparent; border: 0; border-radius: 4px; padding: 7px 10px;
+  color: #ffffff; font: 500 13px/1.2 var(--f-ui); cursor: pointer; transition: background-color .12s ease;
+}
+.dd-opt:hover, .dd-opt:focus-visible { background: rgba(255,255,255,.1); outline: none; }
+.dd-opt .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.dd-opt .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-opt .ico { width: 14px; height: 14px; color: var(--accent); visibility: hidden; }
+.dd-opt[aria-selected="true"] .ico { visibility: visible; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--stroke); border-radius: var(--r-card); }
+table { width: 100%; border-collapse: collapse; background: var(--card); min-width: 560px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--stroke); vertical-align: middle; }
+th { font-size: 11px; font-weight: 600; color: var(--fg-3); text-transform: uppercase; letter-spacing: .07em; background: var(--nav); padding-block: 10px; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--card-hi); }
+td.name { font-family: var(--f-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+td .val-input { width: 100%; font-family: var(--f-mono); font-size: 12.5px; background: transparent; border-color: transparent; color: var(--accent); padding: 5px 8px; }
+td .val-input:hover { border-color: var(--stroke); }
+td .val-input:focus { background: var(--card-hi); }
+td.empty { color: var(--fg-3); padding: 18px 14px; }
+.kind { font-size: 10.5px; padding: 2px 7px; border-radius: 5px; font-family: var(--f-mono); white-space: nowrap; }
+.kind.Flag { background: rgba(76,195,138,.14); color: var(--good); }
+.kind.Int, .kind.Log { background: rgba(242,184,75,.14); color: var(--warn); }
+.kind.String { background: var(--accent-soft); color: var(--accent); }
+
+/* language */
+.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.lang { display: flex; align-items: center; gap: 12px; padding: 11px 14px; }
+.lang.ok { cursor: pointer; }
+.lang .native { flex: 1; }
+.lang .note { font-size: 11px; color: var(--fg-3); }
+.lang.off { opacity: .55; }
+.radio { appearance: none; -webkit-appearance: none; margin: 0; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--fg-3); display: grid; place-items: center; flex: none; cursor: pointer; }
+.radio::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); transform: scale(0); transition: transform .12s; }
+.radio:checked { border-color: var(--accent); }
+.radio:checked::after { transform: scale(1); }
+.radio:disabled { cursor: default; }
+
+/* tos */
+.prose { line-height: 1.65; color: var(--fg-2); max-width: 66ch; }
+.prose h4 { color: var(--fg); margin: 18px 0 4px; font-size: 14px; }
+.prose h4:first-child { margin-top: 0; }
+.prose p { margin: 0 0 8px; }
+
+/* coming soon */
+.soon-panel {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  padding: 34px 30px; border-radius: 12px; border: 1px dashed #45454d;
+  background: var(--card);
+}
+.soon-panel .big { width: 40px; height: 40px; color: var(--accent); stroke-width: 1.5; }
+.soon-panel h3 { margin: 0; font-family: var(--f-display); font-size: 20px; }
+.soon-panel p { margin: 0; color: var(--fg-2); line-height: 1.55; max-width: 54ch; }
+.soon-panel ul { margin: 0; padding-left: 18px; color: var(--fg-2); line-height: 1.7; }
+
+/* settings: accent picker */
+.accent-card { display: flex; flex-direction: column; gap: 14px; }
+.accent-head { display: flex; align-items: flex-start; gap: 14px; }
+.accent-head .txt { flex: 1; min-width: 0; }
+.accent-head .t { font-weight: 550; }
+.accent-head .d, .accent-note { color: var(--fg-3); font-size: 12.5px; margin-top: 2px; line-height: 1.45; }
+.accent-pick { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.accent-custom { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.color-well {
+  position: relative; width: 32px; height: 32px; border-radius: 8px; flex: none; cursor: pointer;
+  border: 1px solid var(--stroke); background: conic-gradient(#ff6b6b, #ffd36b, #b6f06b, #6be8ff, #8b8bff, #ff6bd5, #ff6b6b);
+}
+.color-well { padding: 0; }
+.color-well:focus-visible, .color-well[aria-expanded="true"] { box-shadow: 0 0 0 3px rgba(255,255,255,.14); }
+
+/* custom color picker (replaces the browser's native one) */
+.cp-wrap { position: relative; }
+.cp {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 15; width: 256px;
+  background: #2d2d2d; border: 1px solid #3a3a3a; border-radius: 4px; padding: 12px;
+  display: flex; flex-direction: column; gap: 12px;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #ffffff;
+  box-shadow: 0 16px 40px -10px rgba(0,0,0,.7);
+  animation: fade .12s ease-out both;
+}
+.cp-sv {
+  position: relative; height: 152px; border-radius: 4px; cursor: crosshair; touch-action: none;
+  background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(var(--cp-h, 0), 100%, 50%);
+}
+.cp-sv:focus-visible, .cp-hue:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,.18); }
+.cp-cursor {
+  position: absolute; width: 14px; height: 14px; border-radius: 50%; pointer-events: none;
+  border: 2px solid #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.25);
+  transform: translate(-50%, -50%);
+}
+.cp-tools { display: flex; align-items: center; gap: 10px; }
+.cp-drop {
+  width: 28px; height: 28px; flex: none; display: grid; place-items: center; padding: 0;
+  background: transparent; border: 0; border-radius: 4px; color: #ffffff; cursor: pointer; transition: background-color .12s ease;
+}
+.cp-drop:hover { background: rgba(255,255,255,.1); }
+.cp-drop svg { width: 18px; height: 18px; fill: currentColor; }
+.cp-preview { width: 44px; height: 28px; flex: none; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.cp-hue {
+  position: relative; flex: 1; height: 10px; border-radius: 5px; cursor: pointer; touch-action: none;
+  background: linear-gradient(to right, #f00 0%, #ff0 16.67%, #0f0 33.33%, #0ff 50%, #00f 66.67%, #f0f 83.33%, #f00 100%);
+}
+.cp-thumb {
+  position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; pointer-events: none;
+  background: #ffffff; box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 1px 4px rgba(0,0,0,.5);
+  transform: translate(-50%, -50%);
+}
+.cp-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.cp-f { display: flex; flex-direction: column; gap: 4px; }
+.cp-f span { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: #9b9b9b; text-align: center; }
+.cp-f input {
+  width: 100%; min-width: 0; padding: 6px 4px; text-align: center;
+  background: #1a1a1a; border: 1px solid transparent; border-radius: 4px;
+  color: #ffffff; font: 400 13px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+}
+.cp-f input:focus { outline: none; border-color: rgba(var(--accent-rgb),.55); }
+#accentHex { width: 92px; font-family: var(--f-mono); }
+
+/* unlock fps choices */
+.fps-opts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.seg {
+  background: transparent; border: 1px solid var(--stroke); border-radius: 6px; padding: 5px 10px;
+  color: var(--fg-2); font: inherit; font-size: 12.5px; cursor: pointer; transition: background-color .12s, border-color .12s, color .12s;
+}
+.seg:hover { background: rgba(255,255,255,.06); color: var(--white); }
+.seg[aria-checked="true"] { background: var(--accent-soft); border-color: rgba(var(--accent-rgb),.45); color: var(--accent); }
+.fps-num { width: 72px; text-align: center; font-variant-numeric: tabular-nums; padding: 5px 8px; }
+.fps-unit { font-size: 12.5px; color: var(--fg-3); }
+
+/* custom skies */
+.sky-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sky-status { flex: 1; min-width: 0; color: var(--fg-2); font-size: 13px; }
+.sky-status.err { color: var(--bad); }
+.sky-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.sky-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; transition: border-color .12s, background .12s; }
+.sky-card:hover { background: var(--card-hi); }
+.sky-card.active { border-color: rgba(var(--accent-rgb),.6); }
+.sky-img { aspect-ratio: 16 / 9; max-width: 100%; background: #101014 center / cover no-repeat; border-bottom: 1px solid var(--stroke); }
+.sky-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.sky-body .t { font-weight: 600; overflow-wrap: anywhere; }
+.sky-body .d { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
+.sky-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
+.sky-actions .btn { padding: 6px 14px; }
+.sky-installed { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; color: var(--accent); padding: 6px 0; }
+.sky-installed .ico { width: 16px; height: 16px; }
+.sky-actions .spacer { flex: 1; }
+.sky-help { color: var(--fg-3); font-size: 12.5px; line-height: 1.5; margin: 0; max-width: 72ch; }
+
+/* discord */
+.discord-id-row { align-items: flex-start; }
+.discord-id-row .d a { color: var(--fg-2); }
+.discord-id-row .d a:hover { color: var(--white); }
+.discord-id-row .d code { font-family: var(--f-mono); font-size: 12px; color: var(--fg-2); }
+.discord-id-row .input { width: 190px; flex: none; font-family: var(--f-mono); margin-top: 2px; }
+.bad-text { color: var(--bad) !important; }
+
+/* playtime */
+.pt-now { display: flex; align-items: center; gap: 14px; border-color: rgba(76,195,138,.35); }
+.pt-now .txt { flex: 1; min-width: 0; }
+.pt-now .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--good); font-weight: 600; }
+.pt-now .t { font-weight: 600; font-size: 15px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-now .d { color: var(--fg-3); font-size: 12px; margin-top: 2px; }
+.pt-live { width: 10px; height: 10px; border-radius: 50%; background: var(--good); flex: none; box-shadow: 0 0 0 4px rgba(76,195,138,.18); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(76,195,138,.05); } }
+.pt-clock { font: 600 20px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.pt-card { display: flex; flex-direction: column; gap: 8px; color: inherit; text-decoration: none; transition: background .12s, border-color .12s; min-width: 0; }
+.pt-card:hover { background: var(--card-hi); border-color: #45454d; }
+.pt-card .top { display: flex; align-items: baseline; gap: 8px; }
+.pt-rank { font: 500 11px var(--f-mono); color: var(--fg-3); flex: none; }
+.pt-title { font-weight: 600; line-height: 1.3; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.pt-time { font-family: var(--f-display); font-size: 24px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; margin-top: auto; }
+.pt-bar { height: 4px; border-radius: 4px; background: var(--card-hi); overflow: hidden; }
+.pt-bar > i { display: block; height: 100%; width: 100%; transform-origin: left; background: var(--accent); }
+.pt-meta { font-size: 12px; color: var(--fg-3); }
+.pt-empty { grid-column: 1 / -1; color: var(--fg-2); line-height: 1.55; display: flex; gap: 12px; align-items: flex-start; }
+.pt-empty .ico { color: var(--fg-3); margin-top: 1px; }
+
+/* support: suggestion box */
+.suggest { display: flex; flex-direction: column; gap: 14px; }
+.suggest textarea.input { font-family: var(--f-ui); font-size: 13.5px; line-height: 1.55; min-height: 170px; padding: 10px 12px; }
+.sg-meta { display: flex; justify-content: space-between; gap: 12px; }
+.sg-count { font: 11px var(--f-mono); color: var(--fg-3); flex: none; }
+.sg-count.near { color: var(--warn); }
+.sg-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sg-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-3); }
+.sg-note .ico { width: 14px; height: 14px; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(var(--on-accent-rgb),.25); border-top-color: var(--on-accent); animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.modal.sg-done { align-items: center; text-align: center; }
+.sg-done .modal-foot { justify-content: center; align-self: stretch; }
+.sg-badge {
+  width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin-top: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent);
+  box-shadow: 0 0 0 8px var(--accent-soft), 0 10px 30px -8px rgba(var(--accent-2-rgb),.45);
+  animation: pop .34s cubic-bezier(.3,1.4,.5,1) both;
+}
+.sg-badge .ico { width: 28px; height: 28px; stroke-width: 2.4; }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.sg-preview {
+  align-self: stretch; text-align: left; background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; line-height: 1.55;
+}
+.sg-preview .k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-3); margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+.sg-preview p { margin: 0; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.sg-preview .sum { color: var(--fg); font-weight: 600; }
+
+/* about */
+.about-head { display: flex; gap: 18px; align-items: center; }
+.about-head svg { width: 60px; height: 60px; flex: none; }
+.about-head .wm { font-family: var(--f-display); font-size: 24px; font-weight: 700; }
+.about-head .v { font-family: var(--f-mono); font-size: 12px; color: var(--fg-3); margin-top: 3px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 22px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--fg-3); }
+.kv dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.kv dd.mono { font-family: var(--f-mono); font-size: 12px; }
+
+/* modal */
+.modal-backdrop {
+  position: absolute; inset: 40px 0 0 0; z-index: 20;
+  background: rgba(8,8,10,.6);
+  display: grid; place-items: center; padding: 16px;
+  animation: fade .14s ease-out both;
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  width: min(480px, 100%); max-height: 100%; overflow-y: auto;
+  background: var(--mica); border: 1px solid var(--stroke); border-radius: 12px;
+  padding: 22px; display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 24px 60px -12px rgba(0,0,0,.7);
+}
+.modal.wide { width: min(560px, 100%); }
+.modal h2 { margin: 0; font-family: var(--f-display); font-size: 20px; font-weight: 650; }
+.modal .lead { margin: -8px 0 0; color: var(--fg-2); line-height: 1.5; font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label { font-size: 12px; color: var(--fg-2); font-weight: 550; }
+.field .input { width: 100%; }
+.err { color: var(--bad); font-size: 12px; min-height: 1em; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatch { width: 28px; height: 28px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.swatch[aria-pressed="true"], .swatch[aria-checked="true"] { outline: 2px solid var(--white); outline-offset: 2px; }
+.modal-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card); }
+.modal-row .txt { flex: 1; min-width: 0; }
+.modal-row .d { font-size: 12px; color: var(--fg-3); margin-top: 2px; }
+.modal-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.modal-foot .left { margin-right: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.cl-sec h3 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .07em; display: flex; align-items: center; gap: 8px; }
+.cl-sec h3 i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.cl-sec ul { margin: 0; padding-left: 18px; color: var(--fg-2); line-height: 1.6; font-size: 13px; }
+
+.toast {
+  position: fixed; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translate(-50%, 16px);
+  background: var(--card-hi); border: 1px solid var(--stroke); color: var(--fg);
+  padding: 10px 16px; border-radius: 9px; font-size: 13px; opacity: 0; pointer-events: none; z-index: 30;
+  transition: opacity .16s, transform .16s; box-shadow: 0 10px 30px rgba(0,0,0,.5); max-width: calc(100% - 32px);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- narrow ---------- */
+@media (max-width: 760px) {
+  body { padding-block: 10px; place-items: stretch; }
+  .window { height: auto; min-height: 0; }
+  .body { grid-template-columns: 1fr; }
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--stroke); padding: 12px 8px 8px; }
+  .brand { padding-bottom: 10px; }
+  .nav { flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 4px; }
+  .side-foot, .indicator { display: none; }
+  .nav-item { width: auto; flex: none; padding-left: 12px; }
+  .nav-item[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
+  .content { padding: 20px 16px 24px; }
+  .hero { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .titlebar .ver { display: none; }
+}
+/* ---------- desktop app (Keystrap.exe): the window is the whole viewport ---------- */
+html.native, html.native body { overflow: hidden; }
+html.native body { margin: 0; padding: 0; display: block; background: var(--mica); }
+html.native .window { max-width: none; height: 100%; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
+html.native .winctl button { cursor: pointer; }
+/* the app window opens in the page's background colour; the UI fades in once its first frame is ready */
+html.native .window { opacity: 0; transition: opacity .2s ease-out; animation: ks-failsafe 0s 3s forwards; }
+@keyframes ks-failsafe { to { opacity: 1; } }   /* never stay invisible, even if a script error stops the fade-in */
+html.native.shown .window { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffdd0"/>
+      <stop offset="1" stop-color="#fff799"/>
+    </linearGradient>
+    <!-- Keystrap mark: square tilted 15°, rounded square cut-out -->
+    <symbol id="logo" viewBox="0 0 1024 1024">
+      <path transform="rotate(15 512 512)" fill="url(#logoGrad)" fill-rule="evenodd"
+        d="M128 128H896V896H128Z M422 402H602A20 20 0 0 1 622 422V602A20 20 0 0 1 602 622H422A20 20 0 0 1 402 602V422A20 20 0 0 1 422 402Z"/>
+    </symbol>
+    <!-- sidebar + UI icons: 24px grid, 1.75 stroke, round caps (styled by .ico) -->
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8Z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.2 2.2"/><path d="M9.5 2.5h5"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6 4.75 4.75 0 0 1 17.25 19Z"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.5h.01"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l.9-4.4A8 8 0 1 1 20 12Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4Z"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+  </defs>
+</svg>
+
+<div class="window" role="application" aria-label="Keystrap" id="win">
+  <div class="titlebar">
+    <svg width="16" height="16" aria-hidden="true"><use href="#logo"/></svg>
+    <span class="name">Keystrap</span>
+    <span class="ver" id="titleVer">v1</span>
+    <span class="spacer"></span>
+    <div class="winctl" aria-hidden="true">
+      <button tabindex="-1" data-act="min"><svg viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor"/></svg></button>
+      <button tabindex="-1" data-act="max"><svg viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></button>
+      <button tabindex="-1" data-act="close" class="close"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor"/></svg></button>
+    </div>
+  </div>
+
+  <div class="body">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg aria-hidden="true"><use href="#logo"/></svg>
+        <div>
+          <div class="wm">Keystrap</div>
+          <div class="tag">Roblox launcher</div>
+        </div>
+      </div>
+
+      <div class="nav-wrap">
+        <span class="indicator" id="indicator"></span>
+        <nav class="nav" id="nav" aria-label="Main">
+          <button class="nav-item" data-page="play"><svg class="ico"><use href="#i-play"/></svg><span class="lbl">Play</span></button>
+          <button class="nav-item" data-page="profiles"><svg class="ico"><use href="#i-users"/></svg><span class="lbl">Profiles</span></button>
+          <button class="nav-item" data-page="playtime"><svg class="ico"><use href="#i-timer"/></svg><span class="lbl">Playtime</span></button>
+          <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span></button>
+          <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
+          <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-sliders"/></svg><span class="lbl">Settings</span></button>
+          <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
+          <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
+          <button class="nav-item" data-page="support"><svg class="ico"><use href="#i-headset"/></svg><span class="lbl">Support</span></button>
+          <button class="nav-item" data-page="about"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
+        </nav>
+      </div>
+
+      <div class="side-foot"><span class="dot" id="statusDot"></span><span id="statusText">Checking for Roblox updates…</span></div>
+    </aside>
+
+    <main class="content" id="content">
+      <!-- PLAY -->
+      <section class="page" id="page-play">
+        <h1>Play</h1>
+        <div class="hero">
+          <svg class="mark" aria-hidden="true"><use href="#logo"/></svg>
+          <div>
+            <div class="eyebrow" id="heroProfile">Profile · Main</div>
+            <h3>Ready to launch</h3>
+            <p>Keystrap installs the latest Roblox if needed, applies this profile's flags, then starts Roblox.</p>
+            <div class="progress"><i id="bar"></i></div>
+            <div class="launch-status" id="launchStatus"></div>
+          </div>
+          <div class="hero-actions">
+            <button class="btn primary big" id="launchBtn"><svg class="ico"><use href="#i-play"/></svg><span id="launchLabel">Launch Roblox</span></button>
+            <button class="btn ghost" id="officialBtn" hidden>Open with the Roblox app instead</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="card stat"><div class="k">Channel</div><div class="v">LIVE</div></div>
+          <div class="card stat"><div class="k">Installed Roblox</div><div class="v mono" id="statClient">Not installed</div></div>
+          <div class="card stat"><div class="k">Flags on in this profile</div><div class="v" id="flagCount">0</div></div>
+        </div>
+
+        <h2 class="sec">Quick options</h2>
+        <div class="rows">
+          <div class="row">
+            <svg class="ico"><use href="#i-monitor"/></svg>
+            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div>
+              <div class="fps-opts" id="fpsOpts" role="radiogroup" aria-label="Frame rate limit">
+                <button class="seg" data-fps="uncapped" role="radio">Uncapped</button>
+                <button class="seg" data-fps="monitor" role="radio">Match monitor</button>
+                <button class="seg" data-fps="custom" role="radio">Custom cap</button>
+                <input class="input fps-num" id="fpsCap" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Custom frame rate cap in FPS"><span class="fps-unit" id="fpsCapUnit">FPS</span>
+              </div>
+            </div>
+            <label class="switch"><input type="checkbox" id="q-fps" aria-label="Unlock FPS"><span></span></label>
+          </div>
+          <div class="row">
+            <svg class="ico"><use href="#i-layers"/></svg>
+            <div class="txt"><div class="t">Multi-instance</div><div class="d">Run more than one Roblox window. Keep Keystrap open while you play.</div></div>
+            <label class="switch"><input type="checkbox" id="q-multi" aria-label="Multi-instance"><span></span></label>
+          </div>
+          <div class="row">
+            <svg class="ico"><use href="#i-chat"/></svg>
+            <div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="qDiscordDesc">Show the game you're playing on your Discord profile.</div></div>
+            <label class="switch"><input type="checkbox" id="q-discord" aria-label="Discord Rich Presence"><span></span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- PROFILES -->
+      <section class="page" id="page-profiles">
+        <h1>Profiles</h1>
+        <p class="sub">A profile holds its own set of flags. Click a profile to rename it, change its colour, edit its flags or make it the one Keystrap launches with.</p>
+        <div class="profiles" id="profiles"></div>
+      </section>
+
+      <!-- PLAYTIME -->
+      <section class="page" id="page-playtime">
+        <h1>Playtime</h1>
+        <p class="sub">While Keystrap is open, it follows Roblox's logs and adds up the time you spend in each game. Visits to the same game are combined into one card, and your 10 most played games are shown.</p>
+        <div class="card pt-now" id="ptNow" hidden>
+          <span class="pt-live" aria-hidden="true"></span>
+          <div class="txt"><div class="k">Playing now</div><div class="t" id="ptNowTitle"></div><div class="d">Adds to your totals when you leave the game.</div></div>
+          <div class="pt-clock" id="ptNowTime">0:00</div>
+        </div>
+        <div class="stats">
+          <div class="card stat"><div class="k">Total playtime</div><div class="v" id="ptTotal">0m</div></div>
+          <div class="card stat"><div class="k">Games</div><div class="v" id="ptGames">0</div></div>
+          <div class="card stat"><div class="k">Sessions</div><div class="v" id="ptSessions">0</div></div>
+        </div>
+        <div class="pt-grid" id="ptGrid"></div>
+      </section>
+
+      <!-- SKIES -->
+      <section class="page" id="page-skies">
+        <h1>Custom Skies</h1>
+        <p class="sub">Replace the sky Roblox uses by default. Your choice is applied to Keystrap's copy of Roblox on every launch. Games that set their own sky keep theirs.</p>
+        <div class="sky-bar">
+          <div class="sky-status" id="skyStatus" aria-live="polite"></div>
+          <button class="btn" id="skyImport"><svg class="ico"><use href="#i-plus"/></svg>Import custom sky</button>
+        </div>
+        <div class="sky-grid" id="skyGrid"></div>
+        <p class="sky-help">To import a sky, choose its six images (PNG, JPG or BMP) or six .tex/.dds textures at once. Name them so the side is at the end: _bk, _dn, _ft, _lf, _rt and _up, or _back, _down, _front, _left, _right and _up.</p>
+      </section>
+
+      <!-- FLAGS -->
+      <section class="page" id="page-flags">
+        <h1>Flags</h1>
+        <p class="sub">FastFlags change how the Roblox client behaves. Each profile has its own flags; edits save straight away and apply on the next launch with that profile.</p>
+        <div class="flag-head">
+          <span id="flagProfileLabel">Editing flags for</span>
+          <div class="dd" id="flagProfileDd">
+            <button class="dd-btn" id="flagProfileBtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="flagProfileLabel flagProfileName">
+              <span id="flagProfileName">Main</span><svg class="ico chev"><use href="#i-chevron"/></svg>
+            </button>
+            <div class="dd-menu" id="flagProfileMenu" role="listbox" aria-labelledby="flagProfileLabel" hidden></div>
+          </div>
+          <span id="flagActiveNote" class="chip"></span>
+        </div>
+        <div class="flag-tools">
+          <input class="input" id="flagSearch" type="search" placeholder="Search flags" aria-label="Search flags">
+          <button class="btn" id="addFlag"><svg class="ico"><use href="#i-plus"/></svg>Add flag</button>
+          <button class="btn" id="importFlags">Import JSON</button>
+          <button class="btn" id="copyFlags">Copy JSON</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th style="width:84px">Type</th><th>Name</th><th style="width:30%">Value</th><th style="width:56px">On</th><th style="width:44px"><span class="sr" hidden>Remove</span></th></tr></thead>
+            <tbody id="flagBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="page-settings">
+        <h1>Settings</h1>
+        <h2 class="sec">Appearance</h2>
+        <div class="card accent-card">
+          <div class="accent-head">
+            <div class="txt"><div class="t">Accent color</div><div class="d">Used for buttons, toggles, the active tab marker, borders and highlights. Changes apply straight away.</div></div>
+            <button class="btn ghost" id="accentReset">Reset</button>
+          </div>
+          <div class="accent-pick">
+            <div class="swatches" id="accentSwatches" role="radiogroup" aria-label="Accent color presets"></div>
+            <div class="accent-custom">
+              <div class="cp-wrap" id="accentPickerWrap">
+                <button class="color-well" id="accentWell" title="Pick any color" aria-label="Pick a custom accent color" aria-haspopup="dialog" aria-expanded="false"></button>
+              </div>
+              <input class="input" id="accentHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Accent color hex code" placeholder="#fffba6">
+            </div>
+          </div>
+          <div class="accent-note" id="accentNote" aria-live="polite"></div>
+        </div>
+        <h2 class="sec">Launching</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Open Roblox links with Keystrap</div><div class="d" id="linksDesc">Play buttons on roblox.com start Roblox through Keystrap, with your active profile's flags.</div></div>
+            <label class="switch"><input type="checkbox" id="s-links" aria-label="Open Roblox links with Keystrap"><span></span></label></div>
+          <div class="row"><div class="txt"><div class="t">Close Keystrap after Roblox starts</div><div class="d">With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.</div></div>
+            <label class="switch"><input type="checkbox" id="s-close" aria-label="Close Keystrap after Roblox starts"><span></span></label></div>
+        </div>
+        <h2 class="sec">Discord</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="discordDesc">Shows what you're doing in Keystrap and Roblox on your Discord profile.</div></div>
+            <label class="switch"><input type="checkbox" id="s-discord" aria-label="Discord Rich Presence"><span></span></label></div>
+          <div class="row discord-id-row"><div class="txt"><div class="t"><label for="discordAppId">Discord application ID</label></div>
+            <div class="d">In the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a>, create an application named <b>Roblox</b> so your status reads "Playing Roblox". Under Rich Presence → Art Assets, upload the Keystrap logo with the name <code>keystrap</code>. Then paste the Application ID here.</div>
+            <div class="err" id="discordIdErr"></div></div>
+            <input class="input" id="discordAppId" inputmode="numeric" maxlength="20" spellcheck="false" autocomplete="off" placeholder="123456789012345678"></div>
+        </div>
+        <h2 class="sec">Storage</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Downloaded Roblox versions</div><div class="d" id="versionsDesc">Calculating…</div></div>
+            <button class="btn danger" id="clearCache">Clear</button></div>
+          <div class="row"><div class="txt"><div class="t">Logs</div><div class="d" id="logsDesc">Keystrap writes a log file for each day.</div></div>
+            <button class="btn" data-open-logs><svg class="ico"><use href="#i-folder"/></svg>Open logs folder</button></div>
+          <div class="row"><div class="txt"><div class="t">Send crash reports</div><div class="d">If Keystrap crashes, it sends the error, the Keystrap version and your active profile's name to the developers. Your Windows user name and folders are removed first.</div></div>
+            <label class="switch"><input type="checkbox" id="s-crash" aria-label="Send crash reports"><span></span></label></div>
+          <div class="row" id="devWebhookRow" hidden><div class="txt"><div class="t">Test notifications <span class="badge beta">Developer</span></div><div class="d" id="devWebhookDesc">Sends one sample of each category (minor and major update, fix and crash) to the developers' Discord webhook, to check the formatting.</div></div>
+            <button class="btn" id="devWebhookTest">Send test notifications</button></div>
+        </div>
+      </section>
+
+      <!-- LANGUAGE -->
+      <section class="page" id="page-language">
+        <h1>Language <span class="badge beta">Beta</span></h1>
+        <p class="sub">Translations are in progress. Keystrap shows English until a language is complete. Roblox itself follows your Roblox account's language.</p>
+        <div class="lang-grid" id="langGrid"></div>
+      </section>
+
+      <!-- TOS -->
+      <section class="page" id="page-tos">
+        <h1>Terms of Service</h1>
+        <p class="sub">Last updated 24 October 2026</p>
+        <div class="card prose">
+          <h4>1. What Keystrap is</h4>
+          <p>Keystrap is an independent, open-source launcher for Roblox. It is not made by, affiliated with, or endorsed by Roblox Corporation.</p>
+          <h4>2. Downloading Roblox</h4>
+          <p>Keystrap downloads the Roblox client directly from Roblox's own servers, checks each file against Roblox's published checksums, and keeps it in its own folder.</p>
+          <h4>3. Your account</h4>
+          <p>Keystrap never asks for your Roblox password and never reads your login cookie. You remain bound by the Roblox Terms of Use while playing.</p>
+          <h4>4. Flags</h4>
+          <p>FastFlags are applied at your own risk. Roblox may change, ignore or remove any flag without notice, and some games may behave differently.</p>
+          <h4>5. Data</h4>
+          <p>Profiles, settings and logs are stored only on your computer. Keystrap sends the developers' Discord only these:</p>
+          <p>A suggestion, when you submit one from the Support page: its text, your Windows user name and the Keystrap version.</p>
+          <p>A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile's name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.</p>
+          <h4>6. No warranty</h4>
+          <p>Keystrap is provided as is, without warranty of any kind.</p>
+        </div>
+      </section>
+
+      <!-- SUPPORT -->
+      <section class="page" id="page-support">
+        <h1>Support</h1>
+        <p class="sub">Have an idea, or found something broken? Tell the developers. Keystrap fixes spelling and grammar and lays your message out clearly before sending it.</p>
+        <div class="card suggest">
+          <div class="field">
+            <label for="sg-text">Your suggestion or feedback</label>
+            <textarea class="input" id="sg-text" rows="8" maxlength="1000" placeholder="e.g. it would be cool if keystrap could remember the last server i joined"></textarea>
+            <div class="sg-meta"><span class="err" id="sg-err" role="alert"></span><span class="sg-count" id="sg-count">0 / 1000</span></div>
+          </div>
+          <div class="sg-foot">
+            <span class="sg-note"><svg class="ico"><use href="#i-info"/></svg>Sent with your Windows user name and the Keystrap version.</span>
+            <button class="btn primary" id="sg-send"><svg class="ico"><use href="#i-send"/></svg>Submit Suggestion</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section class="page" id="page-about">
+        <h1>About</h1>
+        <div class="card about-head">
+          <svg aria-hidden="true"><use href="#logo"/></svg>
+          <div><div class="wm">Keystrap</div><div class="v" id="aboutVer">v1</div></div>
+        </div>
+        <div class="card">
+          <dl class="kv">
+            <dt>Installed Roblox</dt><dd id="aboutRoblox">Not installed</dd>
+            <dt>Channel</dt><dd>LIVE</dd>
+            <dt>Data folder</dt><dd class="mono" id="aboutData">%LocalAppData%\Keystrap</dd>
+            <dt>License</dt><dd>MIT</dd>
+          </dl>
+        </div>
+        <div class="flag-tools">
+          <button class="btn" id="whatsNew"><svg class="ico"><use href="#i-sparkle"/></svg>What's new</button>
+          <button class="btn" data-open-logs><svg class="ico"><use href="#i-folder"/></svg>Open logs folder</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="modalRoot"></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  const APP_VERSION = 'v1';   // keep in step with AppInfo.Version in app/Program.cs
+  const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const COLORS = [['#fffcc7', '#fffba6'], ['#6ee7b7', '#3b9fd6'], ['#c4b5fd', '#818cf8'], ['#fda4af', '#fb7185'], ['#fdba74', '#f59e0b'], ['#e5e7eb', '#9ca3af']];
+  const LANGS = [['English', 'English', true], ['Español', 'Spanish'], ['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
+  const CHANGELOG = {
+    Added: [
+      'Playtime: Keystrap tracks how long you play each game while it\'s open, with total time and session counts per game.',
+      'Play buttons on roblox.com launch through Keystrap, with your active profile\'s flags. Turn it off in Settings to give links back to the Roblox app.',
+      'Custom Skies: five built-in skies, or import your own six images, applied to Roblox on every launch.',
+      'Support page suggestion box: send ideas and bug reports straight to the developers.',
+      'Accent color setting with presets and a custom color picker.',
+      'Profiles can have any colour: pick one or type a hex code like #FFD9FC. Cards and badges use it.'
+    ],
+    Fixed: [
+      'Unlock FPS now removes Roblox\'s frame cap instead of capping it at your refresh rate. You can still match your monitor or set your own cap.',
+      'Keystrap could sometimes open as an empty dark window.',
+      'Suggestions report the real Keystrap version.',
+      'The profile picker on the Flags page matches the dark theme.'
+    ],
+    Changed: [
+      'Playtime and Support are no longer marked Coming soon.',
+      'Discord Rich Presence: your Discord profile shows "Browsing Keystrap" or the Roblox game you\'re playing. Set it up in Settings.',
+      'Crash reports: if Keystrap crashes, it tells you what happened and sends the developers a report. You can turn this off in Settings.'
+    ]
+  };
+
+  const DEFAULT_ACCENT = '#fffba6';
+  const ACCENT_PRESETS = [['Cream', '#fffba6'], ['Mint', '#6ee7b7'], ['Sky', '#7cc4fa'], ['Lavender', '#b4a7ff'], ['Rose', '#ff9fb4'], ['Peach', '#ffb57a'], ['Lime', '#c5f06b'], ['Silver', '#d4d7dd']];
+
+  const env = { refreshRate: 0, dataDir: '%LocalAppData%\\Keystrap', versionsBytes: null, installed: null, latest: null, statusError: null, checking: true };
+  let state = null;
+  let flagsProfileId = null;
+  let launching = false;
+  let toastTimer, saveTimer;
+
+  // ---------- state ----------
+  function uid() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function defaultState() {
+    const id = uid();
+    return {
+      version: 1, activeProfile: id, lastSeenChangelog: null,
+      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT },
+      profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
+        { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
+        { name: 'DFIntCSGLevelOfDetailSwitchingDistance', value: '0', on: true },
+        { name: 'FFlagDebugGraphicsPreferD3D11', value: 'True', on: true },
+        { name: 'DFIntConnectionMTUSize', value: '900', on: false }
+      ] }]
+    };
+  }
+  function normalize(s) {
+    const d = defaultState();
+    if (!s || typeof s !== 'object' || !Array.isArray(s.profiles) || !s.profiles.length) return d;
+    s.settings = Object.assign({}, d.settings, s.settings || {});
+    s.settings.accent = normHex(s.settings.accent) || DEFAULT_ACCENT;
+    s.profiles.forEach(p => {
+      p.id = p.id || uid(); p.name = String(p.name || 'Profile'); p.color = (p.color | 0) % COLORS.length;
+      p.hex = normHex(p.hex);   // custom colour, or null to use the preset
+      p.flags = Array.isArray(p.flags) ? p.flags.filter(f => f && f.name).map(f => ({ name: String(f.name), value: String(f.value), on: f.on !== false })) : [];
+    });
+    if (!s.profiles.some(p => p.id === s.activeProfile)) s.activeProfile = s.profiles[0].id;
+    return s;
+  }
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      state.appVersion = APP_VERSION;   // which Keystrap release last wrote the file ("version" is the file format)
+      if (host) host.postMessage({ type: 'save', state });
+      else { try { localStorage.setItem('keystrap-state', JSON.stringify(state)); } catch (e) {} }
+      syncDiscord();
+    }, 120);
+  }
+  // Tells the app what Discord should show, but only when it changed (Discord rate-limits presence updates).
+  let discordSent = null;
+  function syncDiscord() {
+    if (!host || !state) return;
+    // Also carries the crash-report choice and profile name, which the app's crash reporter needs.
+    const msg = { type: 'discord', on: !!state.settings.discordRpc, appId: state.settings.discordAppId || '', profile: activeProfile().name, crashReports: state.settings.crashReports !== false };
+    const key = JSON.stringify(msg);
+    if (key === discordSent) return;
+    discordSent = key;
+    host.postMessage(msg);
+  }
+  const profileById = id => state.profiles.find(p => p.id === id);
+  const activeProfile = () => profileById(state.activeProfile);
+  const flagsProfile = () => profileById(flagsProfileId) || activeProfile();
+
+  // ---------- helpers ----------
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+  function ago(ts) {
+    const s = Math.max(0, (Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (s < 86400) { const h = Math.floor(s / 3600); return h + (h === 1 ? ' hour ago' : ' hours ago'); }
+    const days = Math.floor(s / 86400);
+    return days === 1 ? 'yesterday' : days + ' days ago';
+  }
+  function fmtBytes(b) {
+    if (b == null) return '…';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(0) + ' KB';
+    if (b < 1024 * 1024 * 1024) return (b / 1048576).toFixed(0) + ' MB';
+    return (b / 1073741824).toFixed(2) + ' GB';
+  }
+  // A profile's colour: its own hex (p.hex) if it has one, otherwise one of the preset COLORS (p.color).
+  // While the editor is open, profileDraft holds unsaved colour changes so the card behind it updates live.
+  let profileDraft = null;
+  function profileLook(p) { return profileDraft && profileDraft.id === p.id ? Object.assign({}, p, profileDraft) : p; }
+  function profileBase(p) { const h = normHex(p.hex); return hexRgb(h || COLORS[p.color % COLORS.length][1]); }
+  function avatarStyle(p) {
+    p = profileLook(p);
+    const base = profileBase(p);
+    const light = p.hex ? rgbHex(mixRgb(base, [255, 255, 255], 0.35)) : COLORS[p.color % COLORS.length][0];
+    return 'background:linear-gradient(135deg,' + light + ',' + rgbHex(base) + ');color:' + (luminance(base) > 0.3 ? '#1f1d10' : '#ffffff');
+  }
+  // CSS variables for a profile card: --pc tints the card, --pc-text is a shade light enough to read on the dark theme.
+  function profileVars(p) {
+    const base = profileBase(profileLook(p));
+    let text = base;
+    while (luminance(text) < 0.3) text = mixRgb(text, [255, 255, 255], 0.12);
+    return '--pc:' + rgbList(base) + ';--pc-text:' + rgbHex(text);
+  }
+  function flagKind(name) { const m = /^(?:D|S)?F(Flag|Int|String|Log)/.exec(name); return m ? m[1] : null; }
+  function checkValue(kind, v) {
+    if (kind === 'Flag') return /^(true|false)$/i.test(v) ? null : 'Use True or False.';
+    if (kind === 'Int' || kind === 'Log') return /^-?\d+$/.test(v) ? null : 'Use a whole number.';
+    return null;
+  }
+  function cleanValue(kind, v) { v = String(v).trim(); return kind === 'Flag' ? (/^true$/i.test(v) ? 'True' : 'False') : v; }
+  function armConfirm(btn, label, onConfirm) {
+    if (btn.classList.contains('armed')) { onConfirm(); return; }
+    const old = btn.innerHTML;
+    btn.classList.add('armed'); btn.textContent = label;
+    setTimeout(() => { if (btn.isConnected && btn.classList.contains('armed')) { btn.classList.remove('armed'); btn.innerHTML = old; } }, 3500);
+  }
+
+  // ---------- desktop bridge ----------
+  if (host) {
+    document.documentElement.classList.add('native');
+    $$('.winctl [data-act]').forEach(b => b.addEventListener('click', () => host.postMessage({ type: b.dataset.act })));
+    $('.titlebar').addEventListener('mousedown', e => {
+      if (e.button === 0 && !e.target.closest('.winctl')) host.postMessage({ type: e.detail > 1 ? 'max' : 'drag' });
+    });
+    host.addEventListener('message', e => onHostMessage(e.data));
+  }
+
+  function onHostMessage(msg) {
+    if (!msg || typeof msg !== 'object') return;
+    switch (msg.type) {
+      case 'init':
+        state = normalize(msg.state);
+        env.refreshRate = msg.refreshRate || 0;
+        env.dataDir = msg.dataDir || env.dataDir;
+        env.versionsBytes = msg.versionsBytes;
+        env.installed = msg.installed || null;
+        $('#devWebhookRow').hidden = !msg.dev;
+        start();
+        break;
+      case 'roblox-status':
+        env.checking = false; env.installed = msg.installed || null; env.latest = msg.latest || null; env.statusError = msg.error || null;
+        renderStatus(); renderPlay(); renderAbout();
+        break;
+      case 'versions-size':
+        env.versionsBytes = msg.bytes; env.installed = msg.installed || null;
+        renderSettings(); renderStatus(); renderPlay(); renderAbout();
+        break;
+      case 'launch-progress': if (launching) setProgress(msg.text, msg.pct); break;
+      case 'launch-done': launchFinished(null, msg); break;
+      case 'launch-error': launchFinished(msg.message || 'Roblox could not be started.'); break;
+      case 'launch-link':
+        // A Play button on roblox.com: launch straight away with the active profile.
+        if (!state) break;
+        closeModal();
+        go('play');
+        if (launching) toast('Roblox is already starting. Try the Play button again in a moment.');
+        else startLaunch(msg.link);
+        break;
+      case 'skies':
+        env.skies = msg.items || [];
+        // An imported sky that was deleted elsewhere falls back to Roblox's.
+        if (state && !env.skies.some(s => s.id === state.settings.sky)) { state.settings.sky = 'default'; save(); }
+        if (state) renderSkies();
+        break;
+      case 'sky-progress':
+        skyStatus(msg.text);
+        break;
+      case 'sky-applied':
+        env.skyApplying = null;
+        if (msg.ok) {
+          state.settings.sky = msg.id; save();
+          const s = (env.skies || []).find(x => x.id === msg.id);
+          skyStatus((s ? s.name : 'Sky') + ' is installed.' + (msg.note ? ' ' + msg.note : ''));
+        } else skyStatus(msg.message, true);
+        renderSkies();
+        break;
+      case 'sky-imported':
+        skyStatus('Imported. Click Apply on the new card to use it.');
+        break;
+      case 'sky-import-error':
+        skyStatus(msg.message, true);
+        break;
+      case 'discord-status':
+        env.discord = { state: msg.state, detail: msg.detail || null };
+        if (state) renderDiscord();
+        break;
+      case 'protocol-status':
+        env.linksRegistered = !!msg.registered;
+        if (state) renderSettings();
+        break;
+      case 'playtime':
+        env.playtime = { games: msg.games || [], current: msg.current || [] };
+        if (state) renderPlaytime();
+        break;
+      case 'toast': toast(msg.text); break;
+      case 'webhook-test-done':
+        $('#devWebhookTest').disabled = false;
+        $('#devWebhookDesc').textContent = msg.sent + ' of ' + msg.total + ' test notifications sent' + (msg.error ? ' (last error: ' + msg.error + ')' : '') + '.';
+        break;
+      case 'suggest-done': suggestFinished(msg); break;
+      case 'suggest-error': suggestFinished(null, msg.message || 'Your suggestion couldn\'t be sent.'); break;
+    }
+  }
+
+  // ---------- custom skies ----------
+  // Shown until the app sends real previews (and in the browser preview, which has no app behind it).
+  const SKY_FALLBACK = [
+    ['default', 'Roblox Default', 'The sky Roblox ships with.', 'linear-gradient(#5b8fd6, #a9cdf0 60%, #8a8f96 60%)'],
+    ['galaxy-night', 'Galaxy Night', 'Deep violet night with a dense star field.', 'linear-gradient(#05040f, #1b1342 55%, #2a1d5c 62%, #07060f 62%)'],
+    ['anime-sunset', 'Anime Sunset', 'Soft banded pinks and oranges with a low, glowing sun.', 'linear-gradient(#2c2a6b, #e8789e 45%, #ffd08a 62%, #3a2a4a 62%)'],
+    ['blue-sky', 'Realistic Blue Sky', 'Clear daytime sky with a hazy horizon and a bright sun.', 'linear-gradient(#2a63bd, #7fb4ec 45%, #e6f1fb 62%, #a9b8c7 62%)'],
+    ['vaporwave', 'Vaporwave Synth', 'Striped retro sun over a neon grid.', 'linear-gradient(#150730, #8a2bb8 40%, #ff4fa3 56%, #ffb86b 62%, #12051f 62%)'],
+    ['void-black', 'Void Black', 'Pure black in every direction.', 'linear-gradient(#000, #000)']
+  ];
+  function skyStatus(text, isError) {
+    const el = $('#skyStatus');
+    el.textContent = text || '';
+    el.classList.toggle('err', !!isError);
+  }
+  function renderSkies() {
+    const fallback = SKY_FALLBACK.map(f => ({ id: f[0], name: f[1], desc: f[2], custom: false, preview: null }));
+    const list = env.skies && env.skies.length ? env.skies : fallback;
+    const active = state.settings.sky;
+    $('#skyGrid').innerHTML = list.map(s => {
+      const fb = SKY_FALLBACK.find(f => f[0] === s.id);
+      const bg = s.preview ? 'url(' + s.preview + ')' : fb ? fb[3] : 'linear-gradient(#26262a, #1c1c1f)';
+      const isActive = s.id === active, busy = env.skyApplying === s.id;
+      return '<div class="card sky-card' + (isActive ? ' active' : '') + '">' +
+        '<div class="sky-img" role="img" aria-label="Preview of ' + esc(s.name) + '" style="background-image:' + esc(bg) + '"></div>' +
+        '<div class="sky-body"><div class="t">' + esc(s.name) + '</div><div class="d">' + esc(s.desc) + '</div>' +
+        '<div class="sky-actions">' +
+          (isActive
+            ? '<span class="sky-installed"><svg class="ico"><use href="#i-check"/></svg>Installed</span>'
+            : '<button class="btn primary" data-sky-apply="' + esc(s.id) + '"' + (env.skyApplying ? ' disabled' : '') + '>' + (busy ? 'Applying…' : 'Apply') + '</button>') +
+          '<span class="spacer"></span>' +
+          (s.custom ? '<button class="btn ghost icon" data-sky-delete="' + esc(s.id) + '" aria-label="Delete ' + esc(s.name) + '" title="Delete this sky"><svg class="ico"><use href="#i-x"/></svg></button>' : '') +
+        '</div></div></div>';
+    }).join('');
+  }
+  $('#skyGrid').addEventListener('click', e => {
+    const apply = e.target.closest('[data-sky-apply]'), del = e.target.closest('[data-sky-delete]');
+    if (apply) {
+      const id = apply.dataset.skyApply;
+      if (!host) { state.settings.sky = id; save(); renderSkies(); skyStatus('Preview only: skies are applied by the Keystrap app.'); return; }
+      if (launching) { skyStatus('Wait for Roblox to finish starting, then try again.', true); return; }
+      env.skyApplying = id;
+      skyStatus(id === 'default' ? 'Restoring Roblox\'s sky…' : 'Applying…');
+      renderSkies();
+      host.postMessage({ type: 'sky-apply', id });
+    } else if (del) {
+      armConfirm(del, 'Delete?', () => {
+        const id = del.dataset.skyDelete;
+        if (state.settings.sky === id) {
+          // Put Roblox's sky back first, so the deleted sky isn't left in place.
+          state.settings.sky = 'default'; save();
+          host.postMessage({ type: 'sky-apply', id: 'default' });
+        }
+        host.postMessage({ type: 'sky-delete', id });
+        skyStatus('Sky deleted.');
+      });
+    }
+  });
+  $('#skyImport').addEventListener('click', () => {
+    if (!host) { skyStatus('Importing works in the Keystrap app.'); return; }
+    skyStatus('');
+    host.postMessage({ type: 'sky-import' });
+  });
+
+  // ---------- playtime ----------
+  function fmtDuration(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    if (sec < 60) return '<1m';
+    const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
+    return h ? h + 'h ' + m + 'm' : m + 'm';
+  }
+  function fmtClock(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+  }
+  function renderPlaytime() {
+    const pt = env.playtime || { games: [], current: [] };
+    const games = pt.games, now = pt.current[0];
+    // The app sends only the top 10 games, plus totals that cover every game played.
+    $('#ptTotal').textContent = fmtDuration(pt.totalSeconds != null ? pt.totalSeconds : games.reduce((a, g) => a + g.seconds, 0));
+    $('#ptGames').textContent = pt.gameCount != null ? pt.gameCount : games.length;
+    $('#ptSessions').textContent = pt.sessionCount != null ? pt.sessionCount : games.reduce((a, g) => a + g.sessions, 0);
+    $('#ptNow').hidden = !now;
+    if (now) {
+      $('#ptNowTitle').textContent = now.title + (pt.current.length > 1 ? ' and ' + (pt.current.length - 1) + ' more' : '');
+      tickPlaytime();
+    }
+    const grid = $('#ptGrid');
+    if (!games.length) {
+      grid.innerHTML = '<div class="card pt-empty"><svg class="ico"><use href="#i-timer"/></svg><div>' + (host
+        ? 'No playtime yet. Launch Roblox and join a game, and it appears here when you leave. Keystrap needs to be open while you play.'
+        : 'Playtime is tracked by the Keystrap app on your PC.') + '</div></div>';
+      return;
+    }
+    const top = games[0].seconds || 1;
+    grid.innerHTML = games.slice(0, 10).map((g, i) =>
+      '<a class="card pt-card" href="https://www.roblox.com/games/' + encodeURIComponent(g.placeId) + '" target="_blank" title="Open ' + esc(g.title) + ' on Roblox">' +
+      '<div class="top"><span class="pt-rank">#' + (i + 1) + '</span><span class="pt-title">' + esc(g.title) + '</span></div>' +
+      '<div class="pt-time">' + fmtDuration(g.seconds) + '</div>' +
+      '<div class="pt-bar"><i style="transform:scaleX(' + Math.max(0.02, g.seconds / top).toFixed(3) + ')"></i></div>' +
+      '<div class="pt-meta">' + g.sessions + (g.sessions === 1 ? ' session' : ' sessions') + ' · last played ' + ago(g.lastPlayed) + '</div></a>').join('');
+  }
+  function tickPlaytime() {
+    const now = env.playtime && env.playtime.current[0];
+    if (now) $('#ptNowTime').textContent = fmtClock((Date.now() - now.start) / 1000);
+  }
+  setInterval(() => { if (!$('#ptNow').hidden && $('#page-playtime').classList.contains('active')) tickPlaytime(); }, 1000);
+
+  // ---------- navigation ----------
+  const nav = $('#nav');
+  const items = $$('.nav-item', nav);
+  const indicator = $('#indicator');
+  function placeIndicator() {
+    const btn = nav.querySelector('[aria-current]');
+    if (!btn) return;
+    indicator.style.transform = 'translateY(' + (btn.offsetTop + (btn.offsetHeight - 16) / 2 - nav.scrollTop) + 'px)';
+  }
+  function go(id) {
+    const btn = items.find(b => b.dataset.page === id) || items[0];
+    items.forEach(b => b.removeAttribute('aria-current'));
+    btn.setAttribute('aria-current', 'page');
+    $$('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + btn.dataset.page));
+    placeIndicator();
+    $('#content').scrollTop = 0;
+    try { localStorage.setItem('keystrap-tab', btn.dataset.page); } catch (e) {}
+  }
+  items.forEach(b => b.addEventListener('click', () => go(b.dataset.page)));
+  nav.addEventListener('scroll', placeIndicator, { passive: true });
+  window.addEventListener('resize', placeIndicator);
+
+  // ---------- status ----------
+  function renderStatus() {
+    const dot = $('#statusDot'), text = $('#statusText');
+    dot.className = 'dot';
+    const inst = env.installed, latest = env.latest;
+    if (!host) { text.textContent = 'Preview · Roblox status shows in the app'; return; }
+    if (env.checking) { text.textContent = 'Checking for Roblox updates…'; return; }
+    if (env.statusError && !latest) { dot.classList.add('bad'); text.textContent = 'Couldn\'t reach Roblox'; return; }
+    if (!inst) { dot.classList.add('warn'); text.textContent = 'Roblox downloads on first launch'; return; }
+    if (latest && latest.guid !== inst.guid) { dot.classList.add('warn'); text.textContent = 'Roblox update installs on next launch'; return; }
+    dot.classList.add('good'); text.textContent = 'Roblox ' + (inst.version || '') + ' · up to date';
+  }
+
+  // ---------- play ----------
+  function renderPlay() {
+    const p = activeProfile();
+    $('#heroProfile').textContent = 'Profile · ' + p.name;
+    if (!launching) {
+      const st = $('#launchStatus');
+      st.classList.remove('err');
+      st.textContent = p.lastUsed ? 'Last launched with this profile ' + ago(p.lastUsed) : 'Not launched with this profile yet';
+    }
+    $('#statClient').textContent = env.installed ? (env.installed.version || env.installed.guid) : 'Not installed';
+    $('#flagCount').textContent = p.flags.filter(f => f.on).length;
+    renderFps();
+    $('#q-multi').checked = state.settings.multiInstance;
+  }
+  // ---------- unlock fps ----------
+  // What DFIntTaskSchedulerTargetFps is set to at launch: 0 = uncapped, otherwise a cap in FPS.
+  function fpsTarget() {
+    const s = state.settings;
+    if (s.fpsMode === 'monitor') return env.refreshRate || 0;   // unknown refresh rate: launch uncapped
+    if (s.fpsMode === 'custom') return s.fpsCap;
+    return 0;
+  }
+  function renderFps() {
+    const s = state.settings;
+    $('#q-fps').checked = s.unlockFps;
+    $('#fpsOpts').hidden = !s.unlockFps;
+    $$('#fpsOpts .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.fps === s.fpsMode)));
+    const monitor = $('#fpsOpts [data-fps="monitor"]');
+    monitor.textContent = env.refreshRate ? 'Match monitor (' + env.refreshRate + ' Hz)' : 'Match monitor';
+    $('#fpsCap').hidden = $('#fpsCapUnit').hidden = s.fpsMode !== 'custom';
+    if (document.activeElement !== $('#fpsCap')) $('#fpsCap').value = s.fpsCap;
+    $('#fpsDesc').textContent = !s.unlockFps
+      ? 'Off: Roblox uses its own 60 FPS limit.'
+      : s.fpsMode === 'monitor'
+        ? (env.refreshRate ? 'Capped at your monitor\'s refresh rate, ' + env.refreshRate + ' FPS.' : 'Keystrap couldn\'t read your monitor\'s refresh rate, so Roblox launches uncapped.')
+        : s.fpsMode === 'custom'
+          ? 'Capped at ' + s.fpsCap + ' FPS.'
+          : 'Uncapped: Roblox draws as many frames as your PC can.';
+  }
+  $('#q-fps').addEventListener('change', e => { state.settings.unlockFps = e.target.checked; save(); renderFps(); toast('Unlock FPS ' + (e.target.checked ? 'on' : 'off')); });
+  $('#fpsOpts').addEventListener('click', e => {
+    const b = e.target.closest('.seg');
+    if (!b) return;
+    state.settings.fpsMode = b.dataset.fps; save(); renderFps();
+    if (b.dataset.fps === 'custom') $('#fpsCap').focus();
+  });
+  $('#fpsCap').addEventListener('change', e => {
+    const v = parseInt(e.target.value, 10);
+    if (!(v >= 30 && v <= 1000)) { toast('Use a cap between 30 and 1000 FPS.'); e.target.value = state.settings.fpsCap; return; }
+    state.settings.fpsCap = v; save(); renderFps();
+  });
+  $('#fpsCap').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
+  function setProgress(text, pct) {
+    const st = $('#launchStatus');
+    st.classList.remove('err');
+    if (text) st.textContent = text;
+    if (typeof pct === 'number') $('#bar').style.transform = 'scaleX(' + Math.max(0, Math.min(1, pct)) + ')';
+  }
+  function setLaunching(on) {
+    launching = on;
+    $('#launchBtn').disabled = on;
+    $('#launchLabel').textContent = on ? 'Launching…' : 'Launch Roblox';
+    if (on) $('#officialBtn').hidden = true;
+  }
+  // link: the roblox-player: link from a Play button on roblox.com (passed to Roblox unchanged), or nothing for the Roblox app home.
+  function startLaunch(link) {
+    if (launching) return;
+    const p = activeProfile();
+    setLaunching(true);
+    setProgress(typeof link === 'string' ? 'Joining from the Roblox website…' : 'Starting…', 0.02);
+    if (!host) { simulateLaunch(); return; }
+    const flags = {};
+    p.flags.forEach(f => { if (f.on) flags[f.name] = f.value; });
+    host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: fpsTarget(), multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
+      link: typeof link === 'string' ? link : null, sky: state.settings.sky });
+  }
+  function launchFinished(error) {
+    setLaunching(false);
+    if (error) {
+      setProgress(null, 0);
+      const st = $('#launchStatus');
+      st.textContent = error; st.classList.add('err');
+      $('#officialBtn').hidden = !host;
+      return;
+    }
+    activeProfile().lastUsed = Date.now();
+    save();
+    setProgress('Roblox is running', 1);
+    setTimeout(() => { if (!launching) $('#bar').style.transform = 'scaleX(0)'; }, 1500);
+    renderProfiles();
+  }
+  function simulateLaunch() {
+    const steps = ['Checking for Roblox updates…', 'Applying flags…', 'Starting Roblox…'];
+    let i = 0;
+    const tick = () => {
+      if (i < steps.length) { setProgress(steps[i] + ' (preview)', (i + 1) / (steps.length + 1)); i++; setTimeout(tick, 600); }
+      else { setLaunching(false); setProgress('Preview only: Roblox starts from the Keystrap app', 0); }
+    };
+    tick();
+  }
+  $('#launchBtn').addEventListener('click', startLaunch);
+  $('#officialBtn').addEventListener('click', () => { if (host) host.postMessage({ type: 'launch-official' }); });
+  $('#q-multi').addEventListener('change', e => { state.settings.multiInstance = e.target.checked; save(); toast('Multi-instance ' + (e.target.checked ? 'on' : 'off')); });
+
+  // ---------- profiles ----------
+  function renderProfiles() {
+    const wrap = $('#profiles');
+    wrap.innerHTML = '';
+    state.profiles.forEach(p => {
+      const on = p.flags.filter(f => f.on).length;
+      const isActive = p.id === state.activeProfile;
+      const card = document.createElement('button');
+      card.className = 'card profile' + (isActive ? ' active' : '');
+      card.style.cssText = profileVars(p);
+      card.innerHTML =
+        '<div class="top"><div class="avatar" style="' + avatarStyle(p) + '">' + esc(p.name.charAt(0).toUpperCase() || '?') + '</div>' +
+        '<div style="min-width:0"><div class="t">' + esc(p.name) + '</div><div class="meta">' +
+        (p.lastUsed ? 'Launched ' + ago(p.lastUsed) : 'Never launched') + '</div></div></div>' +
+        '<div class="chips">' + (isActive ? '<span class="chip on">Launches with this</span>' : '') +
+        '<span class="chip">' + on + (on === 1 ? ' flag on' : ' flags on') + '</span>' +
+        '<span class="chip">' + p.flags.length + ' total</span></div>';
+      card.addEventListener('click', () => openProfileEditor(p.id));
+      wrap.appendChild(card);
+    });
+    const add = document.createElement('button');
+    add.className = 'card profile add';
+    add.innerHTML = '<svg class="ico"><use href="#i-plus"/></svg><span>New profile</span>';
+    add.addEventListener('click', () => openProfileEditor(null));
+    wrap.appendChild(add);
+  }
+
+  function openProfileEditor(id) {
+    const isNew = !id;
+    const p = isNew ? { id: uid(), name: '', color: state.profiles.length % COLORS.length, hex: null, lastUsed: null, flags: [] } : profileById(id);
+    const isActive = p.id === state.activeProfile;
+    const sel = { color: p.color, hex: p.hex || null };   // the colour being edited
+    const on = p.flags.filter(f => f.on).length;
+    const m = openModal(
+      '<h2>' + (isNew ? 'New profile' : 'Edit profile') + '</h2>' +
+      '<div class="pe-head"><div class="avatar pe-avatar" id="pe-avatar" aria-hidden="true"></div>' +
+        '<div class="field"><label for="pe-name">Name</label><input class="input" id="pe-name" maxlength="32" placeholder="Competitive" value="' + esc(p.name) + '"><div class="err" id="pe-err"></div></div></div>' +
+      '<div class="field"><label id="pe-color-label">Colour</label>' +
+        '<div class="pe-colors"><div class="swatches" id="pe-colors" role="radiogroup" aria-labelledby="pe-color-label">' +
+          COLORS.map((c, i) => '<button class="swatch" role="radio" data-i="' + i + '" aria-label="Preset ' + (i + 1) + '" style="background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ')"></button>').join('') +
+        '</div>' +
+        '<div class="pe-custom"><button class="color-well" id="pe-well" title="Pick any colour" aria-label="Pick a custom colour" aria-haspopup="dialog" aria-expanded="false"></button>' +
+          '<input class="input pe-hex" id="pe-hex" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#FFD9FC" aria-label="Profile colour hex code"></div></div>' +
+        '<div class="err" id="pe-hex-err"></div><div id="pe-picker"></div></div>' +
+      '<div class="modal-row"><div class="txt"><div class="t">Launch with this profile</div><div class="d">' +
+        (isActive ? 'This is the profile Keystrap launches with.' : 'Keystrap applies this profile\'s flags when you press Launch.') + '</div></div>' +
+        (isActive ? '' : '<label class="switch"><input type="checkbox" id="pe-active" aria-label="Launch with this profile"><span></span></label>') + '</div>' +
+      (isNew ? '' :
+        '<div class="modal-row"><div class="txt"><div class="t">Flags</div><div class="d">' + on + ' on, ' + p.flags.length + ' total</div></div>' +
+        '<button class="btn" id="pe-flags">Edit flags</button></div>') +
+      '<div class="modal-foot">' +
+        (isNew ? '' : '<div class="left"><button class="btn" id="pe-dup">Duplicate</button><button class="btn danger" id="pe-del">Delete</button></div>') +
+        '<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="pe-save">' + (isNew ? 'Create profile' : 'Save') + '</button>' +
+      '</div>');
+
+    const nameEl = $('#pe-name', m), errEl = $('#pe-err', m), hexEl = $('#pe-hex', m), hexErr = $('#pe-hex-err', m);
+    // Shows the colour being edited everywhere at once: the preview badge, the swatches, the hex field,
+    // and (for an existing profile) its card behind the dialog.
+    function showColour(keepHexField) {
+      if (!isNew) profileDraft = { id: p.id, color: sel.color, hex: sel.hex };   // first, so every badge reads the new colour
+      const look = Object.assign({}, p, sel);
+      const av = $('#pe-avatar', m);
+      av.style.cssText = avatarStyle(look);
+      av.textContent = (nameEl.value.trim() || p.name || '?').charAt(0).toUpperCase();
+      $$('.swatch', m).forEach(s => { const on = !sel.hex && +s.dataset.i === sel.color; s.setAttribute('aria-checked', String(on)); s.setAttribute('aria-pressed', String(on)); });
+      $('#pe-well', m).classList.toggle('picked', !!sel.hex);
+      if (!keepHexField) { hexEl.value = (sel.hex || COLORS[sel.color][1]).toUpperCase(); hexEl.classList.remove('bad'); hexErr.textContent = ''; }
+      if (!isNew) renderProfiles();
+    }
+    const picker = makeColorPicker({
+      host: $('#pe-picker', m), well: $('#pe-well', m), label: 'Custom profile colour', inline: true,
+      get: () => sel.hex || COLORS[sel.color][1],
+      set: hex => { sel.hex = hex; showColour(); }
+    });
+    // Closing the dialog any way other than Save drops the unsaved colour from the card.
+    modalCleanup = () => { profileDraft = null; renderProfiles(); };
+
+    nameEl.focus(); nameEl.select();
+    nameEl.addEventListener('input', () => { errEl.textContent = ''; nameEl.classList.remove('bad'); showColour(true); });
+    nameEl.addEventListener('keydown', e => { if (e.key === 'Enter') $('#pe-save', m).click(); });
+    $$('.swatch', m).forEach(s => s.addEventListener('click', () => {
+      sel.color = +s.dataset.i; sel.hex = null;
+      if (picker.isOpen()) picker.load(COLORS[sel.color][1]);
+      showColour();
+    }));
+    hexEl.addEventListener('input', () => {
+      hexErr.textContent = ''; hexEl.classList.remove('bad');
+      const h = /^#?[0-9a-f]{6}$/i.test(hexEl.value.trim()) ? normHex(hexEl.value) : null;
+      if (h) { sel.hex = h; if (picker.isOpen()) picker.load(h); showColour(true); }   // apply as soon as a full code is typed
+    });
+    hexEl.addEventListener('change', () => {
+      const h = normHex(hexEl.value);
+      if (!h) { hexEl.classList.add('bad'); hexErr.textContent = 'Use a hex colour like #FFD9FC.'; return; }
+      sel.hex = h; showColour();
+    });
+    hexEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); hexEl.blur(); } });
+    showColour();
+
+    $('#pe-save', m).addEventListener('click', () => {
+      const name = nameEl.value.trim();
+      const err = !name ? 'Enter a name for this profile.'
+        : state.profiles.some(x => x.id !== p.id && x.name.toLowerCase() === name.toLowerCase()) ? 'Another profile already uses that name.' : '';
+      if (err) { errEl.textContent = err; nameEl.classList.add('bad'); nameEl.focus(); return; }
+      if (hexEl.classList.contains('bad')) { hexEl.focus(); return; }
+      p.name = name; p.color = sel.color; p.hex = sel.hex;
+      profileDraft = null;
+      if (isNew) state.profiles.push(p);
+      const act = $('#pe-active', m);
+      if (act && act.checked) state.activeProfile = p.id;
+      save(); closeModal(); renderAll();
+      toast(isNew ? 'Profile "' + name + '" created' : 'Profile saved');
+    });
+    if (!isNew) {
+      $('#pe-flags', m).addEventListener('click', () => { closeModal(); flagsProfileId = p.id; renderFlags(); go('flags'); });
+      $('#pe-dup', m).addEventListener('click', () => {
+        let n = 2, name;
+        do { name = p.name + ' ' + n++; } while (state.profiles.some(x => x.name.toLowerCase() === name.toLowerCase()));
+        state.profiles.push({ id: uid(), name, color: (p.color + 1) % COLORS.length, hex: null, lastUsed: null, flags: p.flags.map(f => Object.assign({}, f)) });
+        save(); closeModal(); renderAll(); toast('Duplicated as "' + name + '"');
+      });
+      $('#pe-del', m).addEventListener('click', e => {
+        if (state.profiles.length === 1) { toast('Keystrap needs at least one profile.'); return; }
+        armConfirm(e.currentTarget, 'Click again to delete', () => {
+          state.profiles = state.profiles.filter(x => x.id !== p.id);
+          if (state.activeProfile === p.id) state.activeProfile = state.profiles[0].id;
+          if (flagsProfileId === p.id) flagsProfileId = null;
+          save(); closeModal(); renderAll(); toast('Profile "' + p.name + '" deleted');
+        });
+      });
+    }
+  }
+
+  // ---------- flags ----------
+  function renderFlags() {
+    const p = flagsProfile();
+    flagsProfileId = p.id;
+    $('#flagProfileName').textContent = p.name;
+    $('#flagProfileMenu').innerHTML = state.profiles.map(x =>
+      '<button class="dd-opt" role="option" data-id="' + esc(x.id) + '" aria-selected="' + (x.id === p.id) + '">' +
+      '<span class="sw" style="' + avatarStyle(x) + '"></span><span class="nm">' + esc(x.name) + '</span>' +
+      '<svg class="ico"><use href="#i-check"/></svg></button>').join('');
+    const note = $('#flagActiveNote');
+    note.textContent = p.id === state.activeProfile ? 'Launches with this' : 'Not the launch profile';
+    note.className = 'chip' + (p.id === state.activeProfile ? ' on' : '');
+    const q = $('#flagSearch').value.trim().toLowerCase();
+    const body = $('#flagBody');
+    body.innerHTML = '';
+    const list = p.flags.filter(f => !q || f.name.toLowerCase().includes(q));
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="5" class="empty">' + (p.flags.length ? 'No flags match that search.' : 'No flags in ' + esc(p.name) + ' yet. Add one, or import a ClientAppSettings.json.') + '</td></tr>';
+    }
+    list.forEach(f => {
+      const kind = flagKind(f.name) || 'String';
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><span class="kind ' + kind + '">' + kind + '</span></td>' +
+        '<td class="name"></td>' +
+        '<td><input class="input val-input" aria-label="Value"></td>' +
+        '<td><label class="switch"><input type="checkbox" aria-label="Turn flag on"' + (f.on ? ' checked' : '') + '><span></span></label></td>' +
+        '<td><button class="btn ghost icon" aria-label="Remove flag" title="Remove flag"><svg class="ico"><use href="#i-x"/></svg></button></td>';
+      tr.children[1].textContent = f.name;
+      const val = tr.querySelector('.val-input');
+      val.value = f.value;
+      val.addEventListener('keydown', e => { if (e.key === 'Enter') val.blur(); if (e.key === 'Escape') { val.value = f.value; val.blur(); } });
+      val.addEventListener('change', () => {
+        const err = checkValue(kind, val.value.trim());
+        if (err) { toast(f.name + ': ' + err); val.value = f.value; return; }
+        f.value = cleanValue(kind, val.value); val.value = f.value; save();
+      });
+      tr.querySelector('.switch input').addEventListener('change', e => { f.on = e.target.checked; save(); renderPlay(); });
+      tr.querySelector('.icon').addEventListener('click', () => {
+        p.flags = p.flags.filter(x => x !== f);
+        save(); renderFlags(); renderPlay(); toast('Removed ' + f.name);
+      });
+      body.appendChild(tr);
+    });
+  }
+  // profile dropdown
+  const ddBtn = $('#flagProfileBtn'), ddMenu = $('#flagProfileMenu');
+  function setDropdown(open) {
+    ddMenu.hidden = !open;
+    ddBtn.setAttribute('aria-expanded', String(open));
+    if (open) { const cur = ddMenu.querySelector('[aria-selected="true"]') || ddMenu.firstElementChild; if (cur) cur.focus(); }
+  }
+  ddBtn.addEventListener('click', () => setDropdown(ddMenu.hidden));
+  ddMenu.addEventListener('click', e => {
+    const opt = e.target.closest('.dd-opt');
+    if (!opt) return;
+    flagsProfileId = opt.dataset.id;
+    setDropdown(false); renderFlags(); ddBtn.focus();
+  });
+  ddMenu.addEventListener('keydown', e => {
+    const opts = $$('.dd-opt', ddMenu), i = opts.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      opts[(i + (e.key === 'ArrowDown' ? 1 : opts.length - 1)) % opts.length].focus();
+    } else if (e.key === 'Escape') { e.stopPropagation(); setDropdown(false); ddBtn.focus(); }
+  });
+  document.addEventListener('mousedown', e => { if (!ddMenu.hidden && !e.target.closest('#flagProfileDd')) setDropdown(false); });
+  $('#flagSearch').addEventListener('input', () => renderFlags());
+
+  $('#addFlag').addEventListener('click', () => {
+    const p = flagsProfile();
+    const m = openModal(
+      '<h2>Add flag</h2><p class="lead">Adds to ' + esc(p.name) + '. Names start with FFlag, DFFlag, FInt, DFInt, FString, DFString, FLog or DFLog.</p>' +
+      '<div class="field"><label for="af-name">Name</label><input class="input" id="af-name" placeholder="FFlagDebugGraphicsPreferVulkan" spellcheck="false" style="font-family:var(--f-mono)"></div>' +
+      '<div class="field"><label for="af-value">Value</label><input class="input" id="af-value" placeholder="True" spellcheck="false" style="font-family:var(--f-mono)"><div class="err" id="af-err"></div></div>' +
+      '<div class="modal-foot"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="af-add">Add flag</button></div>');
+    const nameEl = $('#af-name', m), valEl = $('#af-value', m), errEl = $('#af-err', m);
+    nameEl.focus();
+    nameEl.addEventListener('input', () => {
+      const k = flagKind(nameEl.value.trim());
+      valEl.placeholder = k === 'Flag' ? 'True' : k === 'Int' || k === 'Log' ? '0' : 'value';
+    });
+    [nameEl, valEl].forEach(el => {
+      el.addEventListener('input', () => { errEl.textContent = ''; el.classList.remove('bad'); });
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') $('#af-add', m).click(); });
+    });
+    $('#af-add', m).addEventListener('click', () => {
+      const name = nameEl.value.trim(), value = valEl.value.trim(), kind = flagKind(name);
+      let err = null, bad = nameEl;
+      if (!/^[A-Za-z0-9_]+$/.test(name) || !kind) err = 'That isn\'t a flag name. It should start with FFlag, FInt, FString or FLog (optionally with D in front).';
+      else if (p.flags.some(f => f.name === name)) err = p.name + ' already has this flag. Change its value in the list.';
+      else if (!value) { err = 'Enter a value.'; bad = valEl; }
+      else if ((err = checkValue(kind, value))) bad = valEl;
+      if (err) { errEl.textContent = err; bad.classList.add('bad'); bad.focus(); return; }
+      p.flags.push({ name, value: cleanValue(kind, value), on: true });
+      save(); closeModal(); renderFlags(); renderPlay(); renderProfiles(); toast('Added ' + name + ' to ' + p.name);
+    });
+  });
+
+  $('#importFlags').addEventListener('click', () => {
+    const p = flagsProfile();
+    const m = openModal(
+      '<h2>Import flags</h2><p class="lead">Paste a ClientAppSettings.json. Flags are added to ' + esc(p.name) + ' and switched on; flags it already has get the new value.</p>' +
+      '<div class="field"><label for="im-json">JSON</label><textarea class="input" id="im-json" rows="9" spellcheck="false" placeholder=\'{\n  "FFlagDebugGraphicsPreferD3D11": "True",\n  "DFIntTaskSchedulerTargetFps": "144"\n}\'></textarea><div class="err" id="im-err"></div></div>' +
+      '<div class="modal-foot"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="im-go">Import</button></div>');
+    const ta = $('#im-json', m), errEl = $('#im-err', m);
+    ta.focus();
+    ta.addEventListener('input', () => { errEl.textContent = ''; ta.classList.remove('bad'); });
+    $('#im-go', m).addEventListener('click', () => {
+      let obj;
+      try { obj = JSON.parse(ta.value); } catch (e) { obj = undefined; }
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+        errEl.textContent = 'That isn\'t a JSON object. It should look like { "FlagName": "value" }.'; ta.classList.add('bad'); return;
+      }
+      let added = 0, updated = 0, skipped = 0;
+      Object.keys(obj).forEach(name => {
+        const kind = flagKind(name);
+        let value = obj[name];
+        if (typeof value === 'boolean') value = value ? 'True' : 'False';
+        value = String(value);
+        if (!kind || !/^[A-Za-z0-9_]+$/.test(name) || checkValue(kind, value)) { skipped++; return; }
+        const existing = p.flags.find(f => f.name === name);
+        if (existing) { existing.value = cleanValue(kind, value); existing.on = true; updated++; }
+        else { p.flags.push({ name, value: cleanValue(kind, value), on: true }); added++; }
+      });
+      if (!added && !updated) { errEl.textContent = skipped ? 'None of those entries are valid flags.' : 'The JSON has no flags in it.'; return; }
+      save(); closeModal(); renderFlags(); renderPlay(); renderProfiles();
+      toast(added + ' added, ' + updated + ' updated' + (skipped ? ', ' + skipped + ' skipped' : ''));
+    });
+  });
+
+  $('#copyFlags').addEventListener('click', () => {
+    const p = flagsProfile(), obj = {};
+    p.flags.forEach(f => { if (f.on) obj[f.name] = f.value; });
+    const text = JSON.stringify(obj, null, 2);
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove();
+      toast(ok ? 'Copied ' + Object.keys(obj).length + ' flags' : 'Couldn\'t copy to the clipboard.');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied ' + Object.keys(obj).length + ' flags'), fallback);
+    else fallback();
+  });
+
+  // ---------- settings ----------
+  function renderSettings() {
+    renderDiscord();
+    $('#s-close').checked = state.settings.closeAfterLaunch;
+    $('#s-links').checked = state.settings.handleLinks;
+    $('#linksDesc').textContent = !host
+      ? 'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.'
+      : state.settings.handleLinks
+        ? (env.linksRegistered === false ? 'Keystrap couldn\'t take over Roblox links. Details are in the log.' : 'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.')
+        : 'Roblox links open with the Roblox app. Turn this on to launch them through Keystrap.';
+    renderAccent();
+    $('#versionsDesc').textContent = host
+      ? env.versionsBytes == null ? 'Calculating…' : (env.versionsBytes ? fmtBytes(env.versionsBytes) + ' in ' + env.dataDir + '\\Versions. Roblox downloads again on the next launch.' : 'Nothing downloaded yet.')
+      : 'Shows the size of Keystrap\'s Roblox downloads in the app.';
+    $('#logsDesc').textContent = 'Keystrap writes a log file for each day to ' + env.dataDir + '\\Logs.';
+  }
+  $('#s-close').addEventListener('change', e => { state.settings.closeAfterLaunch = e.target.checked; save(); toast('Close after launch ' + (e.target.checked ? 'on' : 'off')); });
+
+  // ---------- discord rich presence ----------
+  $('#devWebhookTest').addEventListener('click', () => {
+    if (!host) return;
+    $('#devWebhookTest').disabled = true;
+    $('#devWebhookDesc').textContent = 'Sending…';
+    host.postMessage({ type: 'webhook-test' });
+  });
+  $('#s-crash').addEventListener('change', e => {
+    state.settings.crashReports = e.target.checked; save();
+    toast('Crash reports ' + (e.target.checked ? 'on' : 'off'));
+  });
+  function renderDiscord() {
+    const s = state.settings, d = env.discord || {};
+    $('#s-crash').checked = s.crashReports !== false;
+    $('#s-discord').checked = $('#q-discord').checked = !!s.discordRpc;
+    if (document.activeElement !== $('#discordAppId')) $('#discordAppId').value = s.discordAppId || '';
+    const text = !s.discordRpc ? 'Off. Turn it on to show what you\'re doing in Keystrap and Roblox on your Discord profile.'
+      : !host ? 'Shows what you\'re doing in Keystrap and Roblox on your Discord profile.'
+      : !/^\d{17,20}$/.test(s.discordAppId || '') ? 'Add your Discord application ID below to turn it on.'
+      : d.state === 'connected' ? 'Connected to Discord' + (d.detail ? ' as ' + d.detail : '') + '. Your status follows what you\'re doing.'
+      : d.state === 'no-discord' ? 'Discord isn\'t running. Keystrap connects as soon as it starts.'
+      : d.state === 'error' ? 'Discord didn\'t accept that application ID' + (d.detail ? ' (' + d.detail + ')' : '') + '. Check it and paste it again.'
+      : 'Connecting to Discord…';
+    const desc = $('#discordDesc');
+    desc.textContent = text;
+    desc.classList.toggle('bad-text', !!(s.discordRpc && host && d.state === 'error'));
+    $('#qDiscordDesc').textContent = s.discordRpc && d.state === 'connected'
+      ? 'On: your Discord profile shows the game you\'re playing.'
+      : 'Show the game you\'re playing on your Discord profile.';
+  }
+  function setDiscord(on) {
+    state.settings.discordRpc = on; save(); renderDiscord();
+    toast('Discord Rich Presence ' + (on ? 'on' : 'off'));
+  }
+  $('#s-discord').addEventListener('change', e => setDiscord(e.target.checked));
+  $('#q-discord').addEventListener('change', e => setDiscord(e.target.checked));
+  $('#discordAppId').addEventListener('input', e => {
+    const v = e.target.value.replace(/\D/g, '');
+    if (v !== e.target.value) e.target.value = v;
+    $('#discordIdErr').textContent = '';
+    e.target.classList.remove('bad');
+  });
+  $('#discordAppId').addEventListener('change', e => {
+    const v = e.target.value.trim();
+    if (v && !/^\d{17,20}$/.test(v)) {
+      e.target.classList.add('bad');
+      $('#discordIdErr').textContent = 'An application ID is a 17 to 20 digit number from the Discord Developer Portal.';
+      return;
+    }
+    state.settings.discordAppId = v;
+    if (env.discord) env.discord.state = null;   // show "Connecting…" until the app reports back
+    save(); renderDiscord();
+  });
+  $('#discordAppId').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+  $('#s-links').addEventListener('change', e => {
+    state.settings.handleLinks = e.target.checked;
+    save();
+    if (host) host.postMessage({ type: 'protocol', on: e.target.checked });
+    renderSettings();
+    toast(e.target.checked ? 'Roblox links now open with Keystrap' : 'Roblox links open with the Roblox app again');
+  });
+  $('#clearCache').addEventListener('click', e => {
+    if (!host) { toast('Available in the Keystrap app'); return; }
+    if (launching) { toast('Wait for the launch to finish first.'); return; }
+    if (!env.versionsBytes) { toast('Nothing to clear'); return; }
+    armConfirm(e.currentTarget, 'Click again to clear', () => {
+      const b = $('#clearCache'); b.classList.remove('armed'); b.textContent = 'Clear';
+      host.postMessage({ type: 'clear-versions' });
+    });
+  });
+  $$('[data-open-logs]').forEach(b => b.addEventListener('click', () => {
+    if (host) host.postMessage({ type: 'open-logs' }); else toast('Available in the Keystrap app');
+  }));
+
+  // ---------- accent theme ----------
+  function normHex(v) {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(v || '').trim());
+    if (!m) return null;
+    const h = m[1].toLowerCase();
+    return '#' + (h.length === 3 ? h.replace(/./g, c => c + c) : h);
+  }
+  const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const rgbHex = c => '#' + c.map(x => Math.round(x).toString(16).padStart(2, '0')).join('');
+  const rgbList = c => c.map(Math.round).join(',');
+  const mixRgb = (c, to, t) => c.map((x, i) => x + (to[i] - x) * t);
+  function luminance(c) {
+    const l = c.map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
+  }
+  // The accent is also used as text on the dark theme, so very dark picks are lightened until they read clearly.
+  function accentPalette(hex) {
+    let base = hexRgb(hex), lightened = false;
+    while (luminance(base) < 0.22) { base = mixRgb(base, [255, 255, 255], 0.1); lightened = true; }
+    return { accent: mixRgb(base, [255, 255, 255], 0.35), accent2: base, on: mixRgb(base, [0, 0, 0], 0.88), lightened };
+  }
+  const ACCENT_VARS = ['--accent', '--accent-2', '--accent-rgb', '--accent-2-rgb', '--on-accent', '--on-accent-rgb'];
+  // Theme manager: swaps the whole accent palette live. Every accent style reads these variables, so nothing needs re-rendering.
+  function updateAccentColor(hex) {
+    hex = normHex(hex) || DEFAULT_ACCENT;
+    const s = document.documentElement.style;
+    if (hex === DEFAULT_ACCENT) { ACCENT_VARS.forEach(v => s.removeProperty(v)); return accentPalette(hex); } // the stylesheet's hand-tuned cream
+    const p = accentPalette(hex);
+    s.setProperty('--accent', rgbHex(p.accent));
+    s.setProperty('--accent-2', rgbHex(p.accent2));
+    s.setProperty('--accent-rgb', rgbList(p.accent));
+    s.setProperty('--accent-2-rgb', rgbList(p.accent2));
+    s.setProperty('--on-accent', rgbHex(p.on));
+    s.setProperty('--on-accent-rgb', rgbList(p.on));
+    return p;
+  }
+  function renderAccent(keepHexField) {
+    const cur = state.settings.accent;
+    $('#accentSwatches').innerHTML = ACCENT_PRESETS.map(a => {
+      const p = accentPalette(a[1]), on = a[1] === cur;
+      return '<button class="swatch" role="radio" data-hex="' + a[1] + '" aria-label="' + a[0] + '" title="' + a[0] + '" aria-checked="' + on + '" aria-pressed="' + on + '"' +
+        ' style="background:linear-gradient(135deg,' + rgbHex(p.accent) + ',' + a[1] + ')"></button>';
+    }).join('');
+    if (accentPicker.isOpen() && !accentPicker.driving()) accentPicker.load(cur);
+    if (!keepHexField) { $('#accentHex').value = cur; $('#accentHex').classList.remove('bad'); }
+    const preset = ACCENT_PRESETS.find(a => a[1] === cur);
+    $('#accentNote').textContent = accentPalette(cur).lightened
+      ? 'That color is very dark, so Keystrap uses a lighter shade of it to keep text readable.'
+      : preset ? preset[0] + (cur === DEFAULT_ACCENT ? ' (default)' : '') : 'Custom color ' + cur;
+  }
+  function setAccent(hex, keepHexField) {
+    const h = normHex(hex);
+    if (!h) return false;
+    state.settings.accent = h;
+    updateAccentColor(h);
+    renderAccent(keepHexField);
+    save();
+    return true;
+  }
+  $('#accentSwatches').addEventListener('click', e => { const b = e.target.closest('.swatch'); if (b) setAccent(b.dataset.hex); });
+  // ---------- color picker component (accent setting, profile editor) ----------
+  // HSV model, so dragging stays smooth even where RGB rounds.
+  function hsvToRgb(h, s, v) {
+    const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+    return [f(5), f(3), f(1)].map(x => Math.round(x * 255));
+  }
+  function rgbToHsv(c) {
+    const [r, g, b] = c.map(x => x / 255), max = Math.max(r, g, b), d = max - Math.min(r, g, b);
+    let h = 0;
+    if (d) h = 60 * (max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4);
+    return { h, s: max ? d / max : 0, v: max };
+  }
+  const CP_MARKUP =
+    '<div class="cp-sv" tabindex="0" role="slider" aria-label="Saturation and brightness"><div class="cp-cursor"></div></div>' +
+    '<div class="cp-tools">' +
+      '<button class="cp-drop" type="button" title="Pick a color from the screen" aria-label="Pick a color from the screen">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.71 5.63 18.37 3.29a1 1 0 0 0-1.41 0l-3.12 3.12-1.93-1.91-1.41 1.41 1.42 1.42L3 16.25V21h4.75l8.92-8.92 1.42 1.42 1.41-1.41-1.92-1.92 3.12-3.12a1 1 0 0 0 .01-1.42ZM6.92 19 5 17.08l8.06-8.06 1.92 1.92Z"/></svg>' +
+      '</button>' +
+      '<div class="cp-preview"></div>' +
+      '<div class="cp-hue" tabindex="0" role="slider" aria-label="Hue" aria-valuemin="0" aria-valuemax="360"><div class="cp-thumb"></div></div>' +
+    '</div>' +
+    '<div class="cp-fields">' +
+      '<label class="cp-f"><span>R</span><input inputmode="numeric" maxlength="3" autocomplete="off" aria-label="Red"></label>' +
+      '<label class="cp-f"><span>G</span><input inputmode="numeric" maxlength="3" autocomplete="off" aria-label="Green"></label>' +
+      '<label class="cp-f"><span>B</span><input inputmode="numeric" maxlength="3" autocomplete="off" aria-label="Blue"></label>' +
+    '</div>';
+  let pickers = [];
+  // opts: host (element the panel goes in), well (button that opens it), label, get() -> current hex,
+  //       set(hex) called live while picking, inline (panel sits in the page flow instead of floating).
+  function makeColorPicker(opts) {
+    const el = document.createElement('div');
+    el.className = 'cp' + (opts.inline ? ' inline' : '');
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', opts.label);
+    el.hidden = true;
+    el.innerHTML = CP_MARKUP;
+    opts.host.appendChild(el);
+    const sv = $('.cp-sv', el), hue = $('.cp-hue', el), fields = $$('.cp-f input', el);
+    let hsv = { h: 0, s: 0, v: 1 }, driving = false;
+    function draw(skipFields) {
+      const rgb = hsvToRgb(hsv.h, hsv.s, hsv.v);
+      sv.style.setProperty('--cp-h', hsv.h.toFixed(1));
+      const cur = $('.cp-cursor', el);
+      cur.style.left = (hsv.s * 100) + '%';
+      cur.style.top = ((1 - hsv.v) * 100) + '%';
+      cur.style.background = rgbHex(rgb);
+      $('.cp-thumb', el).style.left = (hsv.h / 360 * 100) + '%';
+      hue.setAttribute('aria-valuenow', Math.round(hsv.h));
+      $('.cp-preview', el).style.background = rgbHex(rgb);
+      if (!skipFields) fields.forEach((f, i) => { f.value = rgb[i]; });
+      return rgb;
+    }
+    function load(hex) { hsv = rgbToHsv(hexRgb(hex)); draw(); }
+    function apply(skipFields) {
+      const rgb = draw(skipFields);
+      driving = true;
+      opts.set(rgbHex(rgb));
+      driving = false;
+    }
+    function open(on, viaKeyboard) {
+      el.hidden = !on;
+      opts.well.setAttribute('aria-expanded', String(on));
+      if (!on) return;
+      load(opts.get());
+      if (viaKeyboard) sv.focus(); // a mouse click leaves focus on the well, so no focus ring appears on the square
+    }
+    opts.well.addEventListener('click', e => open(el.hidden, e.detail === 0));
+    el.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); open(false); opts.well.focus(); } });
+    function drag(target, onMove) {
+      target.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        try { target.setPointerCapture(e.pointerId); } catch (err) {}
+        const move = ev => {
+          const r = target.getBoundingClientRect();
+          onMove(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height)));
+          apply();
+        };
+        move(e);
+        target.addEventListener('pointermove', move);
+        target.addEventListener('pointerup', () => target.removeEventListener('pointermove', move), { once: true });
+      });
+    }
+    drag(sv, (x, y) => { hsv.s = x; hsv.v = 1 - y; });
+    drag(hue, x => { hsv.h = Math.min(359.9, x * 360); });
+    sv.addEventListener('keydown', e => {
+      const step = e.shiftKey ? 0.1 : 0.02, d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      hsv.s = Math.max(0, Math.min(1, hsv.s + d[0])); hsv.v = Math.max(0, Math.min(1, hsv.v + d[1]));
+      apply();
+    });
+    hue.addEventListener('keydown', e => {
+      const d = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1 }[e.key];
+      if (!d) return;
+      e.preventDefault();
+      hsv.h = (hsv.h + d * (e.shiftKey ? 15 : 2) + 360) % 360;
+      apply();
+    });
+    fields.forEach(f => {
+      f.addEventListener('input', () => {
+        f.value = f.value.replace(/\D/g, '').slice(0, 3);
+        const vals = fields.map(x => x.value === '' ? NaN : +x.value);
+        if (vals.some(v => isNaN(v) || v > 255)) return;
+        hsv = rgbToHsv(vals);
+        apply(true);
+      });
+      f.addEventListener('blur', () => draw());
+      f.addEventListener('keydown', e => { if (e.key === 'Enter') f.blur(); });
+    });
+    // The EyeDropper API samples any pixel on screen; hide the button where it isn't available.
+    const dropper = $('.cp-drop', el);
+    if ('EyeDropper' in window) dropper.addEventListener('click', () => {
+      new window.EyeDropper().open().then(r => { load(r.sRGBHex); apply(); }).catch(() => {});
+    });
+    else dropper.hidden = true;
+    const api = { el, open, load, isOpen: () => !el.hidden, driving: () => driving, owns: t => el.contains(t) || opts.well.contains(t) };
+    pickers = pickers.filter(p => p.el.isConnected).concat(api);
+    return api;
+  }
+  // A click anywhere outside a picker (and its button) closes it.
+  document.addEventListener('mousedown', e => pickers.forEach(p => { if (p.isOpen() && !p.owns(e.target)) p.open(false); }));
+
+  const accentPicker = makeColorPicker({
+    host: $('#accentPickerWrap'), well: $('#accentWell'), label: 'Custom accent color',
+    get: () => state.settings.accent, set: hex => setAccent(hex)
+  });
+  $('#accentHex').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    e.target.classList.remove('bad');
+    if (/^#?[0-9a-f]{6}$/i.test(v)) setAccent(v, true); // apply as soon as a full hex code is typed
+  });
+  $('#accentHex').addEventListener('change', e => {
+    if (setAccent(e.target.value)) return;
+    e.target.classList.add('bad');
+    toast('Use a hex color like #7cc4fa.');
+  });
+  $('#accentHex').addEventListener('keydown', e => {
+    if (e.key === 'Enter') e.target.blur();
+    if (e.key === 'Escape') { renderAccent(); e.target.blur(); }
+  });
+  $('#accentReset').addEventListener('click', () => { setAccent(DEFAULT_ACCENT); toast('Accent color reset'); });
+
+  // ---------- language ----------
+  function renderLanguages() {
+    const grid = $('#langGrid');
+    grid.innerHTML = '';
+    LANGS.forEach((l, i) => {
+      const ok = !!l[2];
+      const lab = document.createElement('label');
+      lab.className = 'card lang ' + (ok ? 'ok' : 'off');
+      lab.innerHTML = '<input class="radio" type="radio" name="lang" id="lang-' + i + '"' + (ok ? '' : ' disabled') + (ok && state.settings.language === 'en' ? ' checked' : '') + '>' +
+        '<span class="native"></span><span class="note">' + (ok ? 'Complete' : 'Not translated yet') + '</span>';
+      lab.querySelector('.native').textContent = l[0];
+      lab.title = l[1];
+      grid.appendChild(lab);
+    });
+  }
+
+  // ---------- support: suggestion box ----------
+  const sgText = $('#sg-text'), sgSend = $('#sg-send'), sgErr = $('#sg-err');
+  let sendingSuggestion = false;
+  function renderSuggestCount() {
+    const n = sgText.value.length, c = $('#sg-count');
+    c.textContent = n + ' / 1000';
+    c.classList.toggle('near', n > 900);
+  }
+  function setSendingSuggestion(on) {
+    sendingSuggestion = on;
+    sgSend.disabled = on; sgText.readOnly = on;
+    sgSend.innerHTML = on ? '<span class="spin"></span>Polishing and sending…' : '<svg class="ico"><use href="#i-send"/></svg>Submit Suggestion';
+  }
+  sgText.addEventListener('input', () => { sgErr.textContent = ''; sgText.classList.remove('bad'); renderSuggestCount(); });
+  sgText.addEventListener('keydown', e => { if (e.key === 'Enter' && e.ctrlKey) sgSend.click(); });
+  sgSend.addEventListener('click', () => {
+    if (sendingSuggestion) return;
+    const text = sgText.value.trim();
+    if (text.length < 10) { sgErr.textContent = 'Write a little more so the developers know what you mean.'; sgText.classList.add('bad'); sgText.focus(); return; }
+    if (!host) { toast('Available in the Keystrap app'); return; }
+    sgErr.textContent = '';
+    setSendingSuggestion(true);
+    host.postMessage({ type: 'suggest', text });
+  });
+  function suggestFinished(msg, error) {
+    setSendingSuggestion(false);
+    if (error) { sgErr.textContent = error; return; }
+    sgText.value = ''; renderSuggestCount();
+    openModal(
+      '<div class="sg-badge"><svg class="ico"><use href="#i-check"/></svg></div>' +
+      '<h2>Suggestion sent</h2>' +
+      '<p class="lead">Your suggestion was polished and sent to the developers. Thanks for helping make Keystrap better.</p>' +
+      '<div class="sg-preview">' +
+        '<div><div class="k">Summary <span class="chip on">' + esc(msg.category || 'Feedback') + '</span></div><p class="sum">' + esc(msg.summary || '') + '</p></div>' +
+        '<div><div class="k">Polished suggestion</div><p>' + esc(msg.details || '') + '</p></div>' +
+        (msg.benefit ? '<div><div class="k">Why it helps</div><p>' + esc(msg.benefit) + '</p></div>' : '') +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn primary" data-close>Done</button></div>', 'wide sg-done');
+  }
+  renderSuggestCount();
+
+  // ---------- about + changelog ----------
+  function renderAbout() {
+    $('#aboutVer').textContent = APP_VERSION + ' · build 2026.10.25';
+    $('#aboutRoblox').textContent = env.installed ? (env.installed.version || '') + ' (' + env.installed.guid + ')' : 'Not installed yet';
+    $('#aboutData').textContent = env.dataDir;
+  }
+  function openChangelog() {
+    const dots = { Added: 'var(--good)', Fixed: 'var(--accent)', Changed: 'var(--warn)' };
+    openModal(
+      '<h2>What\'s new in ' + APP_VERSION + '</h2>' +
+      Object.keys(CHANGELOG).map(k => '<div class="cl-sec"><h3><i style="background:' + dots[k] + '"></i>' + k + '</h3><ul>' +
+        CHANGELOG[k].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>').join('') +
+      '<div class="modal-foot"><button class="btn primary" data-close>Got it</button></div>', 'wide');
+    if (state.lastSeenChangelog !== APP_VERSION) { state.lastSeenChangelog = APP_VERSION; save(); }
+  }
+  $('#whatsNew').addEventListener('click', openChangelog);
+
+  // ---------- modal ----------
+  let lastFocus = null;
+  let modalCleanup = null;   // set by a dialog that needs to undo something when it closes
+  function openModal(html, cls) {
+    closeModal();
+    lastFocus = document.activeElement;
+    const bd = document.createElement('div');
+    bd.className = 'modal-backdrop';
+    bd.innerHTML = '<div class="modal ' + (cls || '') + '" role="dialog" aria-modal="true">' + html + '</div>';
+    bd.addEventListener('mousedown', e => { if (e.target === bd) closeModal(); });
+    $$('[data-close]', bd).forEach(b => b.addEventListener('click', closeModal));
+    $('#modalRoot').appendChild(bd);
+    const first = bd.querySelector('[data-close].primary, .modal .btn.primary');
+    if (first && !bd.querySelector('input, textarea')) first.focus();
+    return bd.querySelector('.modal');
+  }
+  function closeModal() {
+    const root = $('#modalRoot');
+    if (!root.firstChild) return;
+    root.innerHTML = '';
+    if (modalCleanup) { const undo = modalCleanup; modalCleanup = null; undo(); }
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
+
+  // ---------- boot ----------
+  function renderAll() { renderPlay(); renderProfiles(); renderFlags(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); }
+  function start() {
+    $('#titleVer').textContent = APP_VERSION;
+    let tab = '';
+    try { tab = localStorage.getItem('keystrap-tab') || ''; } catch (e) {}
+    updateAccentColor(state.settings.accent); // before the UI fades in, so the default never flashes
+    renderAll();
+    go(tab || 'play');
+    if (state.lastSeenChangelog !== APP_VERSION) openChangelog();
+    // Fade in after the first full frame with real content has been laid out.
+    requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add('shown')));
+    if (host) host.postMessage({ type: 'protocol', on: state.settings.handleLinks }); // keeps the registry in line with the setting
+    syncDiscord();
+  }
+
+  if (host) host.postMessage({ type: 'ready' });
+  else {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('keystrap-state') || 'null'); } catch (e) {}
+    state = normalize(saved);
+    env.checking = false;
+    start();
+  }
+})();
+</script>

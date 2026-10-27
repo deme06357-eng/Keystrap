@@ -1,0 +1,10 @@
+# Build output (dist\WebView2Runtime alone is about 670 MB); rebuild with app\build.ps1
+dist/
+*.exe
+*.dll
+app/keystrap.ico
+
+# Webhook URLs: kept out of the repository (anyone with one can post to that channel).
+# Copy secrets.example.json to secrets.json and fill it in; build.ps1 builds them into the exe.
+secrets.json
+app/Secrets.g.cs

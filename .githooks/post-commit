@@ -1,0 +1,6 @@
+#!/bin/sh
+# Posts the new commit to the developers' Discord changelog (tools/commit-changelog.ps1).
+# Runs in the background so committing never waits on the network.
+root="$(git rev-parse --show-toplevel)"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "$root/tools/commit-changelog.ps1" >/dev/null 2>&1 &
+exit 0
