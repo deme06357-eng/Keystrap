@@ -2795,6 +2795,18 @@ namespace Keystrap
 
         const string FpsFlag = "DFIntTaskSchedulerTargetFps";
         const int UncappedFps = 9999;
+        const int MenuFps = 60;
+
+        // The frame rate this launch starts Roblox at, or 0 to leave Roblox's own setting alone. Roblox reads it once at
+        // startup, so it holds for the whole session: joining a game from inside the app home stays at the menu cap.
+        // toAppHome: no game link, so Roblox opens on its home screen.
+        static int LaunchFps(Dictionary<string, object> msg, bool toAppHome)
+        {
+            if (toAppHome && Bool(msg, "menuCap")) return MenuFps;
+            if (!Bool(msg, "unlockFps")) return 0;
+            int target = Int(msg, "fpsTarget");   // 0 means uncapped; otherwise the cap the user picked
+            return target > 0 ? target : UncappedFps;
+        }
 
         void OnWebMessage(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
@@ -3285,21 +3297,22 @@ namespace Keystrap
                     foreach (var kv in (Dictionary<string, object>)raw)
                         flags[kv.Key] = Convert.ToString(kv.Value, System.Globalization.CultureInfo.InvariantCulture);
 
-                // Unlock FPS: Roblox's task scheduler targets 60 FPS unless DFIntTaskSchedulerTargetFps says otherwise.
-                // fpsTarget 0 means uncapped (a target no PC reaches); otherwise it's the cap the user picked.
-                // Off changes nothing, so Roblox keeps its own limit (ClientAppSettings.json is rewritten every launch).
-                // On, the frame rate goes into Roblox's Maximum Frame Rate, the setting Roblox actually honours, and into
-                // the flag as well in case Roblox allows it again. The flag wins over the same one in a profile.
-                if (Bool(msg, "unlockFps"))
+                // The frame rate goes into Roblox's Maximum Frame Rate, the setting Roblox actually honours, and into the
+                // flag as well in case Roblox allows it again; the flag wins over the same one in a profile. Both are
+                // written before Roblox starts, since that's the only time it reads them. Nothing to set: Roblox keeps
+                // its own limit (ClientAppSettings.json is rewritten every launch).
+                string link = msg.ContainsKey("link") ? msg["link"] as string : null;
+                bool toAppHome = !RobloxLink.IsLink(link);
+                int fps = LaunchFps(msg, toAppHome);
+                if (fps > 0)
                 {
-                    int target = Int(msg, "fpsTarget");
-                    int fps = target > 0 ? target : UncappedFps;
                     string value = fps.ToString(CultureInfo.InvariantCulture);
                     string fromProfile;
                     if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)
-                        Log.Write("Unlock FPS replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
+                        Log.Write("Frame rate setting replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
                     flags[FpsFlag] = value;
-                    Log.Write("Unlock FPS: " + (target > 0 ? "capped at " + target : "uncapped"));
+                    Log.Write(toAppHome && Bool(msg, "menuCap") ? "Cap menu: opening the Roblox app home at " + fps + " FPS"
+                        : fps == UncappedFps ? "Unlock FPS: uncapped" : "Unlock FPS: capped at " + fps);
                     Bootstrapper.SetFramerateCap(fps);
                 }
 
@@ -3333,8 +3346,7 @@ namespace Keystrap
                 if (multi && robloxSingleton == null) robloxSingleton = new Mutex(true, "ROBLOX_singletonMutex");
 
                 ReportProgress("Starting Roblox…", 0.99);
-                string link = msg.ContainsKey("link") ? msg["link"] as string : null;
-                Bootstrapper.Start(dir, RobloxLink.IsLink(link) ? link : null);
+                Bootstrapper.Start(dir, toAppHome ? null : link);
 
                 Post(new Dictionary<string, object> { { "type", "launch-done" } });
                 Post(new Dictionary<string, object>

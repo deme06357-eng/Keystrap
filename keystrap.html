@@ -805,6 +805,8 @@ html.native.shown .window { opacity: 1; }
             <label class="switch"><input type="checkbox" id="s-links" aria-label="Open Roblox links with Keystrap"><span></span></label></div>
           <div class="row"><div class="txt"><div class="t">Close Keystrap after Roblox starts</div><div class="d">With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.</div></div>
             <label class="switch"><input type="checkbox" id="s-close" aria-label="Close Keystrap after Roblox starts"><span></span></label></div>
+          <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
+            <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
         </div>
         <h2 class="sec">Discord</h2>
         <div class="rows">
@@ -1123,7 +1125,12 @@ const I18N_ES = {
     'Your language is remembered the next time you open Keystrap.': 'Tu idioma se recuerda la próxima vez que abras Keystrap.',
     'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.',
     'Settings now sits at the bottom of the sidebar.': 'Ajustes ahora está al final de la barra lateral.',
-    'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.': 'Desbloquear FPS vuelve a funcionar: Roblox ahora ignora el flag de fotogramas, así que Keystrap ajusta la Velocidad de fotogramas máxima en la propia configuración de Roblox.',
+    'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
+    'When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.':
+      'Cuando Keystrap abre la pantalla de inicio de Roblox, Roblox empieza a 60 FPS para que tu GPU vaya en silencio. Los enlaces de juegos de roblox.com siguen usando tu opción de Desbloquear FPS. Roblox solo lee esto al iniciarse, así que un juego al que entres desde la pantalla de inicio se queda en 60 FPS hasta que vuelvas a iniciarlo.',
+    'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.':
+      'Limitar el menú a 60 FPS en Ajustes: Roblox abre su pantalla de inicio a 60 FPS para que tu GPU vaya en silencio, y los enlaces de juegos mantienen tu opción de Desbloquear FPS.',
+    'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.':'Desbloquear FPS vuelve a funcionar: Roblox ahora ignora el flag de fotogramas, así que Keystrap ajusta la Velocidad de fotogramas máxima en la propia configuración de Roblox.',
     'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.': 'Si falta un archivo de WebView2, ahora se explica cómo solucionarlo en vez de enviar un informe de fallo, y los errores de los que Keystrap se recupera ya no se informan como fallos.'
   },
   patterns: [
@@ -1139,8 +1146,8 @@ const I18N_ES = {
     [/^Match monitor \((\d+) Hz\)$/, (tr, n) => 'Igual al monitor (' + n + ' Hz)'],
     [/^Capped at your monitor's refresh rate, (\d+) FPS\.$/, (tr, n) => 'Limitado a la frecuencia de tu monitor, ' + n + ' FPS.'],
     [/^Capped at (\d+) FPS\.$/, (tr, n) => 'Limitado a ' + n + ' FPS.'],
-    [/^(Unlock FPS|Multi-instance|Close after launch|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
-      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
+    [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
+      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
       ': ' + (on === 'on' ? 'activado' : 'desactivado')],
     [/^(.+) \(preview\)$/, (tr, t) => tr(t) + ' (vista previa)'],
     [/^Downloading Roblox \((.+)\)…$/, (tr, p) => 'Descargando Roblox (' + p + ')…'],
@@ -1196,7 +1203,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.6';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.7';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1206,7 +1213,8 @@ const I18N_ES = {
   const LANGS = [['English', 'English', 'en'], ['Español', 'Spanish', 'es'],['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
   const CHANGELOG = {
     Added: [
-      'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.'
+      'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
+      'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.'
     ],
     Changed: [
       'Your language is remembered the next time you open Keystrap.',
@@ -1234,7 +1242,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT },
+      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
         { name: 'DFIntCSGLevelOfDetailSwitchingDistance', value: '0', on: true },
@@ -1640,7 +1648,7 @@ const I18N_ES = {
     const flags = {};
     p.flags.forEach(f => { if (f.on) flags[f.name] = f.value; });
     host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: fpsTarget(), multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
-      link: typeof link === 'string' ? link : null, sky: state.settings.sky });
+      menuCap: !!state.settings.menuCap60, link: typeof link === 'string' ? link : null, sky: state.settings.sky });
   }
   function launchFinished(error) {
     setLaunching(false);
@@ -1953,6 +1961,7 @@ const I18N_ES = {
   function renderSettings() {
     renderDiscord();
     $('#s-close').checked = state.settings.closeAfterLaunch;
+    $('#s-menucap').checked = !!state.settings.menuCap60;
     $('#s-links').checked = state.settings.handleLinks;
     $('#linksDesc').textContent = !host
       ? 'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.'
@@ -1966,6 +1975,7 @@ const I18N_ES = {
     $('#logsDesc').textContent = 'Keystrap writes a log file for each day to ' + env.dataDir + '\\Logs.';
   }
   $('#s-close').addEventListener('change', e => { state.settings.closeAfterLaunch = e.target.checked; save(); toast('Close after launch ' + (e.target.checked ? 'on' : 'off')); });
+  $('#s-menucap').addEventListener('change', e => { state.settings.menuCap60 = e.target.checked; save(); toast('Menu FPS cap ' + (e.target.checked ? 'on' : 'off')); });
 
   // ---------- discord rich presence ----------
   $('#devWebhookTest').addEventListener('click', () => {
