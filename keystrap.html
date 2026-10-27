@@ -759,7 +759,7 @@ html.native.shown .window { opacity: 1; }
           <span id="flagProfileLabel">Editing flags for</span>
           <div class="dd" id="flagProfileDd">
             <button class="dd-btn" id="flagProfileBtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="flagProfileLabel flagProfileName">
-              <span id="flagProfileName">Main</span><svg class="ico chev"><use href="#i-chevron"/></svg>
+              <span id="flagProfileName" translate="no">Main</span><svg class="ico chev"><use href="#i-chevron"/></svg>
             </button>
             <div class="dd-menu" id="flagProfileMenu" role="listbox" aria-labelledby="flagProfileLabel" hidden></div>
           </div>
@@ -831,7 +831,7 @@ html.native.shown .window { opacity: 1; }
       <!-- LANGUAGE -->
       <section class="page" id="page-language">
         <h1>Language <span class="badge beta">Beta</span></h1>
-        <p class="sub">Translations are in progress. Keystrap shows English until a language is complete. Roblox itself follows your Roblox account's language.</p>
+        <p class="sub">Pick the language Keystrap uses. More languages are on the way. Roblox itself follows your Roblox account's language.</p>
         <div class="lang-grid" id="langGrid"></div>
       </section>
 
@@ -902,29 +902,312 @@ html.native.shown .window { opacity: 1; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
+// Spanish. The UI is written in English; with Spanish picked, each piece of text in the page is looked up here as it
+// renders (see "translation" in the script below). strings: exact English text. patterns: text with values in it,
+// tried in order; each gets tr (to translate a part, like "5 min ago") and the regex's groups.
+const I18N_ES = {
+  strings: {
+    // sidebar
+    'Roblox launcher': 'Launcher de Roblox',
+    'Play': 'Jugar', 'Profiles': 'Perfiles', 'Playtime': 'Tiempo de juego', 'Custom Skies': 'Cielos personalizados', 'Flags': 'Flags',
+    'Settings': 'Ajustes', 'Language': 'Idioma', 'Beta': 'Beta', 'ToS': 'Términos', 'Support': 'Soporte', 'About': 'Acerca de',
+    'Checking for Roblox updates…': 'Buscando actualizaciones de Roblox…',
+    'Preview · Roblox status shows in the app': 'Vista previa · el estado de Roblox se muestra en la app',
+    'Couldn\'t reach Roblox': 'No se pudo conectar con Roblox',
+    'Roblox downloads on first launch': 'Roblox se descarga en el primer inicio',
+    'Roblox update installs on next launch': 'La actualización de Roblox se instala en el próximo inicio',
+
+    // play
+    'Ready to launch': 'Listo para iniciar',
+    'Keystrap installs the latest Roblox if needed, applies this profile\'s flags, then starts Roblox.': 'Keystrap instala la última versión de Roblox si hace falta, aplica las flags de este perfil y luego inicia Roblox.',
+    'Launch Roblox': 'Iniciar Roblox', 'Launching…': 'Iniciando…',
+    'Open with the Roblox app instead': 'Abrir con la app de Roblox',
+    'Channel': 'Canal', 'Installed Roblox': 'Roblox instalado', 'Not installed': 'No instalado', 'Not installed yet': 'Aún no instalado',
+    'Flags on in this profile': 'Flags activas en este perfil',
+    'Quick options': 'Opciones rápidas',
+    'Unlock FPS': 'Desbloquear FPS',
+    'Uncapped: Roblox draws as many frames as your PC can.': 'Sin límite: Roblox dibuja tantos fotogramas como pueda tu PC.',
+    'Off: Roblox uses its own 60 FPS limit.': 'Desactivado: Roblox usa su propio límite de 60 FPS.',
+    'Keystrap couldn\'t read your monitor\'s refresh rate, so Roblox launches uncapped.': 'Keystrap no pudo leer la frecuencia de tu monitor, así que Roblox se inicia sin límite.',
+    'Uncapped': 'Sin límite', 'Match monitor': 'Igual al monitor', 'Custom cap': 'Límite personalizado',
+    'Frame rate limit': 'Límite de fotogramas', 'Custom frame rate cap in FPS': 'Límite de fotogramas personalizado en FPS',
+    'Use a cap between 30 and 1000 FPS.': 'Usa un límite entre 30 y 1000 FPS.',
+    'Multi-instance': 'Multiinstancia',
+    'Run more than one Roblox window. Keep Keystrap open while you play.': 'Abre más de una ventana de Roblox. Mantén Keystrap abierto mientras juegas.',
+    'Discord Rich Presence': 'Rich Presence de Discord',
+    'Show the game you\'re playing on your Discord profile.': 'Muestra el juego al que estás jugando en tu perfil de Discord.',
+    'On: your Discord profile shows the game you\'re playing.': 'Activado: tu perfil de Discord muestra el juego al que estás jugando.',
+    'Not launched with this profile yet': 'Aún no se ha iniciado con este perfil',
+    'Joining from the Roblox website…': 'Uniéndote desde la web de Roblox…',
+    'Starting…': 'Empezando…', 'Applying flags…': 'Aplicando flags…', 'Starting Roblox…': 'Iniciando Roblox…',
+    'Roblox is running': 'Roblox está en ejecución',
+    'Preview only: Roblox starts from the Keystrap app': 'Solo vista previa: Roblox se inicia desde la app de Keystrap',
+    'Roblox could not be started.': 'No se pudo iniciar Roblox.',
+    'Roblox is already starting. Try the Play button again in a moment.': 'Roblox ya se está iniciando. Vuelve a pulsar Jugar en un momento.',
+    // sent by the app while launching
+    'Checking Roblox\'s sky…': 'Comprobando el cielo de Roblox…', 'Applying your sky…': 'Aplicando tu cielo…',
+    'Reading Roblox\'s package list…': 'Leyendo la lista de paquetes de Roblox…',
+    'Couldn\'t reach Roblox to download it. Check your internet connection and try again.': 'No se pudo conectar con Roblox para descargarlo. Revisa tu conexión a internet y vuelve a intentarlo.',
+    'Couldn\'t download Roblox. Check your internet connection and try again.': 'No se pudo descargar Roblox. Revisa tu conexión a internet y vuelve a intentarlo.',
+    'Couldn\'t write Roblox\'s files. Close Roblox if it\'s running, then try again.': 'No se pudieron escribir los archivos de Roblox. Cierra Roblox si está abierto y vuelve a intentarlo.',
+    'Keystrap couldn\'t apply your custom sky, so Roblox starts with its usual sky.': 'Keystrap no pudo aplicar tu cielo personalizado, así que Roblox se inicia con su cielo habitual.',
+    'Roblox\'s package list is in an unknown format.': 'La lista de paquetes de Roblox tiene un formato desconocido.',
+    'The Roblox app isn\'t installed on this PC.': 'La app de Roblox no está instalada en este PC.',
+
+    // profiles
+    'A profile holds its own set of flags. Click a profile to rename it, change its colour, edit its flags or make it the one Keystrap launches with.': 'Cada perfil tiene su propio conjunto de flags. Haz clic en un perfil para cambiarle el nombre o el color, editar sus flags o hacer que Keystrap inicie con él.',
+    'Never launched': 'Nunca iniciado', 'Launches with this': 'Se inicia con este', 'New profile': 'Nuevo perfil', 'Edit profile': 'Editar perfil',
+    'Name': 'Nombre', 'Competitive': 'Competitivo', 'Colour': 'Color',
+    'Pick any colour': 'Elige cualquier color', 'Pick a custom colour': 'Elige un color personalizado', 'Profile colour hex code': 'Código hex del color del perfil',
+    'Custom profile colour': 'Color de perfil personalizado',
+    'Launch with this profile': 'Iniciar con este perfil',
+    'This is the profile Keystrap launches with.': 'Este es el perfil con el que se inicia Keystrap.',
+    'Keystrap applies this profile\'s flags when you press Launch.': 'Keystrap aplica las flags de este perfil cuando pulsas Iniciar.',
+    'Edit flags': 'Editar flags', 'Duplicate': 'Duplicar', 'Delete': 'Eliminar', 'Cancel': 'Cancelar', 'Create profile': 'Crear perfil', 'Save': 'Guardar',
+    'Use a hex colour like #FFD9FC.': 'Usa un color hex como #FFD9FC.',
+    'Enter a name for this profile.': 'Escribe un nombre para este perfil.',
+    'Another profile already uses that name.': 'Otro perfil ya usa ese nombre.',
+    'Profile saved': 'Perfil guardado',
+    'Keystrap needs at least one profile.': 'Keystrap necesita al menos un perfil.',
+    'Click again to delete': 'Haz clic otra vez para eliminar',
+
+    // playtime
+    'While Keystrap is open, it follows Roblox\'s logs and adds up the time you spend in each game. Visits to the same game are combined into one card, and your 10 most played games are shown.': 'Mientras Keystrap está abierto, sigue los registros de Roblox y suma el tiempo que pasas en cada juego. Las visitas al mismo juego se combinan en una sola tarjeta y se muestran tus 10 juegos más jugados.',
+    'Playing now': 'Jugando ahora', 'Adds to your totals when you leave the game.': 'Se suma a tus totales cuando sales del juego.',
+    'Total playtime': 'Tiempo total', 'Games': 'Juegos', 'Sessions': 'Sesiones',
+    'No playtime yet. Launch Roblox and join a game, and it appears here when you leave. Keystrap needs to be open while you play.': 'Aún no hay tiempo de juego. Inicia Roblox y entra a un juego; aparecerá aquí cuando salgas. Keystrap tiene que estar abierto mientras juegas.',
+    'Playtime is tracked by the Keystrap app on your PC.': 'El tiempo de juego lo registra la app de Keystrap en tu PC.',
+    'just now': 'justo ahora', 'yesterday': 'ayer',
+
+    // skies
+    'Replace the sky Roblox uses by default. Your choice is applied to Keystrap\'s copy of Roblox on every launch. Games that set their own sky keep theirs.': 'Reemplaza el cielo que Roblox usa por defecto. Tu elección se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cielo lo conservan.',
+    'Import custom sky': 'Importar cielo personalizado',
+    'To import a sky, choose its six images (PNG, JPG or BMP) or six .tex/.dds textures at once. Name them so the side is at the end: _bk, _dn, _ft, _lf, _rt and _up, or _back, _down, _front, _left, _right and _up.': 'Para importar un cielo, elige sus seis imágenes (PNG, JPG o BMP) o seis texturas .tex/.dds a la vez. Nómbralas de modo que el lado vaya al final: _bk, _dn, _ft, _lf, _rt y _up, o _back, _down, _front, _left, _right y _up.',
+    'Roblox Default': 'Predeterminado de Roblox', 'Galaxy Night': 'Noche galáctica', 'Anime Sunset': 'Atardecer anime',
+    'Realistic Blue Sky': 'Cielo azul realista', 'Void Black': 'Negro vacío',
+    'The sky Roblox ships with.': 'El cielo que trae Roblox.',
+    'Deep violet night with a dense star field.': 'Noche violeta intensa con un denso campo de estrellas.',
+    'Soft banded pinks and oranges with a low, glowing sun.': 'Franjas suaves de rosas y naranjas con un sol bajo y brillante.',
+    'Clear daytime sky with a hazy horizon and a bright sun.': 'Cielo diurno despejado con un horizonte brumoso y un sol brillante.',
+    'Striped retro sun over a neon grid.': 'Sol retro a rayas sobre una cuadrícula de neón.',
+    'Pure black in every direction.': 'Negro puro en todas direcciones.',
+    'Imported from your files.': 'Importado desde tus archivos.',
+    'Installed': 'Instalado', 'Apply': 'Aplicar', 'Applying…': 'Aplicando…', 'Delete this sky': 'Eliminar este cielo', 'Delete?': '¿Eliminar?',
+    'Imported. Click Apply on the new card to use it.': 'Importado. Haz clic en Aplicar en la nueva tarjeta para usarlo.',
+    'Preview only: skies are applied by the Keystrap app.': 'Solo vista previa: los cielos los aplica la app de Keystrap.',
+    'Wait for Roblox to finish starting, then try again.': 'Espera a que Roblox termine de iniciarse y vuelve a intentarlo.',
+    'Restoring Roblox\'s sky…': 'Restaurando el cielo de Roblox…',
+    'Sky deleted.': 'Cielo eliminado.', 'Importing works in the Keystrap app.': 'La importación funciona en la app de Keystrap.',
+    'It\'s applied when Keystrap installs Roblox on your next launch.': 'Se aplicará cuando Keystrap instale Roblox en tu próximo inicio.',
+    'Restart Roblox to see it.': 'Reinicia Roblox para verlo.',
+    'Importing your sky…': 'Importando tu cielo…',
+    'Wait for the current launch or sky change to finish.': 'Espera a que termine el inicio o el cambio de cielo actual.',
+    'Roblox is using its sky files. Close Roblox, then try again.': 'Roblox está usando sus archivos de cielo. Cierra Roblox y vuelve a intentarlo.',
+    'Keystrap couldn\'t apply that sky. Details are in the log.': 'Keystrap no pudo aplicar ese cielo. Los detalles están en el registro.',
+    'Keystrap couldn\'t import those files. Details are in the log.': 'Keystrap no pudo importar esos archivos. Los detalles están en el registro.',
+    'Couldn\'t delete that sky. Details are in the log.': 'No se pudo eliminar ese cielo. Los detalles están en el registro.',
+    'This sky\'s files are missing. Import it again.': 'Faltan los archivos de este cielo. Vuelve a importarlo.',
+    'This Roblox version has no sky files to replace.': 'Esta versión de Roblox no tiene archivos de cielo que reemplazar.',
+    'Roblox model files only point to images stored on Roblox\'s servers, which Keystrap can\'t download. Export the sky\'s six images and import those instead.': 'Los archivos de modelo de Roblox solo apuntan a imágenes guardadas en los servidores de Roblox, que Keystrap no puede descargar. Exporta las seis imágenes del cielo e impórtalas.',
+    'One of those files isn\'t an image Keystrap can read. Use PNG, JPG or BMP.': 'Uno de esos archivos no es una imagen que Keystrap pueda leer. Usa PNG, JPG o BMP.',
+    'Only imported skies can be deleted.': 'Solo se pueden eliminar los cielos importados.',
+    'Sky': 'Cielo',
+
+    // flags
+    'FastFlags change how the Roblox client behaves. Each profile has its own flags; edits save straight away and apply on the next launch with that profile.': 'Las FastFlags cambian cómo se comporta el cliente de Roblox. Cada perfil tiene sus propias flags; los cambios se guardan al instante y se aplican en el próximo inicio con ese perfil.',
+    'Editing flags for': 'Editando las flags de', 'Not the launch profile': 'No es el perfil de inicio',
+    'Search flags': 'Buscar flags', 'Add flag': 'Añadir flag', 'Import JSON': 'Importar JSON', 'Copy JSON': 'Copiar JSON',
+    'Type': 'Tipo', 'Value': 'Valor', 'On': 'Activa', 'Remove': 'Quitar', 'Turn flag on': 'Activar flag', 'Remove flag': 'Quitar flag',
+    'No flags match that search.': 'Ninguna flag coincide con esa búsqueda.',
+    'Use True or False.': 'Usa True o False.', 'Use a whole number.': 'Usa un número entero.',
+    'value': 'valor',
+    'That isn\'t a flag name. It should start with FFlag, FInt, FString or FLog (optionally with D in front).': 'Eso no es un nombre de flag. Debe empezar por FFlag, FInt, FString o FLog (opcionalmente con una D delante).',
+    'Enter a value.': 'Escribe un valor.',
+    'Import flags': 'Importar flags', 'Import': 'Importar',
+    'That isn\'t a JSON object. It should look like { "FlagName": "value" }.': 'Eso no es un objeto JSON. Debería verse así: { "FlagName": "value" }.',
+    'None of those entries are valid flags.': 'Ninguna de esas entradas es una flag válida.',
+    'The JSON has no flags in it.': 'El JSON no contiene flags.',
+    'Couldn\'t copy to the clipboard.': 'No se pudo copiar al portapapeles.',
+
+    // settings
+    'Appearance': 'Apariencia', 'Accent color': 'Color de acento',
+    'Used for buttons, toggles, the active tab marker, borders and highlights. Changes apply straight away.': 'Se usa en botones, interruptores, el marcador de la pestaña activa, bordes y resaltados. Los cambios se aplican al instante.',
+    'Reset': 'Restablecer', 'Accent color presets': 'Colores de acento predefinidos', 'Pick any color': 'Elige cualquier color',
+    'Pick a custom accent color': 'Elige un color de acento personalizado', 'Accent color hex code': 'Código hex del color de acento',
+    'Custom accent color': 'Color de acento personalizado',
+    'Cream': 'Crema', 'Mint': 'Menta', 'Lavender': 'Lavanda', 'Rose': 'Rosa', 'Peach': 'Durazno', 'Lime': 'Lima', 'Silver': 'Plata',
+    'That color is very dark, so Keystrap uses a lighter shade of it to keep text readable.': 'Ese color es muy oscuro, así que Keystrap usa un tono más claro para que el texto se lea bien.',
+    'Use a hex color like #7cc4fa.': 'Usa un color hex como #7cc4fa.', 'Accent color reset': 'Color de acento restablecido',
+    'Saturation and brightness': 'Saturación y brillo', 'Pick a color from the screen': 'Elige un color de la pantalla', 'Hue': 'Tono',
+    'Red': 'Rojo', 'Green': 'Verde', 'Blue': 'Azul',
+    'Launching': 'Inicio',
+    'Open Roblox links with Keystrap': 'Abrir enlaces de Roblox con Keystrap',
+    'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.': 'Los botones de Jugar en roblox.com inician Roblox a través de Keystrap, con las flags de tu perfil activo.',
+    'Keystrap couldn\'t take over Roblox links. Details are in the log.': 'Keystrap no pudo encargarse de los enlaces de Roblox. Los detalles están en el registro.',
+    'Roblox links open with the Roblox app. Turn this on to launch them through Keystrap.': 'Los enlaces de Roblox se abren con la app de Roblox. Activa esto para iniciarlos con Keystrap.',
+    'Roblox links now open with Keystrap': 'Los enlaces de Roblox ahora se abren con Keystrap',
+    'Roblox links open with the Roblox app again': 'Los enlaces de Roblox vuelven a abrirse con la app de Roblox',
+    'Keystrap couldn\'t change which app opens Roblox links. Details are in the log.': 'Keystrap no pudo cambiar qué app abre los enlaces de Roblox. Los detalles están en el registro.',
+    'Close Keystrap after Roblox starts': 'Cerrar Keystrap cuando Roblox se inicie',
+    'With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.': 'Con la multiinstancia activada, Keystrap se minimiza en su lugar para que las ventanas extra sigan funcionando. El tiempo de juego solo se registra mientras Keystrap está abierto.',
+    'Shows what you\'re doing in Keystrap and Roblox on your Discord profile.': 'Muestra lo que estás haciendo en Keystrap y Roblox en tu perfil de Discord.',
+    'Off. Turn it on to show what you\'re doing in Keystrap and Roblox on your Discord profile.': 'Desactivado. Actívalo para mostrar lo que haces en Keystrap y Roblox en tu perfil de Discord.',
+    'Add your Discord application ID below to turn it on.': 'Añade abajo el ID de tu aplicación de Discord para activarlo.',
+    'Discord isn\'t running. Keystrap connects as soon as it starts.': 'Discord no está abierto. Keystrap se conectará en cuanto se inicie.',
+    'Connecting to Discord…': 'Conectando con Discord…',
+    'Discord application ID': 'ID de aplicación de Discord',
+    'In the': 'En el', 'Discord Developer Portal': 'Portal para desarrolladores de Discord', ', create an application named': ', crea una aplicación llamada',
+    'so your status reads "Playing Roblox". Under Rich Presence → Art Assets, upload the Keystrap logo with the name': 'para que tu estado diga "Jugando a Roblox". En Rich Presence → Art Assets, sube el logo de Keystrap con el nombre',
+    '. Then paste the Application ID here.': '. Después pega aquí el Application ID.',
+    'An application ID is a 17 to 20 digit number from the Discord Developer Portal.': 'Un ID de aplicación es un número de 17 a 20 dígitos del Portal para desarrolladores de Discord.',
+    'Storage': 'Almacenamiento', 'Downloaded Roblox versions': 'Versiones de Roblox descargadas', 'Calculating…': 'Calculando…', 'Clear': 'Borrar',
+    'Nothing downloaded yet.': 'Aún no se ha descargado nada.',
+    'Shows the size of Keystrap\'s Roblox downloads in the app.': 'Muestra en la app el tamaño de las descargas de Roblox de Keystrap.',
+    'Click again to clear': 'Haz clic otra vez para borrar', 'Nothing to clear': 'No hay nada que borrar',
+    'Downloaded Roblox versions cleared': 'Versiones de Roblox descargadas borradas',
+    'Some files are in use. Close Roblox, then try again.': 'Algunos archivos están en uso. Cierra Roblox y vuelve a intentarlo.',
+    'Wait for the launch to finish first.': 'Espera a que termine el inicio.',
+    'Available in the Keystrap app': 'Disponible en la app de Keystrap',
+    'Logs': 'Registros', 'Keystrap writes a log file for each day.': 'Keystrap escribe un archivo de registro cada día.', 'Open logs folder': 'Abrir carpeta de registros',
+    'Send crash reports': 'Enviar informes de errores',
+    'If Keystrap crashes, it sends the error, the Keystrap version and your active profile\'s name to the developers. Your Windows user name and folders are removed first.': 'Si Keystrap falla, envía el error, la versión de Keystrap y el nombre de tu perfil activo a los desarrolladores. Antes se eliminan tu nombre de usuario de Windows y tus carpetas.',
+    'Keystrap couldn\'t save your settings. Details are in the log.': 'Keystrap no pudo guardar tus ajustes. Los detalles están en el registro.',
+    'Test notifications': 'Notificaciones de prueba', 'Developer': 'Desarrollador', 'Send test notifications': 'Enviar notificaciones de prueba', 'Sending…': 'Enviando…',
+    'Sends one sample of each category (minor and major update, fix and crash) to the developers\' Discord webhook, to check the formatting.': 'Envía una muestra de cada categoría (actualización, corrección y fallo, menores y mayores) al webhook de Discord de los desarrolladores para comprobar el formato.',
+
+    // language
+    'Pick the language Keystrap uses. More languages are on the way. Roblox itself follows your Roblox account\'s language.': 'Elige el idioma de Keystrap. Hay más idiomas en camino. Roblox sigue el idioma de tu cuenta de Roblox.',
+    'Complete': 'Completo', 'Not translated yet': 'Aún sin traducir',
+    'English': 'Inglés', 'Spanish': 'Español', 'Portuguese': 'Portugués', 'French': 'Francés', 'German': 'Alemán', 'Russian': 'Ruso', 'Polish': 'Polaco',
+    'Turkish': 'Turco', 'Vietnamese': 'Vietnamita', 'Japanese': 'Japonés', 'Korean': 'Coreano', 'Chinese (Simplified)': 'Chino (simplificado)',
+
+    // terms
+    'Terms of Service': 'Términos del servicio', 'Last updated 24 October 2026': 'Última actualización: 24 de octubre de 2026',
+    '1. What Keystrap is': '1. Qué es Keystrap',
+    'Keystrap is an independent, open-source launcher for Roblox. It is not made by, affiliated with, or endorsed by Roblox Corporation.': 'Keystrap es un launcher independiente y de código abierto para Roblox. No está creado, afiliado ni respaldado por Roblox Corporation.',
+    '2. Downloading Roblox': '2. Descarga de Roblox',
+    'Keystrap downloads the Roblox client directly from Roblox\'s own servers, checks each file against Roblox\'s published checksums, and keeps it in its own folder.': 'Keystrap descarga el cliente de Roblox directamente desde los servidores de Roblox, comprueba cada archivo con las sumas de verificación que publica Roblox y lo guarda en su propia carpeta.',
+    '3. Your account': '3. Tu cuenta',
+    'Keystrap never asks for your Roblox password and never reads your login cookie. You remain bound by the Roblox Terms of Use while playing.': 'Keystrap nunca te pide la contraseña de Roblox ni lee tu cookie de inicio de sesión. Mientras juegas, sigues sujeto a los Términos de uso de Roblox.',
+    '4. Flags': '4. Flags',
+    'FastFlags are applied at your own risk. Roblox may change, ignore or remove any flag without notice, and some games may behave differently.': 'Las FastFlags se aplican bajo tu propia responsabilidad. Roblox puede cambiar, ignorar o eliminar cualquier flag sin previo aviso, y algunos juegos pueden comportarse de otra forma.',
+    '5. Data': '5. Datos',
+    'Profiles, settings and logs are stored only on your computer. Keystrap sends the developers\' Discord only these:': 'Los perfiles, los ajustes y los registros se guardan solo en tu computadora. Keystrap solo envía esto al Discord de los desarrolladores:',
+    'A suggestion, when you submit one from the Support page: its text, your Windows user name and the Keystrap version.': 'Una sugerencia, cuando envías una desde la página de Soporte: su texto, tu nombre de usuario de Windows y la versión de Keystrap.',
+    'A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile\'s name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.': 'Un informe de errores, si Keystrap falla: el error y sus detalles técnicos, la versión de Keystrap, el nombre de tu perfil activo, tu versión de Windows y la hora. Antes se eliminan tu nombre de usuario de Windows y las rutas de carpetas. Puedes desactivar los informes de errores en Ajustes.',
+    '6. No warranty': '6. Sin garantía',
+    'Keystrap is provided as is, without warranty of any kind.': 'Keystrap se ofrece tal cual, sin garantía de ningún tipo.',
+
+    // support
+    'Have an idea, or found something broken? Tell the developers. Keystrap fixes spelling and grammar and lays your message out clearly before sending it.': '¿Tienes una idea o encontraste algo que no funciona? Cuéntaselo a los desarrolladores. Keystrap corrige la ortografía y la gramática y ordena tu mensaje antes de enviarlo.',
+    'Your suggestion or feedback': 'Tu sugerencia o comentario',
+    'e.g. it would be cool if keystrap could remember the last server i joined': 'p. ej. estaría genial que keystrap recordara el último servidor al que entré',
+    'Sent with your Windows user name and the Keystrap version.': 'Se envía con tu nombre de usuario de Windows y la versión de Keystrap.',
+    'Submit Suggestion': 'Enviar sugerencia', 'Polishing and sending…': 'Puliendo y enviando…',
+    'Write a little more so the developers know what you mean.': 'Escribe un poco más para que los desarrolladores entiendan lo que quieres decir.',
+    'You just sent a suggestion. Wait a minute before sending another.': 'Acabas de enviar una sugerencia. Espera un minuto antes de enviar otra.',
+    'The suggestion box isn\'t set up in this build of Keystrap.': 'El buzón de sugerencias no está configurado en esta versión de Keystrap.',
+    'The suggestion box is busy right now. Wait a minute and try again.': 'El buzón de sugerencias está ocupado. Espera un minuto y vuelve a intentarlo.',
+    'Couldn\'t reach the suggestion box. Check your internet connection and try again.': 'No se pudo conectar con el buzón de sugerencias. Revisa tu conexión a internet y vuelve a intentarlo.',
+    'Keystrap couldn\'t send your suggestion. Details are in the log.': 'Keystrap no pudo enviar tu sugerencia. Los detalles están en el registro.',
+    'Your suggestion couldn\'t be sent.': 'No se pudo enviar tu sugerencia.',
+    'Suggestion sent': 'Sugerencia enviada',
+    'Your suggestion was polished and sent to the developers. Thanks for helping make Keystrap better.': 'Tu sugerencia se pulió y se envió a los desarrolladores. Gracias por ayudar a mejorar Keystrap.',
+    'Summary': 'Resumen', 'Polished suggestion': 'Sugerencia pulida', 'Why it helps': 'Por qué ayuda', 'Done': 'Listo',
+    'Feedback': 'Comentario', 'Bug report': 'Informe de error', 'Feature request': 'Petición de función', 'General feedback': 'Comentario general',
+
+    // about + what's new
+    'Data folder': 'Carpeta de datos', 'License': 'Licencia', 'What\'s new': 'Novedades',
+    'Added': 'Añadido', 'Fixed': 'Corregido', 'Changed': 'Cambiado', 'Got it': 'Entendido',
+    'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.': 'Keystrap en español: elige Español en la página Idioma y todo cambia al instante, incluidos los menús, los diálogos y los mensajes.',
+    'Your language is remembered the next time you open Keystrap.': 'Tu idioma se recuerda la próxima vez que abras Keystrap.',
+    'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.'
+  },
+  patterns: [
+    // times (from ago())
+    [/^(\d+) min ago$/, (tr, n) => 'hace ' + n + ' min'],
+    [/^(\d+) hours? ago$/, (tr, n) => 'hace ' + n + (n === '1' ? ' hora' : ' horas')],
+    [/^(\d+) days ago$/, (tr, n) => 'hace ' + n + ' días'],
+    [/^Last launched with this profile (.+)$/, (tr, t) => 'Último inicio con este perfil: ' + tr(t)],
+    [/^Launched (.+)$/, (tr, t) => 'Iniciado ' + tr(t)],
+    // sidebar, play
+    [/^Roblox (.*) · up to date$/, (tr, v) => 'Roblox ' + v + ' · actualizado'],
+    [/^Profile · (.+)$/, (tr, n) => 'Perfil · ' + n],
+    [/^Match monitor \((\d+) Hz\)$/, (tr, n) => 'Igual al monitor (' + n + ' Hz)'],
+    [/^Capped at your monitor's refresh rate, (\d+) FPS\.$/, (tr, n) => 'Limitado a la frecuencia de tu monitor, ' + n + ' FPS.'],
+    [/^Capped at (\d+) FPS\.$/, (tr, n) => 'Limitado a ' + n + ' FPS.'],
+    [/^(Unlock FPS|Multi-instance|Close after launch|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
+      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
+      ': ' + (on === 'on' ? 'activado' : 'desactivado')],
+    [/^(.+) \(preview\)$/, (tr, t) => tr(t) + ' (vista previa)'],
+    [/^Downloading Roblox \((.+)\)…$/, (tr, p) => 'Descargando Roblox (' + p + ')…'],
+    [/^Extracting (.+)…$/, (tr, p) => 'Extrayendo ' + p + '…'],
+    [/^The download finished, but (.+) is missing from it\.$/, (tr, f) => 'La descarga terminó, pero falta ' + f + '.'],
+    [/^Roblox returned an unexpected version: (.+)$/, (tr, v) => 'Roblox devolvió una versión inesperada: ' + v],
+    // profiles
+    [/^(\d+) flags? on$/, (tr, n) => n + (n === '1' ? ' flag activa' : ' flags activas')],
+    [/^(\d+) total$/, (tr, n) => n + ' en total'],
+    [/^(\d+) on, (\d+) total$/, (tr, a, b) => a + ' activas, ' + b + ' en total'],
+    [/^Preset (\d+)$/, (tr, n) => 'Predefinido ' + n],
+    [/^Profile "(.+)" created$/, (tr, n) => 'Perfil "' + n + '" creado'],
+    [/^Profile "(.+)" deleted$/, (tr, n) => 'Perfil "' + n + '" eliminado'],
+    [/^Duplicated as "(.+)"$/, (tr, n) => 'Duplicado como "' + n + '"'],
+    // playtime
+    [/^(\d+) sessions? · last played (.+)$/, (tr, n, t) => n + (n === '1' ? ' sesión' : ' sesiones') + ' · última vez ' + tr(t)],
+    [/^Open (.+) on Roblox$/, (tr, g) => 'Abrir ' + g + ' en Roblox'],
+    [/^(.+) and (\d+) more$/, (tr, g, n) => g + ' y ' + n + ' más'],
+    // skies
+    [/^Preview of (.+)$/, (tr, n) => 'Vista previa de ' + tr(n)],
+    [/^Delete (.+)$/, (tr, n) => 'Eliminar ' + tr(n)],
+    [/^(.+?) is installed\.(?: (.+))?$/, (tr, n, note) => tr(n) + ' está instalado.' + (note ? ' ' + tr(note) : '')],
+    [/^Rendering (.+) \((.+)\)…$/, (tr, n, side) => 'Renderizando ' + tr(n) + ' (' + side + ')…'],
+    [/^Choose all six sky images, named so their side is at the end, like sky_bk, sky_dn, sky_ft, sky_lf, sky_rt and sky_up \(back, down, front, left, right and up also work\)\. Missing: (.+)\.$/, (tr, m) =>
+      'Elige las seis imágenes del cielo, nombradas de modo que el lado vaya al final, como sky_bk, sky_dn, sky_ft, sky_lf, sky_rt y sky_up (también sirven back, down, front, left, right y up). Faltan: ' + m + '.'],
+    // flags
+    [/^No flags in (.+) yet\. Add one, or import a ClientAppSettings\.json\.$/, (tr, n) => n + ' aún no tiene flags. Añade una o importa un ClientAppSettings.json.'],
+    [/^Adds to (.+)\. Names start with FFlag, DFFlag, FInt, DFInt, FString, DFString, FLog or DFLog\.$/, (tr, n) => 'Se añade a ' + n + '. Los nombres empiezan por FFlag, DFFlag, FInt, DFInt, FString, DFString, FLog o DFLog.'],
+    [/^(.+) already has this flag\. Change its value in the list\.$/, (tr, n) => n + ' ya tiene esta flag. Cambia su valor en la lista.'],
+    [/^Paste a ClientAppSettings\.json\. Flags are added to (.+) and switched on; flags it already has get the new value\.$/, (tr, n) => 'Pega un ClientAppSettings.json. Las flags se añaden a ' + n + ' y se activan; las que ya tiene reciben el nuevo valor.'],
+    [/^Added (\S+) to (.+)$/, (tr, f, n) => 'Se añadió ' + f + ' a ' + n],
+    [/^Removed (\S+)$/, (tr, f) => 'Se quitó ' + f],
+    [/^(\d+) added, (\d+) updated(?:, (\d+) skipped)?$/, (tr, a, u, s) => a + ' añadidas, ' + u + ' actualizadas' + (s ? ', ' + s + ' omitidas' : '')],
+    [/^Copied (\d+) flags$/, (tr, n) => 'Se copiaron ' + n + ' flags'],
+    [/^(\w+): (Use .+)$/, (tr, f, m) => f + ': ' + tr(m)],
+    // settings
+    [/^(.+) in (.+)\\Versions\. Roblox downloads again on the next launch\.$/, (tr, size, dir) => size + ' en ' + dir + '\\Versions. Roblox se volverá a descargar en el próximo inicio.'],
+    [/^Keystrap writes a log file for each day to (.+)\.$/, (tr, dir) => 'Keystrap escribe un archivo de registro cada día en ' + dir + '.'],
+    [/^Couldn't open the logs folder: (.+)$/, (tr, e) => 'No se pudo abrir la carpeta de registros: ' + e],
+    [/^Connected to Discord(?: as (.+?))?\. Your status follows what you're doing\.$/, (tr, u) => 'Conectado a Discord' + (u ? ' como ' + u : '') + '. Tu estado sigue lo que estás haciendo.'],
+    [/^Discord didn't accept that application ID(?: \((.+)\))?\. Check it and paste it again\.$/, (tr, d) => 'Discord no aceptó ese ID de aplicación' + (d ? ' (' + d + ')' : '') + '. Revísalo y vuelve a pegarlo.'],
+    [/^(\d+) of (\d+) test notifications sent(?: \(last error: (.+)\))?\.$/, (tr, a, b, e) => a + ' de ' + b + ' notificaciones de prueba enviadas' + (e ? ' (último error: ' + e + ')' : '') + '.'],
+    [/^(\w+) \(default\)$/, (tr, n) => tr(n) + ' (predeterminado)'],
+    [/^Custom color (#[0-9a-f]{6})$/, (tr, h) => 'Color personalizado ' + h],
+    // support, about
+    [/^The suggestion box didn't accept the message \(error (\d+)\)\. Try again later\.$/, (tr, n) => 'El buzón de sugerencias no aceptó el mensaje (error ' + n + '). Inténtalo más tarde.'],
+    [/^(v[\d.]+) · build (.+)$/, (tr, v, b) => v + ' · compilación ' + b],
+    [/^What's new in (.+)$/, (tr, v) => 'Novedades de ' + v]
+  ]
+};
+</script>
+
+<script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1';   // keep in step with AppInfo.Version in app/Program.cs
+  const APP_VERSION = 'v1.2';   // keep in step with AppInfo.Version in app/Program.cs
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const COLORS = [['#fffcc7', '#fffba6'], ['#6ee7b7', '#3b9fd6'], ['#c4b5fd', '#818cf8'], ['#fda4af', '#fb7185'], ['#fdba74', '#f59e0b'], ['#e5e7eb', '#9ca3af']];
-  const LANGS = [['English', 'English', true], ['Español', 'Spanish'], ['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
+  // [name in the language itself, English name, code once it's translated]
+  const LANGS = [['English', 'English', 'en'], ['Español', 'Spanish', 'es'],['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
   const CHANGELOG = {
     Added: [
-      'Keystrap can update itself: Keystrap.Updater.exe downloads the newest release, swaps the files and reopens Keystrap.',
-      'A loading screen with live status while Keystrap starts.',
-      'Playtime shows your 10 most played games. The totals still count every game.'
-    ],
-    Fixed: [
-      'Keystrap starts about 2 seconds faster.',
-      'Keystrap.exe no longer crashes when it\'s copied somewhere without its DLLs.'
+      'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.'
     ],
     Changed: [
-      '"Experiences" are now called "Games" everywhere.',
-      'A cleaner, more compact updater window.',
-      'Crash reports use a tidier format.'
+      'Your language is remembered the next time you open Keystrap.',
+      'The Language page shows which languages are complete.'
     ]
   };
 
@@ -1228,7 +1511,7 @@ html.native.shown .window { opacity: 1; }
     const top = games[0].seconds || 1;
     grid.innerHTML = games.slice(0, 10).map((g, i) =>
       '<a class="card pt-card" href="https://www.roblox.com/games/' + encodeURIComponent(g.placeId) + '" target="_blank" title="Open ' + esc(g.title) + ' on Roblox">' +
-      '<div class="top"><span class="pt-rank">#' + (i + 1) + '</span><span class="pt-title">' + esc(g.title) + '</span></div>' +
+      '<div class="top"><span class="pt-rank">#' + (i + 1) + '</span><span class="pt-title" translate="no">' + esc(g.title) + '</span></div>' +
       '<div class="pt-time">' + fmtDuration(g.seconds) + '</div>' +
       '<div class="pt-bar"><i style="transform:scaleX(' + Math.max(0.02, g.seconds / top).toFixed(3) + ')"></i></div>' +
       '<div class="pt-meta">' + g.sessions + (g.sessions === 1 ? ' session' : ' sessions') + ' · last played ' + ago(g.lastPlayed) + '</div></a>').join('');
@@ -1391,7 +1674,7 @@ html.native.shown .window { opacity: 1; }
       card.style.cssText = profileVars(p);
       card.innerHTML =
         '<div class="top"><div class="avatar" style="' + avatarStyle(p) + '">' + esc(p.name.charAt(0).toUpperCase() || '?') + '</div>' +
-        '<div style="min-width:0"><div class="t">' + esc(p.name) + '</div><div class="meta">' +
+        '<div style="min-width:0"><div class="t" translate="no">' + esc(p.name) + '</div><div class="meta">' +
         (p.lastUsed ? 'Launched ' + ago(p.lastUsed) : 'Never launched') + '</div></div></div>' +
         '<div class="chips">' + (isActive ? '<span class="chip on">Launches with this</span>' : '') +
         '<span class="chip">' + on + (on === 1 ? ' flag on' : ' flags on') + '</span>' +
@@ -1518,7 +1801,7 @@ html.native.shown .window { opacity: 1; }
     $('#flagProfileName').textContent = p.name;
     $('#flagProfileMenu').innerHTML = state.profiles.map(x =>
       '<button class="dd-opt" role="option" data-id="' + esc(x.id) + '" aria-selected="' + (x.id === p.id) + '">' +
-      '<span class="sw" style="' + avatarStyle(x) + '"></span><span class="nm">' + esc(x.name) + '</span>' +
+      '<span class="sw" style="' + avatarStyle(x) + '"></span><span class="nm" translate="no">' + esc(x.name) + '</span>' +
       '<svg class="ico"><use href="#i-check"/></svg></button>').join('');
     const note = $('#flagActiveNote');
     note.textContent = p.id === state.activeProfile ? 'Launches with this' : 'Not the launch profile';
@@ -1534,8 +1817,8 @@ html.native.shown .window { opacity: 1; }
       const kind = flagKind(f.name) || 'String';
       const tr = document.createElement('tr');
       tr.innerHTML =
-        '<td><span class="kind ' + kind + '">' + kind + '</span></td>' +
-        '<td class="name"></td>' +
+        '<td><span class="kind ' + kind + '" translate="no">' + kind + '</span></td>' +
+        '<td class="name" translate="no"></td>' +
         '<td><input class="input val-input" aria-label="Value"></td>' +
         '<td><label class="switch"><input type="checkbox" aria-label="Turn flag on"' + (f.on ? ' checked' : '') + '><span></span></label></td>' +
         '<td><button class="btn ghost icon" aria-label="Remove flag" title="Remove flag"><svg class="ico"><use href="#i-x"/></svg></button></td>';
@@ -1957,15 +2240,80 @@ html.native.shown .window { opacity: 1; }
     const grid = $('#langGrid');
     grid.innerHTML = '';
     LANGS.forEach((l, i) => {
-      const ok = !!l[2];
+      const code = l[2], ok = !!code;
       const lab = document.createElement('label');
       lab.className = 'card lang ' + (ok ? 'ok' : 'off');
-      lab.innerHTML = '<input class="radio" type="radio" name="lang" id="lang-' + i + '"' + (ok ? '' : ' disabled') + (ok && state.settings.language === 'en' ? ' checked' : '') + '>' +
-        '<span class="native"></span><span class="note">' + (ok ? 'Complete' : 'Not translated yet') + '</span>';
+      lab.innerHTML = '<input class="radio" type="radio" name="lang" id="lang-' + i + '"' + (ok ? '' : ' disabled') + (ok && state.settings.language === code ? ' checked' : '') + '>' +
+        '<span class="native" translate="no"></span><span class="note">' + (ok ? 'Complete' : 'Not translated yet') + '</span>';
       lab.querySelector('.native').textContent = l[0];
       lab.title = l[1];
+      if (ok) lab.querySelector('input').addEventListener('change', () => {
+        setLanguage(code);
+        save(); renderAll();
+        toast(code === 'es' ? 'Keystrap está en español' : 'Keystrap is in English');
+      });
       grid.appendChild(lab);
     });
+  }
+
+  // ---------- translation ----------
+  // The page is written in English. With another language picked, every piece of text (and the placeholder, title
+  // and aria-label attributes) is looked up in that language's strings as it appears, so render code stays English.
+  // Text inside translate="no" (names in their own language) is left alone.
+  const PACKS = { es: I18N_ES };
+  const T_ATTRS = ['placeholder', 'title', 'aria-label'];
+  let lang = 'en';
+  const textEn = new WeakMap(), textOut = new WeakMap();   // text node -> its English text / what we wrote into it
+  const attrEn = new WeakMap(), attrOut = new WeakMap();   // element -> { attribute: English / what we wrote }
+  function tr(s) {
+    const pack = PACKS[lang];
+    if (!pack) return s;
+    const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s), core = m[2];
+    if (!core) return s;
+    let out = pack.strings[core];
+    if (out == null) for (const [re, fn] of pack.patterns) { const r = re.exec(core); if (r) { out = fn(tr, ...r.slice(1)); break; } }
+    return out == null ? s : m[1] + out + m[3];
+  }
+  const skip = el => !!el.closest('script, style, textarea, code, [translate="no"]');
+  function trText(n) {
+    if (!n.parentElement || skip(n.parentElement)) return;
+    // Text we wrote ourselves is already translated; anything else is new English from the render code.
+    const en = textOut.get(n) === n.data && textEn.has(n) ? textEn.get(n) : n.data;
+    const out = tr(en);
+    textEn.set(n, en); textOut.set(n, out);
+    if (out !== n.data) n.data = out;
+  }
+  function trAttr(el, a) {
+    const v = el.getAttribute(a);
+    if (v == null || el.closest('[translate="no"]')) return;
+    const en0 = attrEn.get(el) || {}, out0 = attrOut.get(el) || {};
+    const en = out0[a] === v && a in en0 ? en0[a] : v;
+    const out = tr(en);
+    en0[a] = en; out0[a] = out;
+    attrEn.set(el, en0); attrOut.set(el, out0);
+    if (out !== v) el.setAttribute(a, out);
+  }
+  function trTree(root) {
+    if (root.nodeType === 3) { trText(root); return; }
+    if (root.nodeType !== 1) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n; (n = walker.nextNode());) trText(n);
+    [root].concat($$('[placeholder], [title], [aria-label]', root)).forEach(el => T_ATTRS.forEach(a => { if (el.hasAttribute && el.hasAttribute(a)) trAttr(el, a); }));
+  }
+  // Catches whatever the render code writes, before it's painted.
+  new MutationObserver(list => {
+    if (lang === 'en') return;
+    list.forEach(m => {
+      if (m.type === 'childList') m.addedNodes.forEach(trTree);
+      else if (m.type === 'characterData') trText(m.target);
+      else trAttr(m.target, m.attributeName);
+    });
+  }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: T_ATTRS });
+  function setLanguage(code) {
+    lang = PACKS[code] ? code : 'en';
+    state.settings.language = lang;
+    document.documentElement.lang = lang;
+    trTree(document.body);   // in English this puts back the original text
   }
 
   // ---------- support: suggestion box ----------
@@ -2011,7 +2359,7 @@ html.native.shown .window { opacity: 1; }
 
   // ---------- about + changelog ----------
   function renderAbout() {
-    $('#aboutVer').textContent = APP_VERSION + ' · build 2026.10.25';
+    $('#aboutVer').textContent = APP_VERSION + ' · build 2026.10.27';
     $('#aboutRoblox').textContent = env.installed ? (env.installed.version || '') + ' (' + env.installed.guid + ')' : 'Not installed yet';
     $('#aboutData').textContent = env.dataDir;
   }
@@ -2058,6 +2406,7 @@ html.native.shown .window { opacity: 1; }
     let tab = '';
     try { tab = localStorage.getItem('keystrap-tab') || ''; } catch (e) {}
     updateAccentColor(state.settings.accent); // before the UI fades in, so the default never flashes
+    setLanguage(state.settings.language);
     renderAll();
     go(tab || 'play');
     if (state.lastSeenChangelog !== APP_VERSION) openChangelog();

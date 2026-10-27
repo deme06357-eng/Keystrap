@@ -30,8 +30,8 @@ using Shape = System.Windows.Shapes.Path;
 
 [assembly: AssemblyTitle("Keystrap Updater")]
 [assembly: AssemblyProduct("Keystrap")]
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
 [assembly: AssemblyInformationalVersion(Keystrap.Updater.Config.Version)]
 
 namespace Keystrap.Updater
@@ -41,7 +41,7 @@ namespace Keystrap.Updater
         // The GitHub repository releases are published to, as "owner/name". Must be public: the updater doesn't sign in.
         // Empty means no update source is set up.
         public const string ReleaseRepo = "k1tt8/Keystrap";
-        public const string Version = "v1.1";   // keep in step with AppInfo.Version in Program.cs
+        public const string Version = "v1.2";   // keep in step with AppInfo.Version in Program.cs
         public const string UserAgent = "Keystrap-Updater/" + Version;
     }
 
