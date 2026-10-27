@@ -1124,7 +1124,8 @@ const I18N_ES = {
     'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.',
     'Settings now sits at the bottom of the sidebar.': 'Ajustes ahora está al final de la barra lateral.',
     'Unlock FPS also lifts the Maximum Frame Rate set in Roblox\'s own menu, so Uncapped really is uncapped.': 'Desbloquear FPS también quita la Velocidad de fotogramas máxima del menú de Roblox, así que Sin límite de verdad no tiene límite.',
-    'Unlock FPS now wins over a frame rate flag in your profile, so an imported flag list can\'t put the 60 FPS cap back.': 'Desbloquear FPS ahora tiene prioridad sobre el flag de fotogramas de tu perfil, así que una lista de flags importada no puede volver a poner el límite de 60 FPS.'
+    'Unlock FPS now wins over a frame rate flag in your profile, so an imported flag list can\'t put the 60 FPS cap back.': 'Desbloquear FPS ahora tiene prioridad sobre el flag de fotogramas de tu perfil, así que una lista de flags importada no puede volver a poner el límite de 60 FPS.',
+    'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.': 'Si falta un archivo de WebView2, ahora se explica cómo solucionarlo en vez de enviar un informe de fallo, y los errores de los que Keystrap se recupera ya no se informan como fallos.'
   },
   patterns: [
     // times (from ago())
@@ -1196,7 +1197,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.5';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1215,7 +1216,8 @@ const I18N_ES = {
     ],
     Fixed: [
       'Unlock FPS also lifts the Maximum Frame Rate set in Roblox\'s own menu, so Uncapped really is uncapped.',
-      'Unlock FPS now wins over a frame rate flag in your profile, so an imported flag list can\'t put the 60 FPS cap back.'
+      'Unlock FPS now wins over a frame rate flag in your profile, so an imported flag list can\'t put the 60 FPS cap back.',
+      'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.'
     ]
   };
 

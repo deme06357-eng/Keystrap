@@ -168,9 +168,10 @@ namespace Keystrap
     }
 
     // Crash reporting: an error nothing else caught is logged, sent to the developers' Discord (unless the user turned
-    // crash reports off in Settings), and explained in a dark crash dialog; then Keystrap closes. Reports carry the error,
-    // stack trace, Keystrap version, active profile name, Windows version and time. Paths are masked so the Windows
-    // user name doesn't leave the PC.
+    // crash reports off in Settings), and explained in a dark crash dialog; then Keystrap closes. Only these crashes are
+    // reported: errors Keystrap survives are just logged, and a missing WebView2 file gets a how-to-fix message instead.
+    // Reports carry the error, stack trace, Keystrap version, active profile name, Windows version and time. Paths are
+    // masked so the Windows user name doesn't leave the PC.
     static class CrashReporter
     {
         static readonly TimeSpan SendTimeout = TimeSpan.FromSeconds(6);
@@ -178,7 +179,6 @@ namespace Keystrap
         public static volatile bool Enabled = true;      // Settings → Send crash reports
         public static volatile string Profile;           // active profile name, kept up to date by the page
         static int fatalHandled;
-        static int nonFatalSent;
 
         // Runs synchronously on the thread that crashed: the report is posted (or times out) before the dialog opens,
         // and the process only exits after both, so the HTTP request always has the chance to finish.
@@ -188,6 +188,16 @@ namespace Keystrap
             try
             {
                 Log.Write("Crash (" + where + "): " + ex);
+                string missing = MissingWebView2File(ex);
+                if (missing != null)
+                {
+                    // Not a bug in Keystrap: a file it needs is missing or blocked on this PC. Say how to fix it, report nothing.
+                    MessageBox.Show("Keystrap couldn't load " + missing + ", a file it needs to run.\r\n\r\n" +
+                            "Download Keystrap again and unzip the whole folder, keeping its files together. If your antivirus " +
+                            "removed the file, restore it or allow Keystrap, then start it again.",
+                        "Keystrap", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 bool sent = Enabled && Send(ex, where, true);
                 ShowDialog(ex, sent);
             }
@@ -195,11 +205,28 @@ namespace Keystrap
             finally { Environment.Exit(1); }
         }
 
-        // Faulted tasks nobody awaited: worth knowing about, but Keystrap keeps running. At most 3 reports per run.
+        // Faulted tasks nobody awaited: Keystrap keeps running, so this is only logged, never reported.
         public static void NonFatal(Exception ex, string where)
         {
             Log.Write("Unobserved error (" + where + "): " + ex);
-            if (Enabled && Interlocked.Increment(ref nonFatalSent) <= 3) Send(ex, where, false);
+        }
+
+        // The WebView2 file behind a load failure ("Microsoft.Web.WebView2.WinForms"), or null for any other error.
+        static string MissingWebView2File(Exception ex)
+        {
+            for (Exception e = ex; e != null; e = e.InnerException)
+            {
+                string file = e is FileNotFoundException ? ((FileNotFoundException)e).FileName
+                    : e is FileLoadException ? ((FileLoadException)e).FileName
+                    : e is BadImageFormatException ? ((BadImageFormatException)e).FileName
+                    : e is DllNotFoundException ? e.Message
+                    : null;
+                if (file == null || file.IndexOf("WebView2", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (e is DllNotFoundException) return "WebView2Loader.dll";
+                int comma = file.IndexOf(',');
+                return comma < 0 ? Path.GetFileName(file) : file.Substring(0, comma);
+            }
+            return null;
         }
 
         // Replaces the user's folder and name with placeholders.
