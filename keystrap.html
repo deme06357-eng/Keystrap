@@ -904,7 +904,7 @@ html.native.shown .window { opacity: 1; }
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1';   // keep in step with AppInfo.Version in app/Program.cs
+  const APP_VERSION = 'v1.1';   // keep in step with AppInfo.Version in app/Program.cs
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -913,23 +913,18 @@ html.native.shown .window { opacity: 1; }
   const LANGS = [['English', 'English', true], ['Español', 'Spanish'], ['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
   const CHANGELOG = {
     Added: [
-      'Playtime: Keystrap tracks how long you play each game while it\'s open, with total time and session counts per game.',
-      'Play buttons on roblox.com launch through Keystrap, with your active profile\'s flags. Turn it off in Settings to give links back to the Roblox app.',
-      'Custom Skies: five built-in skies, or import your own six images, applied to Roblox on every launch.',
-      'Support page suggestion box: send ideas and bug reports straight to the developers.',
-      'Accent color setting with presets and a custom color picker.',
-      'Profiles can have any colour: pick one or type a hex code like #FFD9FC. Cards and badges use it.'
+      'Keystrap can update itself: Keystrap.Updater.exe downloads the newest release, swaps the files and reopens Keystrap.',
+      'A loading screen with live status while Keystrap starts.',
+      'Playtime shows your 10 most played games. The totals still count every game.'
     ],
     Fixed: [
-      'Unlock FPS now removes Roblox\'s frame cap instead of capping it at your refresh rate. You can still match your monitor or set your own cap.',
-      'Keystrap could sometimes open as an empty dark window.',
-      'Suggestions report the real Keystrap version.',
-      'The profile picker on the Flags page matches the dark theme.'
+      'Keystrap starts about 2 seconds faster.',
+      'Keystrap.exe no longer crashes when it\'s copied somewhere without its DLLs.'
     ],
     Changed: [
-      'Playtime and Support are no longer marked Coming soon.',
-      'Discord Rich Presence: your Discord profile shows "Browsing Keystrap" or the Roblox game you\'re playing. Set it up in Settings.',
-      'Crash reports: if Keystrap crashes, it tells you what happened and sends the developers a report. You can turn this off in Settings.'
+      '"Experiences" are now called "Games" everywhere.',
+      'A cleaner, more compact updater window.',
+      'Crash reports use a tidier format.'
     ]
   };
 

@@ -30,18 +30,19 @@ using Shape = System.Windows.Shapes.Path;
 
 [assembly: AssemblyTitle("Keystrap Updater")]
 [assembly: AssemblyProduct("Keystrap")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: AssemblyInformationalVersion("v1")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyInformationalVersion(Keystrap.Updater.Config.Version)]
 
 namespace Keystrap.Updater
 {
     static class Config
     {
-        // The GitHub repository releases are published to, as "owner/name". Leave empty until it exists;
-        // the updater then says no update source is set up.
-        public const string ReleaseRepo = "";
-        public const string UserAgent = "Keystrap-Updater/v1";
+        // The GitHub repository releases are published to, as "owner/name". Must be public: the updater doesn't sign in.
+        // Empty means no update source is set up.
+        public const string ReleaseRepo = "k1tt8/Keystrap";
+        public const string Version = "v1.1";   // keep in step with AppInfo.Version in Program.cs
+        public const string UserAgent = "Keystrap-Updater/" + Version;
     }
 
     class Options
@@ -118,8 +119,8 @@ namespace Keystrap.Updater
         {
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             var options = Options.Parse(args);
-            Log.Write("Updater v1 starting for " + options.Dir);
-            WebhookService.Source = "Keystrap Updater v1";
+            Log.Write("Updater " + Config.Version + " starting for " + options.Dir);
+            WebhookService.Source = "Keystrap Updater " + Config.Version;
             var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
             app.DispatcherUnhandledException += (s, e) =>
             {

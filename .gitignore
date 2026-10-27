@@ -3,6 +3,7 @@ dist/
 *.exe
 *.dll
 app/keystrap.ico
+release/
 
 # Webhook URLs: kept out of the repository (anyone with one can post to that channel).
 # Copy secrets.example.json to secrets.json and fill it in; build.ps1 builds them into the exe.
