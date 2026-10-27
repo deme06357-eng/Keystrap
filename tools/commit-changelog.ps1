@@ -35,13 +35,13 @@ $logFile = Join-Path $gitDir 'keystrap-changelog.log'
 function Log($text) { Add-Content $logFile ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + '  ' + $text) -Encoding UTF8 }
 
 try {
-    # The same webhook the app uses (secrets.json, kept out of the repository), and the version from the app's code.
+    # The same webhook the app uses (secrets.json, kept out of the repository), and the version from version.txt.
     $secretsFile = Join-Path $root 'secrets.json'
     if (-not (Test-Path $secretsFile)) { throw 'No secrets.json (copy secrets.example.json and fill it in)' }
     $url = (Get-Content $secretsFile -Raw -Encoding UTF8 | ConvertFrom-Json).notificationsWebhook
     if (-not $url) { throw 'secrets.json has no notificationsWebhook' }
-    $program = Get-Content (Join-Path $root 'app\Program.cs') -Raw -Encoding UTF8
-    $raw = [regex]::Match($program, 'public const string Version = "v?([0-9.]+)"').Groups[1].Value
+    $versionFile = Join-Path $root 'version.txt'
+    $raw = if (Test-Path $versionFile) { [regex]::Match((Get-Content $versionFile -TotalCount 1), 'v?([0-9.]+)').Groups[1].Value } else { '' }
     # Shown as major.minor: "v1" or "1" reads 1.0, "1.3" stays 1.3.
     $version = if ($raw -match '\.') { $raw } elseif ($raw) { "$raw.0" } else { '?' }
 
