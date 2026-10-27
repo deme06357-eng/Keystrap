@@ -126,7 +126,7 @@ namespace Keystrap
                 using (var http = new HttpClient())
                 {
                     http.Timeout = timeout;
-                    http.DefaultRequestHeaders.UserAgent.ParseAdd(Source.Replace(' ', '/'));
+                    http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent());
                     var body = new StringContent(BuildPayload(n), Encoding.UTF8, "application/json");
                     using (HttpResponseMessage resp = await http.PostAsync(Url, body).ConfigureAwait(false))
                     {
@@ -144,6 +144,14 @@ namespace Keystrap
         }
 
         public static Task<bool> SendAsync(Notification n) { return SendAsync(n, TimeSpan.FromSeconds(15)); }
+
+        // "Keystrap Updater v1.1" -> "Keystrap-Updater/v1.1": a User-Agent product token can't contain spaces or extra slashes.
+        public static string UserAgent()
+        {
+            string s = (Source ?? "Keystrap").Trim();
+            int space = s.LastIndexOf(' ');
+            return space < 0 ? s.Replace('/', '-') : s.Substring(0, space).Replace(' ', '-').Replace('/', '-') + "/" + s.Substring(space + 1).Replace('/', '-');
+        }
 
         // For a crashing process: waits at most `timeout` on a pool thread (so it can't deadlock the UI thread).
         public static bool Send(Notification n, TimeSpan timeout)

@@ -474,7 +474,11 @@ namespace Keystrap.Updater
 
         static bool IsUrl(string s) { return s.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || s.StartsWith("https://", StringComparison.OrdinalIgnoreCase); }
 
-        // Reads GitHub's "latest release" JSON (or the same shape from --manifest) and picks the asset to install.
+        static readonly System.Text.RegularExpressions.Regex VersionTag = new System.Text.RegularExpressions.Regex(@"^[vV]?\d+(\.\d+)*$");
+
+        // Reads GitHub's release list (or one release, or a list, in the same shape from --manifest) and picks the
+        // highest version that is a real release: a tag like v1.1, not a draft or pre-release, with Keystrap.zip or
+        // Keystrap.exe attached. Anything else on the releases page (a test release, a tag like "Key") is ignored.
         async Task<Release> GetLatestAsync()
         {
             string source = options.Manifest;
@@ -482,7 +486,7 @@ namespace Keystrap.Updater
             {
                 if (string.IsNullOrWhiteSpace(options.Repo))
                     throw new UpdateException("No update source is set up yet. Updates arrive once Keystrap has a releases page.");
-                source = "https://api.github.com/repos/" + options.Repo.Trim('/') + "/releases/latest";
+                source = "https://api.github.com/repos/" + options.Repo.Trim('/') + "/releases?per_page=30";
             }
             string text;
             if (IsUrl(source))
@@ -497,10 +501,31 @@ namespace Keystrap.Updater
             }
             else text = File.ReadAllText(source);
 
-            var json = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(text);
+            object parsed = new JavaScriptSerializer().DeserializeObject(text);
+            IEnumerable<Dictionary<string, object>> entries = parsed is object[]
+                ? ((object[])parsed).OfType<Dictionary<string, object>>()
+                : new[] { parsed as Dictionary<string, object> }.Where(d => d != null);
+
+            Release best = null;
+            foreach (var json in entries)
+            {
+                var r = ReadRelease(json, source);
+                if (r == null) continue;
+                if (best == null || Versions.Compare(r.Version, best.Version) > 0) best = r;
+            }
+            if (best == null) throw new UpdateException("No Keystrap release has been published yet.");
+            Log.Write("Latest release " + best.Version + " (" + best.AssetName + ")");
+            return best;
+        }
+
+        // One release, or null when it isn't one the updater should install.
+        static Release ReadRelease(Dictionary<string, object> json, string source)
+        {
             var r = new Release { Version = json.ContainsKey("tag_name") ? json["tag_name"] as string : null };
-            if (string.IsNullOrEmpty(r.Version)) throw new UpdateException("The release information is missing a version.");
-            var assets = (json.ContainsKey("assets") ? json["assets"] as ArrayList : null) ?? new ArrayList();
+            if (string.IsNullOrEmpty(r.Version) || !VersionTag.IsMatch(r.Version.Trim())) return null;
+            if (true.Equals(json.ContainsKey("draft") ? json["draft"] : null) || true.Equals(json.ContainsKey("prerelease") ? json["prerelease"] : null)) return null;
+            // DeserializeObject gives object[] for arrays, Deserialize<T> gives ArrayList; both are IEnumerable.
+            var assets = (json.ContainsKey("assets") ? json["assets"] as IEnumerable : null) ?? new object[0];
             foreach (string wanted in new[] { "Keystrap.zip", "Keystrap.exe" })
             {
                 var a = assets.OfType<Dictionary<string, object>>().FirstOrDefault(x => string.Equals(x["name"] as string, wanted, StringComparison.OrdinalIgnoreCase));
@@ -512,9 +537,7 @@ namespace Keystrap.Updater
                 r.Size = a.ContainsKey("size") ? Convert.ToInt64(a["size"]) : 0;
                 break;
             }
-            if (r.AssetSource == null) throw new UpdateException("Release " + r.Version + " has no Keystrap.zip or Keystrap.exe to install.");
-            Log.Write("Latest release " + r.Version + " (" + r.AssetName + ")");
-            return r;
+            return r.AssetSource == null ? null : r;
         }
 
         async Task<string> DownloadAsync(Release r)
