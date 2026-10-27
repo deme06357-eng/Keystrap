@@ -391,11 +391,34 @@ namespace Keystrap
         static readonly Preset[] Presets =
         {
             new Preset { Id = "galaxy-night", Name = "Galaxy Night", Desc = "Deep violet night with a dense star field.", Fn = GalaxyNight },
-            new Preset { Id = "anime-sunset", Name = "Anime Sunset", Desc = "Soft banded pinks and oranges with a low, glowing sun.", Fn = AnimeSunset },
             new Preset { Id = "blue-sky", Name = "Realistic Blue Sky", Desc = "Clear daytime sky with a hazy horizon and a bright sun.", Fn = BlueSky },
-            new Preset { Id = "vaporwave", Name = "Vaporwave Synth", Desc = "Striped retro sun over a neon grid.", Fn = Vaporwave },
             new Preset { Id = "void-black", Name = "Void Black", Desc = "Pure black in every direction.", Fn = (x, y, z, s) => new Rgb(0, 0, 0) },
         };
+
+        // Presets that were removed. Their rendered files are deleted, and a saved choice of one means Roblox's own sky.
+        static readonly string[] Retired = { "anime-sunset", "vaporwave" };
+
+        // The sky to actually apply: a removed preset or a deleted import falls back to Roblox's default.
+        public static string Resolve(string id)
+        {
+            if (string.IsNullOrEmpty(id) || id == Default) return Default;
+            if (Presets.Any(p => p.Id == id)) return id;
+            if (id.StartsWith("custom-") && Directory.Exists(Path.Combine(Dir, id))) return id;
+            Log.Write("Sky " + id + " no longer exists; using Roblox's default sky");
+            return Default;
+        }
+
+        // Clears out the rendered files of removed presets, once they're no longer needed.
+        public static void RemoveRetired()
+        {
+            foreach (string id in Retired)
+            {
+                string dir = Path.Combine(Dir, id);
+                if (!Directory.Exists(dir)) continue;
+                try { Directory.Delete(dir, true); Log.Write("Removed the retired sky preset " + id); }
+                catch (Exception ex) { Log.Write("Couldn't remove the retired sky preset " + id + ": " + ex.Message); }
+            }
+        }
 
         static double Clamp(double v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
         static double Smooth(double a, double b, double v) { double t = Clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); }
@@ -450,20 +473,6 @@ namespace Keystrap
             return c;
         }
 
-        static Rgb AnimeSunset(double x, double y, double z, double star)
-        {
-            // Posterised into soft bands for a hand-painted look.
-            double t = Math.Max(0, y);
-            double banded = Math.Floor(t * 14) / 14 + Smooth(0.6, 1.0, t * 14 - Math.Floor(t * 14)) / 14;
-            Rgb c = y >= 0
-                ? Ramp(banded, new[] { 0.0, 0.08, 0.2, 0.42, 1.0 }, new[] { 0xffd08a, 0xff9f7a, 0xe8789e, 0x7a5aa8, 0x2c2a6b })
-                : Ramp(-y, new[] { 0.0, 0.25 }, new[] { 0xc77a8a, 0x3a2a4a });
-            double a = Angle(x, y, z, 0, 0.07, 1);
-            c = c.Add(Rgb.Hex(0xffc58a), Math.Exp(-a * a / 0.03) * 0.55);
-            if (a < 0.11) c = Rgb.Mix(c, Rgb.Hex(0xfff3c9), Smooth(0.11, 0.095, a));
-            return c;
-        }
-
         static Rgb BlueSky(double x, double y, double z, double star)
         {
             Rgb c = y >= 0
@@ -473,31 +482,6 @@ namespace Keystrap
             c = c.Add(new Rgb(1, 0.97, 0.9), Math.Exp(-a * a / 0.01) * 0.6);
             if (a < 0.03) c = new Rgb(1, 1, 0.97);
             return c;
-        }
-
-        static Rgb Vaporwave(double x, double y, double z, double star)
-        {
-            if (y >= 0)
-            {
-                Rgb c = Ramp(y, new[] { 0.0, 0.1, 0.35, 0.7, 1.0 }, new[] { 0xffb86b, 0xff4fa3, 0x8a2bb8, 0x3a1170, 0x150730 });
-                if (star > 0.998 && y > 0.25) c = c.Add(new Rgb(1, 0.85, 1), 0.6);
-                // Striped retro sun sitting on the horizon straight ahead.
-                double a = Angle(x, y, z, 0, 0.2, 1);
-                if (a < 0.3 && z > 0)
-                {
-                    double v = (y / Math.Max(z, 0.01) - 0.2) / 0.31;   // -1 bottom .. 1 top of the sun
-                    bool gap = v < 0.1 && (Math.Abs(Math.Sin((v - 0.1) * 26)) < 0.35 + (0.1 - v) * 0.6);
-                    if (!gap) c = Rgb.Mix(c, Ramp((1 - v) / 2, new[] { 0.0, 1.0 }, new[] { 0xffe36b, 0xff3d8b }), Smooth(0.3, 0.29, a));
-                }
-                return c;
-            }
-            // Ground: a neon grid on the plane one unit below the camera, fading into the horizon glow.
-            double t = -1 / y, gx = x * t, gz = z * t;
-            double dist = Math.Sqrt(gx * gx + gz * gz);
-            double line = Math.Min(Math.Abs(gx - Math.Round(gx)), Math.Abs(gz - Math.Round(gz)));
-            double w = 0.03 + dist * 0.004;
-            Rgb ground = Rgb.Hex(0x12051f).Add(Rgb.Hex(0x2fe6ff), Smooth(w, 0, line) * Math.Exp(-dist * 0.05));
-            return Rgb.Mix(ground, Rgb.Hex(0xff4fa3), Math.Exp(y * 18) * 0.85);
         }
 
         // Direction for pixel (u, v) in -1..1 (v up) on each face of the cube.
@@ -3028,7 +3012,7 @@ namespace Keystrap
             try
             {
                 string dir = InstalledDir();
-                var items = await Task.Run(() => Skies.List(dir));
+                var items = await Task.Run(() => { Skies.RemoveRetired(); return Skies.List(dir); });
                 Post(new Dictionary<string, object> { { "type", "skies" }, { "items", items } });
             }
             catch (Exception ex) { Log.Write("Listing skies failed: " + ex); }
@@ -3417,6 +3401,7 @@ namespace Keystrap
                 string sky = msg.ContainsKey("sky") ? msg["sky"] as string : null;
                 if (!string.IsNullOrEmpty(sky))
                 {
+                    sky = Skies.Resolve(sky);
                     ReportProgress(sky == Skies.Default ? "Checking Roblox's sky…" : "Applying your sky…", 0.95);
                     try { await Task.Run(() => Skies.ApplyTo(dir, sky, text => ReportProgress(text, 0.95))); }
                     catch (Exception ex)

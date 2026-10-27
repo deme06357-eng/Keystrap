@@ -650,7 +650,7 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="play"><svg class="ico"><use href="#i-play"/></svg><span class="lbl">Play</span></button>
           <button class="nav-item" data-page="profiles"><svg class="ico"><use href="#i-users"/></svg><span class="lbl">Profiles</span></button>
           <button class="nav-item" data-page="playtime"><svg class="ico"><use href="#i-timer"/></svg><span class="lbl">Playtime</span></button>
-          <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span></button>
+          <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
@@ -741,7 +741,7 @@ html.native.shown .window { opacity: 1; }
 
       <!-- SKIES -->
       <section class="page" id="page-skies">
-        <h1>Custom Skies</h1>
+        <h1>Custom Skies <span class="badge beta">Beta</span></h1>
         <p class="sub">Replace the sky Roblox uses by default. Your choice is applied to Keystrap's copy of Roblox on every launch. Games that set their own sky keep theirs.</p>
         <div class="sky-bar">
           <div class="sky-status" id="skyStatus" aria-live="polite"></div>
@@ -985,13 +985,11 @@ const I18N_ES = {
     'Replace the sky Roblox uses by default. Your choice is applied to Keystrap\'s copy of Roblox on every launch. Games that set their own sky keep theirs.': 'Reemplaza el cielo que Roblox usa por defecto. Tu elección se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cielo lo conservan.',
     'Import custom sky': 'Importar cielo personalizado',
     'To import a sky, choose its six images (PNG, JPG or BMP) or six .tex/.dds textures at once. Name them so the side is at the end: _bk, _dn, _ft, _lf, _rt and _up, or _back, _down, _front, _left, _right and _up.': 'Para importar un cielo, elige sus seis imágenes (PNG, JPG o BMP) o seis texturas .tex/.dds a la vez. Nómbralas de modo que el lado vaya al final: _bk, _dn, _ft, _lf, _rt y _up, o _back, _down, _front, _left, _right y _up.',
-    'Roblox Default': 'Predeterminado de Roblox', 'Galaxy Night': 'Noche galáctica', 'Anime Sunset': 'Atardecer anime',
+    'Roblox Default': 'Predeterminado de Roblox', 'Galaxy Night': 'Noche galáctica',
     'Realistic Blue Sky': 'Cielo azul realista', 'Void Black': 'Negro vacío',
     'The sky Roblox ships with.': 'El cielo que trae Roblox.',
     'Deep violet night with a dense star field.': 'Noche violeta intensa con un denso campo de estrellas.',
-    'Soft banded pinks and oranges with a low, glowing sun.': 'Franjas suaves de rosas y naranjas con un sol bajo y brillante.',
     'Clear daytime sky with a hazy horizon and a bright sun.': 'Cielo diurno despejado con un horizonte brumoso y un sol brillante.',
-    'Striped retro sun over a neon grid.': 'Sol retro a rayas sobre una cuadrícula de neón.',
     'Pure black in every direction.': 'Negro puro en todas direcciones.',
     'Imported from your files.': 'Importado desde tus archivos.',
     'Installed': 'Instalado', 'Apply': 'Aplicar', 'Applying…': 'Aplicando…', 'Delete this sky': 'Eliminar este cielo', 'Delete?': '¿Eliminar?',
@@ -1125,7 +1123,9 @@ const I18N_ES = {
     'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.': 'Cada actualización de Keystrap se anuncia en el canal de novedades del Discord de Keystrap.',
     'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Flags, Language, ToS, Support, About, Settings.':
       'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Flags, Idioma, Términos, Soporte, Acerca de, Ajustes.',
-    '"Experiences" are now called "Games" everywhere.': 'Las "Experiencias" ahora se llaman "Juegos" en todas partes.',
+    'Custom Skies is marked Beta, and the Anime Sunset and Vaporwave Synth presets are gone. If you had one picked, Roblox\'s own sky comes back.':
+      'Cielos personalizados está en Beta, y los cielos Anime Sunset y Vaporwave Synth ya no están. Si tenías uno elegido, vuelve el cielo de Roblox.',
+    '"Experiences" are now called "Games" everywhere.':'Las "Experiencias" ahora se llaman "Juegos" en todas partes.',
     'Playtime shows only your 10 most played games. The totals still count every game.': 'Tiempo de juego muestra solo tus 10 juegos más jugados. Los totales siguen contando todos los juegos.',
     'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.': 'La línea "Inspired by Bloxstrap" ya no está: Keystrap es un launcher propio.',
     'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.':
@@ -1214,7 +1214,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.0.9';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.0.10';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1234,7 +1234,8 @@ const I18N_ES = {
       'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Flags, Language, ToS, Support, About, Settings.',
       '"Experiences" are now called "Games" everywhere.',
       'Playtime shows only your 10 most played games. The totals still count every game.',
-      'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.'
+      'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.',
+      'Custom Skies is marked Beta, and the Anime Sunset and Vaporwave Synth presets are gone. If you had one picked, Roblox\'s own sky comes back.'
     ],
     Fixed: [
       'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
@@ -1454,9 +1455,7 @@ const I18N_ES = {
   const SKY_FALLBACK = [
     ['default', 'Roblox Default', 'The sky Roblox ships with.', 'linear-gradient(#5b8fd6, #a9cdf0 60%, #8a8f96 60%)'],
     ['galaxy-night', 'Galaxy Night', 'Deep violet night with a dense star field.', 'linear-gradient(#05040f, #1b1342 55%, #2a1d5c 62%, #07060f 62%)'],
-    ['anime-sunset', 'Anime Sunset', 'Soft banded pinks and oranges with a low, glowing sun.', 'linear-gradient(#2c2a6b, #e8789e 45%, #ffd08a 62%, #3a2a4a 62%)'],
     ['blue-sky', 'Realistic Blue Sky', 'Clear daytime sky with a hazy horizon and a bright sun.', 'linear-gradient(#2a63bd, #7fb4ec 45%, #e6f1fb 62%, #a9b8c7 62%)'],
-    ['vaporwave', 'Vaporwave Synth', 'Striped retro sun over a neon grid.', 'linear-gradient(#150730, #8a2bb8 40%, #ff4fa3 56%, #ffb86b 62%, #12051f 62%)'],
     ['void-black', 'Void Black', 'Pure black in every direction.', 'linear-gradient(#000, #000)']
   ];
   function skyStatus(text, isError) {
