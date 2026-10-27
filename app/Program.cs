@@ -3258,14 +3258,18 @@ namespace Keystrap
                 // Unlock FPS: Roblox's task scheduler targets 60 FPS unless DFIntTaskSchedulerTargetFps says otherwise.
                 // fpsTarget 0 means uncapped (a target no PC reaches); otherwise it's the cap the user picked.
                 // Off writes nothing, so Roblox falls back to its own limit (ClientAppSettings.json is rewritten every launch).
-                // A flag the profile sets by hand still wins.
-                if (Bool(msg, "unlockFps") && !flags.ContainsKey(FpsFlag))
+                // On, it wins over the same flag in a profile, so an imported flag list can't quietly put the cap back.
+                if (Bool(msg, "unlockFps"))
                 {
                     int target = Int(msg, "fpsTarget");
-                    flags[FpsFlag] = (target > 0 ? target : UncappedFps).ToString(CultureInfo.InvariantCulture);
+                    string value = (target > 0 ? target : UncappedFps).ToString(CultureInfo.InvariantCulture);
+                    string fromProfile;
+                    if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)
+                        Log.Write("Unlock FPS replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
+                    flags[FpsFlag] = value;
                     Log.Write("Unlock FPS: " + (target > 0 ? "capped at " + target : "uncapped"));
+                    Bootstrapper.ClearFramerateCap();
                 }
-                if (Bool(msg, "unlockFps")) Bootstrapper.ClearFramerateCap();
 
                 ReportProgress("Checking for Roblox updates…", 0.02);
                 RobloxVersion latest = null;
