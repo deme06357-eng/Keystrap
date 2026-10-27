@@ -1130,6 +1130,8 @@ const I18N_ES = {
     'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.': 'La línea "Inspired by Bloxstrap" ya no está: Keystrap es un launcher propio.',
     'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.':
       'El actualizador solo instala versiones publicadas de verdad, y muestra las notas de la versión que instala en vez de las anteriores.',
+    'Playtime\'s total time, games and sessions count every game you\'ve played again, not just the top 10.':
+      'El tiempo total, los juegos y las sesiones de Tiempo de juego vuelven a contar todos los juegos que has jugado, no solo los 10 primeros.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
     'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
@@ -1214,7 +1216,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.0.10';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.0.11';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1241,7 +1243,8 @@ const I18N_ES = {
       'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
       'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.',
       'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.',
-      'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.'
+      'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.',
+      'Playtime\'s total time, games and sessions count every game you\'ve played again, not just the top 10.'
     ]
   };
 
@@ -1437,7 +1440,9 @@ const I18N_ES = {
         if (state) renderSettings();
         break;
       case 'playtime':
-        env.playtime = { games: msg.games || [], current: msg.current || [] };
+        // games is only the top 10; the totals cover every game played, so the stats above the list stay true.
+        env.playtime = { games: msg.games || [], current: msg.current || [],
+          totalSeconds: msg.totalSeconds, gameCount: msg.gameCount, sessionCount: msg.sessionCount };
         if (state) renderPlaytime();
         break;
       case 'toast': toast(msg.text); break;
