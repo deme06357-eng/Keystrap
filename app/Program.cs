@@ -29,18 +29,15 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 [assembly: AssemblyTitle("Keystrap")]
 [assembly: AssemblyProduct("Keystrap")]
-// Windows only accepts numbers here; everything shown to people uses Keystrap.AppInfo.Version ("v1").
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
-[assembly: AssemblyInformationalVersion(Keystrap.AppInfo.Version)]
+// The version attributes come from version.txt, through Version.g.cs (written by build.ps1).
 
 namespace Keystrap
 {
     static class AppInfo
     {
-        // The release name used everywhere: logs, the suggestion box, web requests and the data files. Keep in step
-        // with APP_VERSION in keystrap.html.
-        public const string Version = "v1.2";
+        // The release name used everywhere: logs, the suggestion box, web requests and the data files. Set it in
+        // version.txt; the build carries it here and into APP_VERSION in keystrap.html.
+        public const string Version = Release.Version;
         public const string UserAgent = "Keystrap/" + Version;
     }
 

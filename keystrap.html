@@ -652,11 +652,11 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="playtime"><svg class="ico"><use href="#i-timer"/></svg><span class="lbl">Playtime</span></button>
           <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span></button>
           <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
-          <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-sliders"/></svg><span class="lbl">Settings</span></button>
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
           <button class="nav-item" data-page="support"><svg class="ico"><use href="#i-headset"/></svg><span class="lbl">Support</span></button>
           <button class="nav-item" data-page="about"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
+          <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-sliders"/></svg><span class="lbl">Settings</span></button>
         </nav>
       </div>
 
@@ -1121,7 +1121,8 @@ const I18N_ES = {
     'Added': 'Añadido', 'Fixed': 'Corregido', 'Changed': 'Cambiado', 'Got it': 'Entendido',
     'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.': 'Keystrap en español: elige Español en la página Idioma y todo cambia al instante, incluidos los menús, los diálogos y los mensajes.',
     'Your language is remembered the next time you open Keystrap.': 'Tu idioma se recuerda la próxima vez que abras Keystrap.',
-    'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.'
+    'The Language page shows which languages are complete.': 'La página Idioma muestra qué idiomas están completos.',
+    'Settings now sits at the bottom of the sidebar.': 'Ajustes ahora está al final de la barra lateral.'
   },
   patterns: [
     // times (from ago())
@@ -1193,7 +1194,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2';   // keep in step with AppInfo.Version in app/Program.cs
+  const APP_VERSION = 'v1.2';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1207,7 +1208,8 @@ const I18N_ES = {
     ],
     Changed: [
       'Your language is remembered the next time you open Keystrap.',
-      'The Language page shows which languages are complete.'
+      'The Language page shows which languages are complete.',
+      'Settings now sits at the bottom of the sidebar.'
     ]
   };
 

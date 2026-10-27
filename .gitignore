@@ -3,6 +3,7 @@ dist/
 *.exe
 *.dll
 app/keystrap.ico
+app/Version.g.cs
 release/
 
 # Webhook URLs: kept out of the repository (anyone with one can post to that channel).
