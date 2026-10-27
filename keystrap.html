@@ -457,6 +457,10 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .xh-tune { display: flex; flex-direction: column; gap: 14px; }
 .xh-colors { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 #xhColor { width: 36px; height: 30px; padding: 0 2px; border: 1px solid var(--stroke); border-radius: 8px; background: transparent; cursor: pointer; }
+.xh-slider { display: flex; align-items: center; gap: 12px; }
+.xh-slider input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.xh-slider output { width: 46px; text-align: right; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--fg); }
+.xh-marks { display: flex; justify-content: space-between; margin-top: -8px; font-size: 11.5px; color: var(--fg-3); padding-right: 116px; }
 .xh-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); cursor: pointer; }
 .xh-check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
 @media (max-width: 900px) { .xh-layout { grid-template-columns: minmax(0, 1fr); } }
@@ -791,17 +795,20 @@ html.native.shown .window { opacity: 1; }
           <div class="xh-side">
             <h2 class="sec">Style</h2>
             <div class="xh-styles" id="xhStyles" role="radiogroup" aria-label="Crosshair style"></div>
+            <div class="xh-tune" id="xhSizeBox">
+              <h2 class="sec">Size</h2>
+              <div class="xh-slider">
+                <input type="range" id="xhScale" min="50" max="200" step="5" aria-label="Crosshair size">
+                <output id="xhScaleOut" for="xhScale">100%</output>
+                <button class="seg" id="xhScaleReset">Reset</button>
+              </div>
+              <div class="xh-marks" aria-hidden="true"><span>Compact</span><span id="xhScaleMax">Oversized</span></div>
+            </div>
             <div class="xh-tune" id="xhTune">
               <h2 class="sec">Color</h2>
               <div class="xh-colors">
                 <div class="swatches" id="xhSwatches" role="radiogroup" aria-label="Crosshair color"></div>
                 <input type="color" id="xhColor" aria-label="Custom crosshair color">
-              </div>
-              <h2 class="sec">Size</h2>
-              <div class="fps-opts" id="xhSizes" role="radiogroup" aria-label="Crosshair size">
-                <button class="seg" data-size="s" role="radio">Small</button>
-                <button class="seg" data-size="m" role="radio">Medium</button>
-                <button class="seg" data-size="l" role="radio">Large</button>
               </div>
               <label class="xh-check"><input type="checkbox" id="xhOutline"><span>Dark outline, so it shows on bright skies</span></label>
             </div>
@@ -1200,7 +1207,7 @@ const I18N_ES = {
     'Circle': 'Círculo', 'Circle and dot': 'Círculo y punto', 'Your image': 'Tu imagen',
     'Crosshair color': 'Color de la mira', 'Custom crosshair color': 'Color personalizado de la mira',
     'White': 'Blanco', 'Cyan': 'Cian', 'Pink': 'Rosa', 'Yellow': 'Amarillo',
-    'Size': 'Tamaño', 'Crosshair size': 'Tamaño de la mira', 'Small': 'Pequeña', 'Medium': 'Mediana', 'Large': 'Grande',
+    'Size': 'Tamaño', 'Crosshair size': 'Tamaño de la mira', 'Compact': 'Compacta', 'Oversized': 'Enorme',
     'Dark outline, so it shows on bright skies': 'Contorno oscuro, para que se vea en cielos claros',
     'Import .png or .cur': 'Importar .png o .cur',
     'Roblox centers the image on the mouse, so the middle of your image is where you aim. Images bigger than 64 pixels are scaled down to fit.':
@@ -1216,8 +1223,8 @@ const I18N_ES = {
     'Keystrap couldn\'t read that file. Use a .png, .cur or .ico image.': 'Keystrap no pudo leer ese archivo. Usa una imagen .png, .cur o .ico.',
     'Preview only: the Keystrap app puts your crosshair into Roblox.': 'Solo vista previa: la app de Keystrap pone tu mira en Roblox.',
     'Importing works in the Keystrap app.': 'La importación funciona en la app de Keystrap.',
-    'Crosshairs: pick a style, color and size, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.':
-      'Miras: elige un estilo, un color y un tamaño, o importa tu propio .png o .cur, y Keystrap lo pone en Roblox en cada inicio.',
+    'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.':
+      'Miras: elige un estilo y un color, ajusta su tamaño entre el 50 % y el 200 %, o importa tu propio .png o .cur, y Keystrap lo pone en Roblox en cada inicio.',
     'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
     'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.': 'Si Roblox recibe demasiadas solicitudes, Keystrap espera y vuelve a intentarlo, y te dice cuánto esperar si tiene que parar.',
@@ -1302,7 +1309,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.0.12';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.0.13';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1316,7 +1323,7 @@ const I18N_ES = {
     Added: [
       'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
       'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.',
-      'Crosshairs: pick a style, color and size, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.',
+      'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap puts it into Roblox on every launch.',
       'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.'
     ],
     Changed: [
@@ -1351,7 +1358,7 @@ const I18N_ES = {
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
       settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
-        crosshair: { style: 'default', color: '#ffffff', size: 'm', outline: true, image: null } },
+        crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
         { name: 'DFIntCSGLevelOfDetailSwitchingDistance', value: '0', on: true },
@@ -1365,8 +1372,13 @@ const I18N_ES = {
     if (!s || typeof s !== 'object' || !Array.isArray(s.profiles) || !s.profiles.length) return d;
     s.settings = Object.assign({}, d.settings, s.settings || {});
     s.settings.accent = normHex(s.settings.accent) || DEFAULT_ACCENT;
-    const xh = s.settings.crosshair = Object.assign({}, d.settings.crosshair, s.settings.crosshair || {});
+    const savedXh = s.settings.crosshair || {};
+    const xh = s.settings.crosshair = Object.assign({}, d.settings.crosshair, savedXh);
     xh.color = normHex(xh.color) || '#ffffff';
+    // Size used to be Small/Medium/Large; it's a percentage now.
+    if (typeof savedXh.scale !== 'number') xh.scale = XH_OLD_SIZES[savedXh.size] || 100;
+    xh.scale = Math.min(XH_SCALE_MAX, Math.max(XH_SCALE_MIN, Math.round(xh.scale)));
+    delete xh.size;
     if (!XH_STYLES.some(x => x[0] === xh.style) || (xh.style === 'image' && !xh.image)) xh.style = 'default';
     s.profiles.forEach(p => {
       p.id = p.id || uid(); p.name = String(p.name || 'Profile'); p.color = (p.color | 0) % COLORS.length;
@@ -1563,7 +1575,9 @@ const I18N_ES = {
   // Crosshairs: [id, name]. "default" is Roblox's own, and "image" only appears once one is imported.
   const XH_STYLES = [['default', 'Roblox Default'], ['dot', 'Dot'], ['cross', 'Cross'], ['crossdot', 'Cross and dot'], ['circle', 'Circle'], ['circledot', 'Circle and dot'], ['tee', 'T'], ['image', 'Your image']];
   const XH_COLORS = [['White', '#ffffff'], ['Cream', '#fffba6'], ['Green', '#4cff7a'], ['Cyan', '#4fe3ff'], ['Pink', '#ff6bd0'], ['Red', '#ff4a4a'], ['Yellow', '#ffe14a']];
-  const XH_SCALE = { s: 0.75, m: 1, l: 1.35 };
+  // Size is a percentage of the normal crosshair. At 200% every drawn style still fits Roblox's 64px image.
+  const XH_SCALE_MIN = 50, XH_SCALE_MAX = 200;
+  const XH_OLD_SIZES = { s: 75, m: 100, l: 135 };
 
   const SKY_FALLBACK = [
     ['default', 'Roblox Default', 'The sky Roblox ships with.', 'linear-gradient(#5b8fd6, #a9cdf0 60%, #8a8f96 60%)'],
@@ -2586,14 +2600,22 @@ const I18N_ES = {
       xhImages[src].addEventListener('error', done, { once: true });
     });
   }
-  // Draws crosshair c centred on (x, y), at the size Roblox shows it from a px-square image.
+  // Draws crosshair c centred on (x, y), at the size Roblox shows it from a px-square image. Roblox's own crosshair is
+  // never resized; an imported image is scaled about its centre, within the square.
   function drawCrosshair(ctx, c, x, y, px) {
+    const k = (c.scale || 100) / 100;
     if (c.style === 'default' || c.style === 'image') {
       const img = xhImage(c.style === 'image' ? c.image : env.xhDefault);
-      if (img) { ctx.imageSmoothingEnabled = px !== 64; ctx.drawImage(img, x - px / 2, y - px / 2, px, px); }
+      if (!img) return;
+      const s = c.style === 'image' ? px * Math.min(k, xhImageMaxScale(c.image) / 100) : px;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x - px / 2, y - px / 2, px, px); ctx.clip();
+      ctx.imageSmoothingEnabled = s !== 64;
+      ctx.drawImage(img, x - s / 2, y - s / 2, s, s);
+      ctx.restore();
       return;
     }
-    const u = px / 64 * (XH_SCALE[c.size] || 1);
+    const u = px / 64 * k;
     const gap = 4 * u, arm = 9 * u, width = Math.max(1, 2.5 * u), dot = Math.max(1, 2.2 * u), ring = 9 * u;
     const lines = [];
     if (c.style === 'cross' || c.style === 'crossdot' || c.style === 'tee') {
@@ -2616,6 +2638,27 @@ const I18N_ES = {
     };
     if (c.outline) pass('rgba(0,0,0,.85)', Math.max(1, u));
     pass(c.color, 0);
+  }
+  // The biggest size an imported image can have before its visible part would be cut off by the 64px square:
+  // a small icon in the middle can grow, a full-size image can't.
+  const xhFit = {};
+  function xhImageMaxScale(src) {
+    if (src in xhFit) return xhFit[src];
+    const img = xhImage(src);
+    if (!img) return 100;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const g = cv.getContext('2d');
+    g.drawImage(img, 0, 0, 64, 64);
+    const d = g.getImageData(0, 0, 64, 64).data;
+    let reach = 0;   // furthest visible pixel from the centre, along either axis
+    for (let i = 0; i < 64 * 64; i++) {
+      if (d[i * 4 + 3] < 16) continue;
+      const px = i % 64, py = (i / 64) | 0;
+      reach = Math.max(reach, Math.abs(px + .5 - 32), Math.abs(py + .5 - 32));
+    }
+    const fit = reach ? Math.floor(32 / reach * 100 / 5) * 5 : XH_SCALE_MAX;
+    return (xhFit[src] = Math.max(100, Math.min(XH_SCALE_MAX, fit)));
   }
   function crosshairPng(c, px) {
     const cv = document.createElement('canvas');
@@ -2655,11 +2698,22 @@ const I18N_ES = {
     $('#xhSwatches').innerHTML = XH_COLORS.map(x =>
       '<button class="swatch" role="radio" data-hex="' + x[1] + '" aria-label="' + x[0] + '" title="' + x[0] + '" aria-checked="' + (c.color === x[1]) + '" style="background:' + x[1] + '"></button>').join('');
     $('#xhColor').value = c.color;
-    $$('#xhSizes .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.size === c.size)));
     $$('#xhBgs .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.bg === (env.xhBg || 'sky'))));
     $('#xhOutline').checked = !!c.outline;
-    $('#xhTune').hidden = c.style === 'default' || c.style === 'image';   // color and size only change drawn styles
+    $('#xhTune').hidden = c.style === 'default' || c.style === 'image';   // color and outline only change drawn styles
+    $('#xhSizeBox').hidden = c.style === 'default';                       // Roblox's own crosshair keeps its size
+    renderCrosshairScale();
     drawCrosshairPreview();
+  }
+  // The slider stops where an imported image would start to be cut off.
+  function renderCrosshairScale() {
+    const c = state.settings.crosshair;
+    const max = c.style === 'image' ? xhImageMaxScale(c.image) : XH_SCALE_MAX;
+    const slider = $('#xhScale');
+    slider.max = max;
+    slider.value = Math.min(c.scale, max);
+    $('#xhScaleOut').textContent = Math.min(c.scale, max) + '%';
+    $('#xhScaleMax').textContent = max < XH_SCALE_MAX ? max + '%' : 'Oversized';
   }
   function xhStatus(text, isError) {
     const el = $('#xhStatus');
@@ -2685,7 +2739,15 @@ const I18N_ES = {
   $('#xhStyles').addEventListener('click', e => { const b = e.target.closest('[data-style]'); if (b) setCrosshair({ style: b.dataset.style }); });
   $('#xhSwatches').addEventListener('click', e => { const b = e.target.closest('[data-hex]'); if (b) setCrosshair({ color: b.dataset.hex }); });
   $('#xhColor').addEventListener('input', e => setCrosshair({ color: e.target.value }));
-  $('#xhSizes').addEventListener('click', e => { const b = e.target.closest('[data-size]'); if (b) setCrosshair({ size: b.dataset.size }); });
+  // Dragging redraws the preview on every step; the full re-render and the save wait for the drag to settle.
+  $('#xhScale').addEventListener('input', e => {
+    state.settings.crosshair.scale = +e.target.value;
+    $('#xhScaleOut').textContent = e.target.value + '%';
+    drawCrosshairPreview();
+    clearTimeout(xhTimer);
+    xhTimer = setTimeout(() => { save(); renderCrosshairs(); sendCrosshair(); }, 350);
+  });
+  $('#xhScaleReset').addEventListener('click', () => setCrosshair({ scale: 100 }));
   $('#xhOutline').addEventListener('change', e => setCrosshair({ outline: e.target.checked }));
   $('#xhBgs').addEventListener('click', e => { const b = e.target.closest('[data-bg]'); if (b) { env.xhBg = b.dataset.bg; renderCrosshairs(); } });
   $('#xhImport').addEventListener('click', () => {
