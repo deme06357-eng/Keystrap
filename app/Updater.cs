@@ -38,7 +38,7 @@ namespace Keystrap.Updater
     {
         // The GitHub repository releases are published to, as "owner/name". Must be public: the updater doesn't sign in.
         // Empty means no update source is set up.
-        public const string ReleaseRepo = "k1tt8/Keystrap";
+        public const string ReleaseRepo = "deme06357-eng/Keystrap";
         public const string Version = global::Keystrap.Release.Version;   // from version.txt, like AppInfo.Version
         public const string UserAgent = "Keystrap-Updater/" + Version;
     }
