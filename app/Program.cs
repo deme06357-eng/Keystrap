@@ -1689,9 +1689,11 @@ namespace Keystrap
             Log.Write("Wrote " + flags.Count + " flags to ClientAppSettings.json");
         }
 
-        // Roblox's in-game Maximum Frame Rate (60, 144, 240...) caps the game on top of DFIntTaskSchedulerTargetFps, so
-        // Unlock FPS sets it back to -1 ("not set") in Roblox's own settings file. Never throws; Roblox may be rewriting it.
-        public static void ClearFramerateCap()
+        // Roblox's in-game Maximum Frame Rate, kept in its own settings file. Roblox only accepts allow-listed flags from
+        // ClientAppSettings.json and DFIntTaskSchedulerTargetFps isn't one ("Denied local configuration" in its log), so
+        // this is the setting that actually sets the frame rate. -1 ("not set") leaves Roblox on its 60 FPS default.
+        // Never throws; Roblox may be rewriting the file.
+        public static void SetFramerateCap(int fps)
         {
             try
             {
@@ -1700,13 +1702,14 @@ namespace Keystrap
                 foreach (string file in Directory.GetFiles(folder, "GlobalBasicSettings_*.xml"))
                 {
                     string xml = File.ReadAllText(file);
-                    string fixedXml = Regex.Replace(xml, @"(<int name=""FramerateCap"">)\d+(</int>)", "${1}-1${2}");
-                    if (fixedXml == xml) continue;
-                    File.WriteAllText(file, fixedXml);
-                    Log.Write("Cleared Roblox's in-game frame rate cap in " + Path.GetFileName(file));
+                    string updated = Regex.Replace(xml, @"(<int name=""FramerateCap"">)-?\d+(</int>)",
+                        "${1}" + fps.ToString(CultureInfo.InvariantCulture) + "${2}");
+                    if (updated == xml) continue;
+                    File.WriteAllText(file, updated);
+                    Log.Write("Set Roblox's Maximum Frame Rate to " + fps + " in " + Path.GetFileName(file));
                 }
             }
-            catch (Exception ex) { Log.Write("Couldn't clear Roblox's in-game frame rate cap: " + ex.Message); }
+            catch (Exception ex) { Log.Write("Couldn't set Roblox's Maximum Frame Rate: " + ex.Message); }
         }
 
         // link: the website's roblox-player:/roblox: link, passed through unchanged; null opens the Roblox app home.
@@ -3284,18 +3287,20 @@ namespace Keystrap
 
                 // Unlock FPS: Roblox's task scheduler targets 60 FPS unless DFIntTaskSchedulerTargetFps says otherwise.
                 // fpsTarget 0 means uncapped (a target no PC reaches); otherwise it's the cap the user picked.
-                // Off writes nothing, so Roblox falls back to its own limit (ClientAppSettings.json is rewritten every launch).
-                // On, it wins over the same flag in a profile, so an imported flag list can't quietly put the cap back.
+                // Off changes nothing, so Roblox keeps its own limit (ClientAppSettings.json is rewritten every launch).
+                // On, the frame rate goes into Roblox's Maximum Frame Rate, the setting Roblox actually honours, and into
+                // the flag as well in case Roblox allows it again. The flag wins over the same one in a profile.
                 if (Bool(msg, "unlockFps"))
                 {
                     int target = Int(msg, "fpsTarget");
-                    string value = (target > 0 ? target : UncappedFps).ToString(CultureInfo.InvariantCulture);
+                    int fps = target > 0 ? target : UncappedFps;
+                    string value = fps.ToString(CultureInfo.InvariantCulture);
                     string fromProfile;
                     if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)
                         Log.Write("Unlock FPS replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
                     flags[FpsFlag] = value;
                     Log.Write("Unlock FPS: " + (target > 0 ? "capped at " + target : "uncapped"));
-                    Bootstrapper.ClearFramerateCap();
+                    Bootstrapper.SetFramerateCap(fps);
                 }
 
                 ReportProgress("Checking for Roblox updates…", 0.02);
