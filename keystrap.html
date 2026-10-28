@@ -798,7 +798,7 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
           <button class="nav-item" data-page="about"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
           <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-gear"/></svg><span class="lbl">Settings</span></button>
-          <button class="nav-item" data-page="dev" id="navDev" hidden><svg class="ico"><use href="#i-dev"/></svg><span class="lbl">Developer</span><span class="badge beta">Dev</span></button>
+          <button class="nav-item" data-page="dev" id="navDev" hidden><svg class="ico"><use href="#i-dev"/></svg><span class="lbl">Dev/Testing</span></button>
         </nav>
       </div>
 
@@ -1074,7 +1074,7 @@ html.native.shown .window { opacity: 1; }
 
       <!-- DEVELOPER (owner only: this whole tab is shown only when Keystrap runs with --dev) -->
       <section class="page" id="page-dev">
-        <h1>Developer <span class="badge beta">Dev</span></h1>
+        <h1>Dev/Testing</h1>
         <p class="sub">Internal tools for building Keystrap, shown only when it's run in developer mode. These aren't part of the normal app.</p>
         <h2 class="sec">Notifications</h2>
         <div class="rows">
@@ -1341,7 +1341,7 @@ const I18N_ES = {
     'Send crash reports': 'Enviar informes de errores',
     'If Keystrap crashes, it sends the error, the Keystrap version and your active profile\'s name to the developers. Your Windows user name and folders are removed first.': 'Si Keystrap falla, envía el error, la versión de Keystrap y el nombre de tu perfil activo a los desarrolladores. Antes se eliminan tu nombre de usuario de Windows y tus carpetas.',
     'Keystrap couldn\'t save your settings. Details are in the log.': 'Keystrap no pudo guardar tus ajustes. Los detalles están en el registro.',
-    'Test notifications': 'Notificaciones de prueba', 'Developer': 'Desarrollador', 'Sending…': 'Enviando…',
+    'Test notifications': 'Notificaciones de prueba', 'Dev/Testing': 'Desarrollo/Pruebas', 'Sending…': 'Enviando…',
     'Notifications': 'Notificaciones',
     'Internal tools for building Keystrap, shown only when it\'s run in developer mode. These aren\'t part of the normal app.':
       'Herramientas internas para crear Keystrap, visibles solo cuando se ejecuta en modo desarrollador. No forman parte de la app normal.',
@@ -1441,8 +1441,8 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'Your Playtime history is safer: when Keystrap saves it, it only ever adds to it, so it can\'t be overwritten or lost.':
-      'Tu historial de Tiempo de juego es más seguro: cuando Keystrap lo guarda, solo le añade datos, así que no se puede sobrescribir ni perder.',
+    'Renamed the developer-only tab to "Dev/Testing".':
+      'Se renombró la pestaña solo para desarrolladores a "Dev/Testing".',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
@@ -1554,7 +1554,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.3';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.4';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1565,8 +1565,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Fixed: [
-      'Your Playtime history is safer: when Keystrap saves it, it only ever adds to it, so it can\'t be overwritten or lost.'
+    Changed: [
+      'Renamed the developer-only tab to "Dev/Testing".'
     ]
   };
 
