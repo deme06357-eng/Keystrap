@@ -3237,10 +3237,19 @@ namespace Keystrap
                     : core.Environment.CreateWebResourceResponse(null, 404, "Not Found", "");
             };
             core.WebMessageReceived += OnWebMessage;
+            // Links never open on their own: the page asks first ("You're leaving Keystrap") and then sends
+            // "open-url". A link that tries to open a window, or to take this one somewhere else, is sent back to
+            // the page to ask about.
             core.NewWindowRequested += (s, e) =>
             {
                 e.Handled = true;
-                Process.Start(e.Uri);
+                Post(new Dictionary<string, object> { { "type", "confirm-url" }, { "url", e.Uri } });
+            };
+            core.NavigationStarting += (s, e) =>
+            {
+                if (e.Uri.StartsWith("https://keystrap.app/", StringComparison.OrdinalIgnoreCase)) return;
+                e.Cancel = true;
+                Post(new Dictionary<string, object> { { "type", "confirm-url" }, { "url", e.Uri } });
             };
             LoadingStatus("Loading UI components…");
             // Timing marks in the log, to see where startup time goes.
@@ -3389,6 +3398,9 @@ namespace Keystrap
                         Log.Write("roblox-player:// failed: " + ex.Message);
                         Toast("The Roblox app isn't installed on this PC.");
                     }
+                    break;
+                case "open-url":
+                    OpenWebsite(msg.ContainsKey("url") ? msg["url"] as string : null);
                     break;
                 case "open-logs":
                     OpenLogs();
@@ -3651,6 +3663,22 @@ namespace Keystrap
                 string message = ex is InvalidOperationException ? ex.Message : "Keystrap couldn't read that file. Use a .png, .cur or .ico image.";
                 Post(new Dictionary<string, object> { { "type", "crosshair-import-error" }, { "message", message } });
             }
+        }
+
+        // ---------- Outside links ----------
+
+        // Opens a website in the user's browser, after they said Continue on the page's warning. Only real web
+        // addresses: anything else (a file, a program, another kind of link) is refused.
+        void OpenWebsite(string url)
+        {
+            Uri uri;
+            if (!Uri.TryCreate(url, UriKind.Absolute, out uri) || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+            {
+                Log.Write("Refused to open a link that isn't a web address: " + url);
+                return;
+            }
+            try { Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }); }
+            catch (Exception ex) { Log.Write("Opening " + uri.Host + " failed: " + ex.Message); Toast("Keystrap couldn't open your browser."); }
         }
 
         // ---------- Multi-instance ----------

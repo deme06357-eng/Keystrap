@@ -486,6 +486,15 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .sky-body .d { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
 .sky-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
 .sky-actions .btn { padding: 6px 14px; }
+/* outside link warning */
+.link-modal { max-width: 440px; }
+.link-badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 4px;
+  background: var(--accent-soft); color: var(--accent); }
+.link-badge .ico { width: 22px; height: 22px; }
+.link-target { padding: 12px 14px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid var(--stroke); }
+.link-target .host { font-weight: 600; color: var(--fg); overflow-wrap: anywhere; }
+.link-target .url { margin-top: 3px; font: 12px/1.45 var(--f-mono); color: var(--fg-3); overflow-wrap: anywhere; max-height: 5.8em; overflow-y: auto; }
+
 /* cursor ring: the outer box only moves; the inner circle changes size, so the ring stays centred on the mouse */
 .cursor-ring { position: fixed; left: 0; top: 0; z-index: 9999; width: 0; height: 0; pointer-events: none; opacity: 0; transition: opacity .2s ease; will-change: transform; }
 .cursor-ring.on { opacity: 1; }
@@ -717,6 +726,7 @@ html.native.shown .window { opacity: 1; }
     <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.2 2.2"/><path d="M9.5 2.5h5"/></symbol>
     <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6 4.75 4.75 0 0 1 17.25 19Z"/></symbol>
     <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
     <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M10 4.5a2 2 0 0 1 4 0V6h3.5a1 1 0 0 1 1 1v3.5H17a2 2 0 0 0 0 4h1.5V18a1 1 0 0 1-1 1H14v-1.5a2 2 0 0 0-4 0V19H6.5a1 1 0 0 1-1-1v-3.5H7a2 2 0 0 0 0-4H5.5V7a1 1 0 0 1 1-1H10z"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
     <symbol id="i-gear" viewBox="0 0 24 24"><path d="M10.4 5.08L10.4 2.43 L13.6 2.43 L13.6 5.08 A7.1 7.1 0 0 1 15.76 5.98 L17.63 4.1 L19.9 6.37 L18.02 8.24 A7.1 7.1 0 0 1 18.92 10.4 L21.57 10.4 L21.57 13.6 L18.92 13.6 A7.1 7.1 0 0 1 18.02 15.76 L19.9 17.63 L17.63 19.9 L15.76 18.02 A7.1 7.1 0 0 1 13.6 18.92 L13.6 21.57 L10.4 21.57 L10.4 18.92 A7.1 7.1 0 0 1 8.24 18.02 L6.37 19.9 L4.1 17.63 L5.98 15.76 A7.1 7.1 0 0 1 5.08 13.6 L2.43 13.6 L2.43 10.4 L5.08 10.4 A7.1 7.1 0 0 1 5.98 8.24 L4.1 6.37 L6.37 4.1 L8.24 5.98 A7.1 7.1 0 0 1 10.4 5.08 Z"/><circle cx="12" cy="12" r="3"/></symbol>
@@ -1414,6 +1424,11 @@ const I18N_ES = {
       'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
     'Settings has a gear icon in the sidebar.': 'Ajustes tiene un icono de engranaje en la barra lateral.',
     'Cursor ring': 'Anillo del cursor',
+    'You\'re leaving Keystrap': 'Vas a salir de Keystrap', 'Continue': 'Continuar',
+    'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
+    'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
+    'Links to websites now ask first and show where they go, so nothing opens without you saying so.':
+      'Los enlaces a sitios web ahora preguntan antes y muestran a dónde van, así que nada se abre sin tu permiso.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
       'La multiinstancia empieza a funcionar cuando cierras todas las ventanas de Roblox y vuelves a iniciar desde Keystrap.',
     'Multi-instance no longer stays off without saying so when Roblox was already open; Keystrap tells you to close Roblox once.':
@@ -1538,7 +1553,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.8';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.9';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1549,8 +1564,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Fixed: [
-      'Multi-instance no longer stays off without saying so when Roblox was already open; Keystrap tells you to close Roblox once.'
+    Added: [
+      'Links to websites now ask first and show where they go, so nothing opens without you saying so.'
     ]
   };
 
@@ -1723,6 +1738,7 @@ const I18N_ES = {
         if (launching) toast('Roblox is already starting. Try the Play button again in a moment.');
         else startLaunch(msg.link);
         break;
+      case 'confirm-url': confirmLink(msg.url); break;
       case 'mods': env.mods = msg; if (state) renderMods(); break;
       case 'flags-refused': env.refused = msg.names || []; if (state) renderFlags(); break;
       case 'mod-saved': modStatus('Saved. Roblox uses it the next time it starts.'); break;
@@ -2983,6 +2999,38 @@ const I18N_ES = {
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
+
+  // ---------- outside links ----------
+  // Every link to a website asks first, showing where it goes. Cancel is focused, so a stray Enter doesn't open
+  // anything; Continue hands the address to the app, which only opens web addresses. Links the page didn't open
+  // itself (a new window, or something navigating this one) come back from the app as "confirm-url".
+  function confirmLink(url) {
+    let u;
+    try { u = new URL(url); } catch (e) { return; }
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return;
+    const m = openModal(
+      '<div class="link-badge"><svg class="ico"><use href="#i-external"/></svg></div>' +
+      '<h2>You\'re leaving Keystrap</h2>' +
+      '<p class="lead">This link opens a website in your browser. Only continue if you trust where it goes.</p>' +
+      '<div class="link-target"><div class="host" translate="no"></div><div class="url" translate="no"></div></div>' +
+      '<div class="modal-foot"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="link-go">Continue</button></div>', 'link-modal');
+    $('.host', m).textContent = u.hostname;
+    $('.url', m).textContent = u.href;
+    $('[data-close]', m).focus();
+    $('#link-go', m).addEventListener('click', () => {
+      closeModal();
+      if (host) host.postMessage({ type: 'open-url', url: u.href });
+      else window.open(u.href, '_blank', 'noopener');
+    });
+  }
+  function interceptLink(e) {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (!a || !/^https?:/i.test(a.href)) return;
+    e.preventDefault();
+    confirmLink(a.href);
+  }
+  document.addEventListener('click', interceptLink, true);
+  document.addEventListener('auxclick', e => { if (e.button === 1) interceptLink(e); }, true);   // middle-click
 
   // ---------- crosshairs ----------
   // The page draws the crosshair itself, so the preview is exactly what Roblox gets. The app is sent two PNGs:
