@@ -446,6 +446,29 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .sky-body .d { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
 .sky-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
 .sky-actions .btn { padding: 6px 14px; }
+/* flag builder */
+.fb { display: flex; flex-direction: column; gap: 14px; }
+.fb .t { font-weight: 600; }
+.fb .d { color: var(--fg-3); font-size: 12.5px; margin-top: 2px; }
+.fb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px; }
+.fb-field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--fg-2); min-width: 0; }
+.fb-field select { width: 100%; }
+.fb-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.fb-note { flex: 1; min-width: 220px; margin: 0; color: var(--fg-3); font-size: 12px; line-height: 1.5; }
+.fb-refused { margin: 0; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; color: var(--fg-2); background: rgba(255,122,122,.08); border: 1px solid rgba(255,122,122,.25); }
+.chip.refused { color: #ff9a9a; border-color: rgba(255,122,122,.35); background: rgba(255,122,122,.08); margin-left: 8px; font-family: var(--f-ui, inherit); }
+
+/* mods */
+.mod-font { display: flex; flex-direction: column; gap: 12px; }
+.mod-sample { font-size: 22px; line-height: 1.35; color: var(--white); padding: 14px 16px; border-radius: 8px; background: #101014; border: 1px solid var(--stroke); overflow-wrap: anywhere; }
+.mod-font-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mod-font-bar .d { flex: 1; min-width: 0; color: var(--fg-2); font-size: 13px; overflow-wrap: anywhere; }
+.mod-play { width: 34px; height: 34px; padding: 0; justify-content: center; flex: none; }
+.mod-play .ico { width: 14px; height: 14px; }
+#modSounds .row { align-items: center; }
+#modSounds .row .btn { padding: 6px 12px; }
+#modSounds .d.custom { color: var(--accent); }
+
 /* crosshairs */
 .xh-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .xh-stage { padding: 0; overflow: hidden; }
@@ -488,6 +511,7 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .pt-now .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--good); font-weight: 600; }
 .pt-now .t { font-weight: 600; font-size: 15px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pt-now .d { color: var(--fg-3); font-size: 12px; margin-top: 2px; }
+.pt-now .pt-server { color: var(--fg-2); }
 .pt-live { width: 10px; height: 10px; border-radius: 50%; background: var(--good); flex: none; box-shadow: 0 0 0 4px rgba(76,195,138,.18); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(76,195,138,.05); } }
 .pt-clock { font: 600 20px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--fg); }
@@ -631,6 +655,7 @@ html.native.shown .window { opacity: 1; }
     <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.2 2.2"/><path d="M9.5 2.5h5"/></symbol>
     <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6 4.75 4.75 0 0 1 17.25 19Z"/></symbol>
     <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M10 4.5a2 2 0 0 1 4 0V6h3.5a1 1 0 0 1 1 1v3.5H17a2 2 0 0 0 0 4h1.5V18a1 1 0 0 1-1 1H14v-1.5a2 2 0 0 0-4 0V19H6.5a1 1 0 0 1-1-1v-3.5H7a2 2 0 0 0 0-4H5.5V7a1 1 0 0 1 1-1H10z"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
     <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z"/></symbol>
@@ -681,6 +706,7 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="playtime"><svg class="ico"><use href="#i-timer"/></svg><span class="lbl">Playtime</span></button>
           <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span><span class="badge beta" id="skiesNavBadge">Beta</span></button>
           <button class="nav-item" data-page="crosshairs"><svg class="ico"><use href="#i-crosshair"/></svg><span class="lbl">Crosshairs</span><span class="badge beta">Beta</span></button>
+          <button class="nav-item" data-page="mods"><svg class="ico"><use href="#i-puzzle"/></svg><span class="lbl">Mods</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
@@ -757,7 +783,7 @@ html.native.shown .window { opacity: 1; }
         <p class="sub">While Keystrap is open, it follows Roblox's logs and adds up the time you spend in each game. Visits to the same game are combined into one card, and your 10 most played games are shown.</p>
         <div class="card pt-now" id="ptNow" hidden>
           <span class="pt-live" aria-hidden="true"></span>
-          <div class="txt"><div class="k">Playing now</div><div class="t" id="ptNowTitle"></div><div class="d">Adds to your totals when you leave the game.</div></div>
+          <div class="txt"><div class="k">Playing now</div><div class="t" id="ptNowTitle"></div><div class="d pt-server" id="ptNowServer" hidden></div><div class="d">Adds to your totals when you leave the game.</div></div>
           <div class="pt-clock" id="ptNowTime">0:00</div>
         </div>
         <div class="stats">
@@ -827,6 +853,26 @@ html.native.shown .window { opacity: 1; }
         </div>
       </section>
 
+      <!-- MODS -->
+      <section class="page" id="page-mods">
+        <h1>Mods <span class="badge beta">Beta</span></h1>
+        <p class="sub">Swap Roblox's font and sounds for your own. Mods are put into Keystrap's copy of Roblox when it starts, and resetting one brings Roblox's file back. Games that use their own fonts or sounds keep theirs.</p>
+        <div class="sky-status" id="modStatus" aria-live="polite"></div>
+        <h2 class="sec">Font</h2>
+        <div class="card mod-font">
+          <div class="mod-sample" id="modSample">The quick brown fox jumps over the lazy dog. 0123456789</div>
+          <div class="mod-font-bar">
+            <div class="d" id="modFontName">Roblox's own fonts</div>
+            <button class="btn" id="modFontImport"><svg class="ico"><use href="#i-plus"/></svg>Import .ttf or .otf</button>
+            <button class="btn" id="modFontReset" hidden>Reset</button>
+          </div>
+          <p class="sky-help">Replaces every font in Roblox's menus and games, except the one for Chinese, Japanese and Korean text.</p>
+        </div>
+        <h2 class="sec">Sounds</h2>
+        <div class="rows" id="modSounds"></div>
+        <p class="sky-help">Use .ogg, .mp3 or .wav files under 5 MB.</p>
+      </section>
+
       <!-- FLAGS -->
       <section class="page" id="page-flags">
         <h1>Flags</h1>
@@ -841,6 +887,27 @@ html.native.shown .window { opacity: 1; }
           </div>
           <span id="flagActiveNote" class="chip"></span>
         </div>
+        <div class="card fb">
+          <div><div class="t">Flag builder</div>
+            <div class="d">Pick how Roblox should look and add it to this profile. "Automatic" leaves it to Roblox.</div></div>
+          <div class="fb-grid">
+            <label class="fb-field"><span>Graphics</span>
+              <select id="fbApi"><option value="auto">Automatic</option><option value="d3d11">DirectX 11</option><option value="vulkan">Vulkan</option><option value="opengl">OpenGL</option></select></label>
+            <label class="fb-field"><span>Texture quality</span>
+              <select id="fbTex"><option value="auto">Automatic</option><option value="0">Lowest</option><option value="1">Low</option><option value="2">Medium</option><option value="3">High</option></select></label>
+            <label class="fb-field"><span>Anti-aliasing</span>
+              <select id="fbAa"><option value="auto">Automatic</option><option value="0">Off</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
+            <label class="fb-field"><span>Post-processing</span>
+              <select id="fbPost"><option value="auto">Automatic</option><option value="off">Off</option></select></label>
+            <label class="fb-field"><span>Grass</span>
+              <select id="fbGrass"><option value="auto">Automatic</option><option value="off">Off</option></select></label>
+          </div>
+          <div class="fb-foot">
+            <p class="fb-note">Frame rate isn't a flag anymore: use Unlock FPS on the Play page. No flag lowers your ping; Roblox ignores network flags.</p>
+            <button class="btn primary" id="fbApply">Add to profile</button>
+          </div>
+        </div>
+        <p class="fb-refused" id="flagRefused" hidden></p>
         <div class="flag-tools">
           <input class="input" id="flagSearch" type="search" placeholder="Search flags" aria-label="Search flags">
           <button class="btn" id="addFlag"><svg class="ico"><use href="#i-plus"/></svg>Add flag</button>
@@ -1197,8 +1264,8 @@ const I18N_ES = {
     'Added': 'Añadido', 'Fixed': 'Corregido', 'Changed': 'Cambiado', 'Got it': 'Entendido',
     'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.': 'Keystrap en español: elige Español en la página Idioma y todo cambia al instante, incluidos los menús, los diálogos y los mensajes.',
     'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.': 'Cada actualización de Keystrap se anuncia en el canal de novedades del Discord de Keystrap.',
-    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, About, Settings.':
-      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Miras, Flags, Idioma, Términos, Acerca de, Ajustes.',
+    'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Mods, Flags, Language, ToS, About, Settings.':
+      'La barra lateral ahora va así: Jugar, Perfiles, Tiempo de juego, Cielos personalizados, Miras, Mods, Flags, Idioma, Términos, Acerca de, Ajustes.',
     'Custom Skies is coming soon: it\'s switched off while it\'s being finished, and Roblox keeps its own sky until then.':
       'Cielos personalizados llegará pronto: está desactivado mientras se termina, y Roblox mantiene su propio cielo hasta entonces.',
     '"Experiences" are now called "Games" everywhere.':'Las "Experiencias" ahora se llaman "Juegos" en todas partes.',
@@ -1208,10 +1275,45 @@ const I18N_ES = {
       'El actualizador solo instala versiones publicadas de verdad, y muestra las notas de la versión que instala en vez de las anteriores.',
     'Playtime\'s total time, games and sessions count every game you\'ve played again, not just the top 10.':
       'El tiempo total, los juegos y las sesiones de Tiempo de juego vuelven a contar todos los juegos que has jugado, no solo los 10 primeros.',
+    // mods
+    'Mods': 'Mods',
+    'Swap Roblox\'s font and sounds for your own. Mods are put into Keystrap\'s copy of Roblox when it starts, and resetting one brings Roblox\'s file back. Games that use their own fonts or sounds keep theirs.':
+      'Cambia la fuente y los sonidos de Roblox por los tuyos. Los mods se ponen en la copia de Roblox de Keystrap al iniciarse, y al restablecer uno vuelve el archivo de Roblox. Los juegos que usan sus propias fuentes o sonidos mantienen los suyos.',
+    'Font': 'Fuente', 'Sounds': 'Sonidos',
+    'The quick brown fox jumps over the lazy dog. 0123456789': 'El veloz murciélago hindú comía feliz cardillo y kiwi. 0123456789',
+    'Roblox\'s own fonts': 'Las fuentes de Roblox', 'Import .ttf or .otf': 'Importar .ttf u .otf',
+    'Replaces every font in Roblox\'s menus and games, except the one for Chinese, Japanese and Korean text.':
+      'Reemplaza todas las fuentes de los menús y juegos de Roblox, excepto la del texto en chino, japonés y coreano.',
+    'Use .ogg, .mp3 or .wav files under 5 MB.': 'Usa archivos .ogg, .mp3 o .wav de menos de 5 MB.',
+    'Death': 'Muerte', 'Jump': 'Salto', 'Landing': 'Aterrizaje', 'Footsteps': 'Pasos', 'Falling': 'Caída', 'Getting up': 'Levantarse',
+    'Swimming': 'Nadar', 'Splash': 'Chapoteo', 'Explosion': 'Explosión', 'Volume slider': 'Control de volumen',
+    'Roblox\'s own sound': 'El sonido de Roblox', 'Replace': 'Reemplazar', 'Play sound': 'Reproducir sonido',
+    'Sounds show up here once Keystrap has installed Roblox.': 'Los sonidos aparecen aquí cuando Keystrap haya instalado Roblox.',
+    'Mods work in the Keystrap app.': 'Los mods funcionan en la app de Keystrap.',
+    'Roblox\'s own fonts come back the next time it starts.': 'Las fuentes de Roblox vuelven la próxima vez que se inicie.',
+    'Roblox\'s own sound comes back the next time it starts.': 'El sonido de Roblox vuelve la próxima vez que se inicie.',
+    'That sound couldn\'t be played here, but Roblox may still play it.': 'Ese sonido no se pudo reproducir aquí, pero puede que Roblox sí lo reproduzca.',
+    'That isn\'t a .ttf or .otf font Keystrap can use.': 'Esa no es una fuente .ttf u .otf que Keystrap pueda usar.',
+    'Use an .ogg, .mp3 or .wav sound.': 'Usa un sonido .ogg, .mp3 o .wav.', 'Use a sound under 5 MB.': 'Usa un sonido de menos de 5 MB.',
+    'Keystrap couldn\'t read that file. Details are in the log.': 'Keystrap no pudo leer ese archivo. Los detalles están en el registro.',
+    'Keystrap couldn\'t apply your mods, so Roblox starts with its own font and sounds.': 'Keystrap no pudo aplicar tus mods, así que Roblox se inicia con su propia fuente y sus sonidos.',
+    // flag builder
+    'Flag builder': 'Generador de flags',
+    'Pick how Roblox should look and add it to this profile. "Automatic" leaves it to Roblox.': 'Elige cómo debe verse Roblox y añádelo a este perfil. "Automático" lo deja en manos de Roblox.',
+    'Graphics': 'Gráficos', 'Texture quality': 'Calidad de texturas', 'Anti-aliasing': 'Suavizado', 'Post-processing': 'Posprocesado', 'Grass': 'Hierba',
+    'Automatic': 'Automático', 'Lowest': 'Mínima', 'Low': 'Baja', 'Medium': 'Media', 'High': 'Alta', 'Off': 'Desactivado',
+    'Frame rate isn\'t a flag anymore: use Unlock FPS on the Play page. No flag lowers your ping; Roblox ignores network flags.':
+      'Los fotogramas ya no son un flag: usa Desbloquear FPS en la página Jugar. Ningún flag baja tu ping; Roblox ignora los flags de red.',
+    'Add to profile': 'Añadir al perfil', 'Roblox refused this': 'Roblox lo rechazó',
+    'Roblox refused 1 of this profile\'s flags when it last started. It\'s marked below and has no effect.':
+      'Roblox rechazó 1 de los flags de este perfil la última vez que se inició. Está marcado abajo y no tiene efecto.',
+    'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.': 'Keystrap ahora muestra dónde está el servidor de Roblox en el que juegas, en la página Tiempo de juego.',
+    'Mods: swap Roblox\'s font and ten of its sounds, like the death sound and jumping, for your own.': 'Mods: cambia la fuente de Roblox y diez de sus sonidos, como el de muerte y el de salto, por los tuyos.',
+    'A flag builder on the Flags page, and flags Roblox refused at its last start are marked.': 'Un generador de flags en la página Flags, y los flags que Roblox rechazó en su último inicio aparecen marcados.',
     'Crosshairs': 'Miras',
     'Use your crosshair for every Roblox mouse cursor: over the game, over buttons, in text boxes, while dragging, and in Shift Lock and first person. It\'s applied to Keystrap\'s copy of Roblox on every launch. Games that set their own cursor keep theirs.':
       'Usa tu mira para todos los cursores de Roblox: sobre el juego, sobre botones, en cuadros de texto, al arrastrar, y en Shift Lock y primera persona. Se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cursor mantienen el suyo.',
-    'Coming soon': 'Próximamente', 'Custom Skies is coming soon': 'Cielos personalizados llegará pronto',
+    'Coming soon': 'Próximamente', 'Soon': 'Pronto','Custom Skies is coming soon': 'Cielos personalizados llegará pronto',
     'It\'s still being finished. It unlocks in a future update, and until then Roblox keeps its own sky.':
       'Todavía se está terminando. Se desbloquea en una próxima actualización y, hasta entonces, Roblox mantiene su propio cielo.',
     'Crosshair preview': 'Vista previa de la mira', 'Preview background': 'Fondo de la vista previa', 'Dark': 'Oscuro', 'Light': 'Claro',
@@ -1283,6 +1385,12 @@ const I18N_ES = {
     // playtime
     [/^(\d+) sessions? · last played (.+)$/, (tr, n, t) => n + (n === '1' ? ' sesión' : ' sesiones') + ' · última vez ' + tr(t)],
     [/^Open (.+) on Roblox$/, (tr, g) => 'Abrir ' + g + ' en Roblox'],
+    [/^Custom font: (.+)$/, (tr, f) => 'Fuente personalizada: ' + f],
+    [/^Play (Death|Jump|Landing|Footsteps|Falling|Getting up|Swimming|Splash|Explosion|Volume slider)$/, (tr, s) => 'Reproducir: ' + tr(s)],
+    [/^Builder settings saved to (.+)$/, (tr, p) => 'Ajustes del generador guardados en ' + p],
+    [/^Roblox refused (\d+) of this profile's flags when it last started\. They're marked below and have no effect\.$/, (tr, n) =>
+      'Roblox rechazó ' + n + ' de los flags de este perfil la última vez que se inició. Están marcados abajo y no tienen efecto.'],
+    [/^Server in (.+)\. Press Shift\+F3 in Roblox for live ping\.$/, (tr, where) => 'Servidor en ' + where + '. Pulsa Shift+F3 en Roblox para ver el ping en vivo.'],
     [/^(.+) and (\d+) more$/, (tr, g, n) => g + ' y ' + n + ' más'],
     // skies
     [/^Preview of (.+)$/, (tr, n) => 'Vista previa de ' + tr(n)],
@@ -1321,7 +1429,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.1';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.2';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1336,10 +1444,13 @@ const I18N_ES = {
       'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
       'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.',
       'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap uses it for every Roblox mouse cursor on every launch.',
+      'Mods: swap Roblox\'s font and ten of its sounds, like the death sound and jumping, for your own.',
+      'A flag builder on the Flags page, and flags Roblox refused at its last start are marked.',
+      'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.',
       'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.'
     ],
     Changed: [
-      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Flags, Language, ToS, About, Settings.',
+      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Mods, Flags, Language, ToS, About, Settings.',
       '"Experiences" are now called "Games" everywhere.',
       'Playtime shows only your 10 most played games. The totals still count every game.',
       'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.',
@@ -1523,6 +1634,10 @@ const I18N_ES = {
         if (launching) toast('Roblox is already starting. Try the Play button again in a moment.');
         else startLaunch(msg.link);
         break;
+      case 'mods': env.mods = msg; if (state) renderMods(); break;
+      case 'flags-refused': env.refused = msg.names || []; if (state) renderFlags(); break;
+      case 'mod-saved': modStatus('Saved. Roblox uses it the next time it starts.'); break;
+      case 'mod-error': modStatus(msg.message, true); break;
       case 'crosshair-default':
         env.xhDefault = msg.image || null;
         if (state) renderCrosshairs();
@@ -1607,10 +1722,11 @@ const I18N_ES = {
   function skiesUnlocked() { return !!env.dev; }
   function renderSkies() {
     const open = skiesUnlocked();
-    for (const badge of [$('#skiesNavBadge'), $('#skiesBadge')]) {
-      badge.textContent = open ? 'Beta' : 'Coming soon';
+    // The sidebar has room for a short word only; the page heading says it in full.
+    [[$('#skiesNavBadge'), 'Soon'], [$('#skiesBadge'), 'Coming soon']].forEach(([badge, locked]) => {
+      badge.textContent = open ? 'Beta' : locked;
       badge.className = 'badge ' + (open ? 'beta' : 'soon');
-    }
+    });
     $('[data-page="skies"]').classList.toggle('is-soon', !open);
     $('#skySoon').hidden = open;
     $('#page-skies .sky-bar').hidden = $('#skyGrid').hidden = $('#page-skies .sky-help').hidden = !open;
@@ -1685,6 +1801,9 @@ const I18N_ES = {
     $('#ptNow').hidden = !now;
     if (now) {
       $('#ptNowTitle').textContent = now.title + (pt.current.length > 1 ? ' and ' + (pt.current.length - 1) + ' more' : '');
+      // Roblox's servers don't answer pings, so live ping is Roblox's own Shift+F3 stats.
+      $('#ptNowServer').hidden = !now.region;
+      if (now.region) $('#ptNowServer').textContent = 'Server in ' + now.region + '. Press Shift+F3 in Roblox for live ping.';
       tickPlaytime();
     }
     const grid = $('#ptGrid');
@@ -2013,6 +2132,13 @@ const I18N_ES = {
     const note = $('#flagActiveNote');
     note.textContent = p.id === state.activeProfile ? 'Launches with this' : 'Not the launch profile';
     note.className = 'chip' + (p.id === state.activeProfile ? ' on' : '');
+    const refused = env.refused || [];
+    const refusedHere = p.flags.filter(f => f.on && refused.includes(f.name)).length;
+    $('#flagRefused').hidden = !refusedHere;
+    $('#flagRefused').textContent = refusedHere === 1
+      ? 'Roblox refused 1 of this profile\'s flags when it last started. It\'s marked below and has no effect.'
+      : 'Roblox refused ' + refusedHere + ' of this profile\'s flags when it last started. They\'re marked below and have no effect.';
+    renderFlagBuilder();
     const q = $('#flagSearch').value.trim().toLowerCase();
     const body = $('#flagBody');
     body.innerHTML = '';
@@ -2025,11 +2151,12 @@ const I18N_ES = {
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td><span class="kind ' + kind + '" translate="no">' + kind + '</span></td>' +
-        '<td class="name" translate="no"></td>' +
+        '<td class="name"><span class="nm" translate="no"></span></td>' +
         '<td><input class="input val-input" aria-label="Value"></td>' +
         '<td><label class="switch"><input type="checkbox" aria-label="Turn flag on"' + (f.on ? ' checked' : '') + '><span></span></label></td>' +
         '<td><button class="btn ghost icon" aria-label="Remove flag" title="Remove flag"><svg class="ico"><use href="#i-x"/></svg></button></td>';
-      tr.children[1].textContent = f.name;
+      tr.querySelector('.nm').textContent = f.name;
+      if (refused.includes(f.name)) tr.children[1].insertAdjacentHTML('beforeend', '<span class="chip refused">Roblox refused this</span>');
       const val = tr.querySelector('.val-input');
       val.value = f.value;
       val.addEventListener('keydown', e => { if (e.key === 'Enter') val.blur(); if (e.key === 'Escape') { val.value = f.value; val.blur(); } });
@@ -2046,6 +2173,39 @@ const I18N_ES = {
       body.appendChild(tr);
     });
   }
+  // ---------- flag builder ----------
+  // Each choice is a set of flags. "auto" removes the group's flags, so Roblox decides.
+  const FB = {
+    fbApi: { auto: [], d3d11: [['FFlagDebugGraphicsPreferD3D11', 'True']], vulkan: [['FFlagDebugGraphicsPreferVulkan', 'True']], opengl: [['FFlagDebugGraphicsPreferOpenGL', 'True']] },
+    fbTex: { auto: [] },
+    fbAa: { auto: [] },
+    fbPost: { auto: [], off: [['FFlagDisablePostFx', 'True']] },
+    fbGrass: { auto: [], off: [['FIntFRMMinGrassDistance', '0'], ['FIntFRMMaxGrassDistance', '0'], ['FIntRenderGrassDetailStrands', '0']] },
+  };
+  [0, 1, 2, 3].forEach(q => FB.fbTex[q] = [['DFFlagTextureQualityOverrideEnabled', 'True'], ['DFIntTextureQualityOverride', String(q)]]);
+  [0, 2, 4, 8].forEach(n => FB.fbAa[n] = [['FIntDebugForceMSAASamples', String(n)]]);
+  const fbNames = group => [...new Set(Object.values(FB[group]).flat().map(f => f[0]))];
+
+  // The builder starts from what the profile already has turned on.
+  function renderFlagBuilder() {
+    const p = flagsProfile();
+    const value = name => { const f = p.flags.find(x => x.name === name && x.on); return f ? f.value : null; };
+    Object.keys(FB).forEach(group => {
+      const match = Object.keys(FB[group]).find(k => FB[group][k].length && FB[group][k].every(f => value(f[0]) === f[1]));
+      $('#' + group).value = match || 'auto';
+    });
+  }
+  $('#fbApply').addEventListener('click', () => {
+    const p = flagsProfile();
+    Object.keys(FB).forEach(group => {
+      const names = fbNames(group);
+      p.flags = p.flags.filter(f => !names.includes(f.name));
+      FB[group][$('#' + group).value].forEach(f => p.flags.push({ name: f[0], value: f[1], on: true }));
+    });
+    save(); renderFlags(); renderPlay();
+    toast('Builder settings saved to ' + p.name);
+  });
+
   // profile dropdown
   const ddBtn = $('#flagProfileBtn'), ddMenu = $('#flagProfileMenu');
   function setDropdown(open) {
@@ -2780,8 +2940,58 @@ const I18N_ES = {
     else xhStatus('Importing works in the Keystrap app.');
   });
 
+  // ---------- mods ----------
+  // The app keeps the custom font and sounds and puts them into Roblox when it starts; the page shows what's set,
+  // previews the font and plays each sound.
+  let modFontLoaded = null, modAudio = null;
+  function renderMods() {
+    const m = env.mods || { font: null, sounds: [] };
+    $('#modFontName').textContent = m.font ? 'Custom font: ' + m.font.name : 'Roblox\'s own fonts';
+    $('#modFontReset').hidden = !m.font;
+    const sample = $('#modSample');
+    if (m.font && m.font.data && modFontLoaded !== m.font.data) {
+      modFontLoaded = m.font.data;
+      new FontFace('KeystrapModFont', 'url(' + m.font.data + ')').load()
+        .then(face => { document.fonts.add(face); sample.style.fontFamily = 'KeystrapModFont, ' + getComputedStyle(document.body).fontFamily; })
+        .catch(() => { sample.style.fontFamily = ''; });
+    }
+    if (!m.font) { modFontLoaded = null; sample.style.fontFamily = ''; }
+    $('#modSounds').innerHTML = m.sounds.map(s =>
+      '<div class="row">' +
+        '<button class="btn mod-play" data-play="' + esc(s.id) + '" aria-label="Play ' + esc(s.name) + '" title="Play sound"' + (s.preview ? '' : ' disabled') + '><svg class="ico"><use href="#i-play"/></svg></button>' +
+        '<div class="txt"><div class="t">' + esc(s.name) + '</div>' +
+          (s.custom ? '<div class="d custom" translate="no">' + esc(s.custom) + '</div>' : '<div class="d">Roblox\'s own sound</div>') + '</div>' +
+        '<button class="btn" data-import="' + esc(s.id) + '">Replace</button>' +
+        (s.custom ? '<button class="btn" data-reset="' + esc(s.id) + '">Reset</button>' : '') +
+      '</div>').join('') || '<div class="row"><div class="txt"><div class="d">Sounds show up here once Keystrap has installed Roblox.</div></div></div>';
+  }
+  function modStatus(text, isError) {
+    const el = $('#modStatus');
+    el.textContent = text || '';
+    el.classList.toggle('err', !!isError);
+  }
+  function modSend(msg) {
+    if (host) { modStatus(''); host.postMessage(msg); }
+    else modStatus('Mods work in the Keystrap app.');
+  }
+  $('#modFontImport').addEventListener('click', () => modSend({ type: 'mod-import', kind: 'font' }));
+  $('#modFontReset').addEventListener('click', () => { modSend({ type: 'mod-reset', kind: 'font' }); modStatus('Roblox\'s own fonts come back the next time it starts.'); });
+  $('#modSounds').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.import) modSend({ type: 'mod-import', kind: 'sound', id: b.dataset.import });
+    else if (b.dataset.reset) { modSend({ type: 'mod-reset', kind: 'sound', id: b.dataset.reset }); modStatus('Roblox\'s own sound comes back the next time it starts.'); }
+    else if (b.dataset.play) {
+      const s = (env.mods.sounds || []).find(x => x.id === b.dataset.play);
+      if (!s || !s.preview) return;
+      if (modAudio) modAudio.pause();
+      modAudio = new Audio(s.preview);
+      modAudio.play().catch(() => modStatus('That sound couldn\'t be played here, but Roblox may still play it.', true));
+    }
+  });
+
   // ---------- boot ----------
-  function renderAll() { renderPlay(); renderProfiles(); renderFlags(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); renderCrosshairs(); }
+  function renderAll() { renderPlay(); renderProfiles(); renderFlags(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); renderCrosshairs(); renderMods(); }
   function start() {
     $('#titleVer').textContent = APP_VERSION;
     let tab = '';

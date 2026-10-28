@@ -1341,6 +1341,192 @@ namespace Keystrap
         }
     }
 
+    // Mods: a custom font and custom sounds, put into Keystrap's copy of Roblox on every launch like skies and
+    // crosshairs. Roblox's originals are backed up once per version and go back when a mod is reset. A custom font
+    // works by pointing every font family (content\fonts\families\*.json) at the one font file. Games that use their
+    // own fonts or sounds keep theirs.
+    static class Mods
+    {
+        static readonly string Dir = Path.Combine(Paths.Data, "Mods");
+        static readonly string FontDir = Path.Combine(Dir, "Font"), SoundDir = Path.Combine(Dir, "Sounds");
+        const string BackupFolder = @"content\keystrap-original-mods";   // mirrors content\
+        const string CustomFont = "KeystrapCustomFont";
+        static readonly object gate = new object();
+        // Every face's font, whether it ships in content\fonts (rbxasset://) or Roblox downloads it (rbxassetid://).
+        static readonly Regex AssetId = new Regex(@"""assetId""\s*:\s*""[^""]*""", RegexOptions.Compiled);
+
+        // Sounds that can be replaced: the file in content\sounds, and what it is.
+        public static readonly string[][] Sounds =
+        {
+            new[] { "ouch.ogg", "Death" },
+            new[] { "action_jump.mp3", "Jump" },
+            new[] { "action_jump_land.mp3", "Landing" },
+            new[] { "action_footsteps_plastic.mp3", "Footsteps" },
+            new[] { "action_falling.ogg", "Falling" },
+            new[] { "action_get_up.mp3", "Getting up" },
+            new[] { "action_swim.mp3", "Swimming" },
+            new[] { "impact_water.mp3", "Splash" },
+            new[] { "impact_explosion_03.mp3", "Explosion" },
+            new[] { "volume_slider.ogg", "Volume slider" },
+        };
+
+        // Left alone: replacing the fallback for Chinese, Japanese and Korean would turn that text into boxes.
+        static readonly string[] KeepFamilies = { "NotoSansCJKFallback" };
+
+        static string FontFile
+        {
+            get
+            {
+                if (!Directory.Exists(FontDir)) return null;
+                return Directory.GetFiles(FontDir).FirstOrDefault(f => f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        static string Head(string file)
+        {
+            var b = new byte[4];
+            using (var fs = File.OpenRead(file)) fs.Read(b, 0, 4);
+            return Encoding.ASCII.GetString(b);
+        }
+
+        public static void ImportFont(string file)
+        {
+            string head = Head(file);
+            if (head != "\0\u0001\0\0" && head != "OTTO" && head != "true")
+                throw new InvalidOperationException("That isn't a .ttf or .otf font Keystrap can use.");
+            lock (gate)
+            {
+                if (Directory.Exists(FontDir)) Directory.Delete(FontDir, true);
+                Directory.CreateDirectory(FontDir);
+                File.Copy(file, Path.Combine(FontDir, Path.GetFileName(file)));
+            }
+        }
+
+        public static void ImportSound(string id, string file)
+        {
+            if (!Sounds.Any(s => s[0] == id)) throw new InvalidOperationException("Keystrap doesn't replace that sound.");
+            if (new FileInfo(file).Length > 5 * 1024 * 1024) throw new InvalidOperationException("Use a sound under 5 MB.");
+            byte[] b = File.ReadAllBytes(file);
+            string head = Encoding.ASCII.GetString(b, 0, Math.Min(4, b.Length));
+            bool audio = head == "OggS" || head.StartsWith("ID3") || head == "RIFF" || (b.Length > 1 && b[0] == 0xFF && (b[1] & 0xE0) == 0xE0);
+            if (!audio) throw new InvalidOperationException("Use an .ogg, .mp3 or .wav sound.");
+            lock (gate)
+            {
+                Directory.CreateDirectory(SoundDir);
+                File.WriteAllBytes(Path.Combine(SoundDir, id), b);
+                File.WriteAllText(Path.Combine(SoundDir, id + ".name"), Path.GetFileName(file));
+            }
+        }
+
+        // kind "font", or "sound" with the sound's file name as id.
+        public static void Reset(string kind, string id)
+        {
+            lock (gate)
+            {
+                if (kind == "font") { if (Directory.Exists(FontDir)) Directory.Delete(FontDir, true); return; }
+                if (!Sounds.Any(s => s[0] == id)) return;
+                foreach (string f in new[] { Path.Combine(SoundDir, id), Path.Combine(SoundDir, id + ".name") })
+                    if (File.Exists(f)) File.Delete(f);
+            }
+        }
+
+        // Puts the saved mods into a Roblox version folder, and Roblox's own files back where a mod was reset.
+        public static void ApplyTo(string versionDir)
+        {
+            lock (gate)
+            {
+                string content = Path.Combine(versionDir, "content"), backup = Path.Combine(versionDir, BackupFolder);
+                int replaced = 0;
+                foreach (string[] s in Sounds)
+                {
+                    string custom = Path.Combine(SoundDir, s[0]);
+                    replaced += Place(content, backup, Path.Combine("sounds", s[0]), File.Exists(custom) ? File.ReadAllBytes(custom) : null);
+                }
+
+                string fonts = Path.Combine(content, "fonts"), font = FontFile, asset = null;
+                if (!Directory.Exists(fonts)) return;
+                foreach (string old in Directory.GetFiles(fonts, CustomFont + ".*")) File.Delete(old);
+                if (font != null)
+                {
+                    string name = CustomFont + Path.GetExtension(font).ToLowerInvariant();
+                    File.Copy(font, Path.Combine(fonts, name));
+                    asset = "\"assetId\": \"rbxasset://fonts/" + name + "\"";
+                }
+                string families = Path.Combine(fonts, "families");
+                if (Directory.Exists(families))
+                    foreach (string json in Directory.GetFiles(families, "*.json"))
+                    {
+                        if (KeepFamilies.Contains(Path.GetFileNameWithoutExtension(json))) continue;
+                        string rel = Path.Combine("fonts", "families", Path.GetFileName(json));
+                        byte[] updated = null;
+                        if (asset != null)
+                        {
+                            string original = Path.Combine(backup, rel);
+                            string text = File.ReadAllText(File.Exists(original) ? original : json);
+                            updated = Encoding.UTF8.GetBytes(AssetId.Replace(text, asset));
+                        }
+                        replaced += Place(content, backup, rel, updated);
+                    }
+                if (replaced > 0) Log.Write("Mods: " + replaced + " Roblox files set in " + versionDir + (font != null ? " (font " + Path.GetFileName(font) + ")" : ""));
+            }
+        }
+
+        // Writes bytes over content\rel after backing up Roblox's file; null puts Roblox's file back, if it was replaced.
+        static int Place(string content, string backup, string rel, byte[] bytes)
+        {
+            string target = Path.Combine(content, rel), original = Path.Combine(backup, rel);
+            if (!File.Exists(target)) return 0;
+            if (bytes == null)
+            {
+                if (!File.Exists(original)) return 0;
+                File.Copy(original, target, true);
+                File.Delete(original);
+                return 1;
+            }
+            if (!File.Exists(original))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(original));
+                File.Copy(target, original);
+            }
+            File.WriteAllBytes(target, bytes);
+            return 1;
+        }
+
+        // What the Mods page shows: the font (with its data for a preview) and each sound, playable.
+        public static Dictionary<string, object> Describe(string versionDir)
+        {
+            string font = FontFile;
+            var sounds = Sounds.Select(s =>
+            {
+                string custom = Path.Combine(SoundDir, s[0]), nameFile = custom + ".name";
+                string source = File.Exists(custom) ? custom : RobloxFile(versionDir, Path.Combine("sounds", s[0]));
+                return new Dictionary<string, object>
+                {
+                    { "id", s[0] },
+                    { "name", s[1] },
+                    { "custom", File.Exists(custom) ? (File.Exists(nameFile) ? File.ReadAllText(nameFile) : s[0]) : null },
+                    { "preview", source != null ? "data:audio/" + (s[0].EndsWith(".ogg") ? "ogg" : "mpeg") + ";base64," + Convert.ToBase64String(File.ReadAllBytes(source)) : null },
+                };
+            }).ToList();
+            return new Dictionary<string, object>
+            {
+                { "type", "mods" },
+                { "font", font == null ? null : new Dictionary<string, object> {
+                    { "name", Path.GetFileName(font) },
+                    { "data", new FileInfo(font).Length < 8 * 1024 * 1024 ? "data:font/" + Path.GetExtension(font).TrimStart('.') + ";base64," + Convert.ToBase64String(File.ReadAllBytes(font)) : null } } },
+                { "sounds", sounds },
+            };
+        }
+
+        // Roblox's own copy of a content file: its backup if a mod replaced it, otherwise the file itself.
+        static string RobloxFile(string versionDir, string rel)
+        {
+            if (versionDir == null) return null;
+            string original = Path.Combine(versionDir, BackupFolder, rel), current = Path.Combine(versionDir, "content", rel);
+            return File.Exists(original) ? original : File.Exists(current) ? current : null;
+        }
+    }
+
     // Roblox's public web APIs answer 429 (Too Many Requests) when a PC asks too often. Every Keystrap lookup goes through
     // RobloxApi: a 429 is retried after the wait Roblox asks for (Retry-After), or after 1, 2 and 4 seconds when it doesn't
     // say, and a host that's still limiting is left alone until its wait is over, so Keystrap never adds to the block.
@@ -2284,6 +2470,41 @@ namespace Keystrap
         }
     }
 
+    // Roblox only accepts flags on its allow list now, and logs each one it refuses at start
+    // ("Denied local configuration for: DFIntTaskSchedulerTargetFps"). The Flags page marks those.
+    static class RefusedFlags
+    {
+        static readonly Regex Denied = new Regex(@"Denied local configuration for: (\S+)", RegexOptions.Compiled);
+
+        // From the newest Roblox log that loaded flags. Empty when there's none, or nothing was refused.
+        public static List<string> Latest()
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox", "logs");
+            if (!Directory.Exists(dir)) return new List<string>();
+            var logs = new DirectoryInfo(dir).GetFiles("*_Player_*.log")
+                .Where(f => f.Name.IndexOf("CrashHandler", StringComparison.OrdinalIgnoreCase) < 0)
+                .OrderByDescending(f => f.LastWriteTimeUtc)
+                .Take(10);
+            foreach (FileInfo log in logs)
+            {
+                string head = Head(log.FullName, 1 << 20);   // flags are loaded in the first second; the start is enough
+                if (head.IndexOf("LoadClientSettingsFromLocal", StringComparison.Ordinal) < 0) continue;
+                return Denied.Matches(head).Cast<Match>().Select(m => m.Groups[1].Value).Distinct().ToList();
+            }
+            return new List<string>();
+        }
+
+        static string Head(string file, int max)
+        {
+            using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            {
+                var buf = new byte[(int)Math.Min(max, fs.Length)];
+                int n = fs.Read(buf, 0, buf.Length);
+                return Encoding.UTF8.GetString(buf, 0, n);
+            }
+        }
+    }
+
     // Playtime: follows Roblox's own log files (%LocalAppData%\Roblox\logs) the way Bloxstrap's activity watcher
     // does. A "Joining game" line opens a session; a disconnect line, the next join (teleport) or Roblox closing
     // ends it. Sessions are stored in playtime.json and combined per experience (universe ID) for the page.
@@ -2294,6 +2515,7 @@ namespace Keystrap
             public long Universe;   // experience ID; 0 until known
             public long Place;
             public string JobId;    // server ID, used with Start to avoid recording a session twice
+            public string Server;   // the Roblox server's public address, once the log names it
             public DateTime Start;  // UTC, from the log line timestamps
             public DateTime End;
         }
@@ -2314,6 +2536,7 @@ namespace Keystrap
         static readonly Regex Stamp = new Regex(@"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)", RegexOptions.Compiled);
         static readonly Regex JoinLine = new Regex(@"\[FLog::Output\] ! Joining game '([0-9a-fA-F\-]+)' place (\d+)", RegexOptions.Compiled);
         static readonly Regex UniverseLine = new Regex(@"\[FLog::GameJoinLoadTime\] Report game_join_loadtime: placeid:(\d+).*?universeid:(\d+)", RegexOptions.Compiled);
+        static readonly Regex ServerLine = new Regex(@"\[FLog::Network\] UDMUX Address = (\d{1,3}(?:\.\d{1,3}){3})", RegexOptions.Compiled);
         static readonly Regex LeaveLine = new Regex(@"\[FLog::Network\] Time to disconnect replication data|\[FLog::SingleSurfaceApp\] leaveUGCGameInternal|\[FLog::Network\] Connection lost", RegexOptions.Compiled);
 
         // Title cleanup: bracketed tags like "[UPDATE 5]" or "(NEW!)", emoji and symbols, then stray punctuation at the ends.
@@ -2471,9 +2694,43 @@ namespace Keystrap
                     }
                     continue;
                 }
+                m = ServerLine.Match(line);
+                if (m.Success && st.Open != null)
+                {
+                    st.Open.Server = m.Groups[1].Value;
+                    ResolveRegion(st.Open.Server);
+                    any = true;
+                    continue;
+                }
                 if (st.Open != null && LeaveLine.IsMatch(line)) any |= Close(st, when);
             }
             return any;
+        }
+
+        // Where a Roblox server is ("Ashburn, Virginia, US"), looked up once per address from ipinfo.io. Only the
+        // server's address is sent, never anything about the player. Roblox's servers don't answer pings, so live
+        // ping is left to Roblox's own Shift+F3 stats.
+        readonly Dictionary<string, string> regions = new Dictionary<string, string>();
+        readonly HashSet<string> resolvingRegions = new HashSet<string>();
+
+        async void ResolveRegion(string ip)
+        {
+            if (regions.ContainsKey(ip) || !resolvingRegions.Add(ip)) return;
+            try
+            {
+                var d = json.Deserialize<Dictionary<string, object>>(await RobloxApi.GetStringAsync(http, "https://ipinfo.io/" + ip + "/json"));
+                var parts = new[] { "city", "region", "country" }
+                    .Select(k => d.ContainsKey(k) ? d[k] as string : null)
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .Distinct();
+                string place = string.Join(", ", parts);
+                if (place.Length == 0) return;
+                regions[ip] = place;
+                Log.Write("Roblox server " + ip + " is in " + place);
+                changed();
+            }
+            catch (Exception ex) { Log.Write("Couldn't look up where Roblox server " + ip + " is: " + ex.Message); }
+            finally { resolvingRegions.Remove(ip); }
         }
 
         bool Close(LogState st, DateTime end)
@@ -2602,6 +2859,8 @@ namespace Keystrap
                 { "title", TitleOf(st.Open) ?? "Place " + st.Open.Place },
                 { "placeId", st.Open.Place },
                 { "start", Ms(st.Open.Start) },
+                { "server", st.Open.Server },
+                { "region", st.Open.Server != null && regions.ContainsKey(st.Open.Server) ? regions[st.Open.Server] : null },
             }).ToList();
             return new Dictionary<string, object>
             {
@@ -3129,6 +3388,17 @@ namespace Keystrap
                 case "crosshair-import":
                     ImportCrosshair();
                     break;
+                case "mods":
+                    SendModsAsync();
+                    break;
+                case "mod-import":
+                    ImportMod(msg.ContainsKey("kind") ? msg["kind"] as string : null, msg.ContainsKey("id") ? msg["id"] as string : null);
+                    break;
+                case "mod-reset":
+                    try { Mods.Reset(msg["kind"] as string, msg.ContainsKey("id") ? msg["id"] as string : null); }
+                    catch (Exception ex) { Log.Write("Resetting a mod failed: " + ex.Message); }
+                    SendModsAsync();
+                    break;
                 case "sky-delete":
                     try { Skies.Delete(msg["id"] as string); }
                     catch (Exception ex) { Log.Write("Deleting a sky failed: " + ex.Message); Toast("Couldn't delete that sky. Details are in the log."); }
@@ -3360,6 +3630,62 @@ namespace Keystrap
             }
         }
 
+        // ---------- Refused flags ----------
+
+        // After a launch, Roblox needs a few seconds to start and log what it refused.
+        async void SendRefusedFlagsAsync(int delayMs)
+        {
+            try
+            {
+                if (delayMs > 0) await Task.Delay(delayMs);
+                var names = await Task.Run(() => RefusedFlags.Latest());
+                Post(new Dictionary<string, object> { { "type", "flags-refused" }, { "names", names } });
+            }
+            catch (Exception ex) { Log.Write("Reading the flags Roblox refused failed: " + ex.Message); }
+        }
+
+        // ---------- Mods ----------
+
+        async void SendModsAsync()
+        {
+            try
+            {
+                string dir = InstalledDir();
+                Post(await Task.Run(() => Mods.Describe(dir)));
+            }
+            catch (Exception ex) { Log.Write("Listing mods failed: " + ex.Message); }
+        }
+
+        // kind "font", or "sound" with the sound's file name as id. Saved now, put into Roblox on the next launch.
+        void ImportMod(string kind, string id)
+        {
+            string file;
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = kind == "font" ? "Choose a font" : "Choose a sound";
+                dlg.Filter = kind == "font" ? "Fonts|*.ttf;*.otf" : "Sounds|*.ogg;*.mp3;*.wav";
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                file = dlg.FileName;
+            }
+            ImportModAsync(kind, id, file);
+        }
+
+        async void ImportModAsync(string kind, string id, string file)
+        {
+            try
+            {
+                await Task.Run(() => { if (kind == "font") Mods.ImportFont(file); else Mods.ImportSound(id, file); });
+                Post(new Dictionary<string, object> { { "type", "mod-saved" } });
+                SendModsAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Importing a mod failed: " + ex.Message);
+                string message = ex is InvalidOperationException ? ex.Message : "Keystrap couldn't read that file. Details are in the log.";
+                Post(new Dictionary<string, object> { { "type", "mod-error" }, { "message", message } });
+            }
+        }
+
         // A second Keystrap start (usually a Play button on roblox.com) sent us its link, or asked to be shown.
         void OnLinkHandoff(string message)
         {
@@ -3463,6 +3789,8 @@ namespace Keystrap
             if (playtimeReady) Post(playtime.Snapshot());
             SendSkiesAsync();
             SendCrosshairDefaultAsync();
+            SendModsAsync();
+            SendRefusedFlagsAsync(0);
             SendVersionsSizeAsync();
             CheckRobloxAsync();
         }
@@ -3684,6 +4012,12 @@ namespace Keystrap
                     Log.Write("Applying the crosshair failed: " + ex.Message);
                     Toast("Keystrap couldn't apply your crosshair, so Roblox starts with its usual one.");
                 }
+                try { await Task.Run(() => Mods.ApplyTo(dir)); }
+                catch (Exception ex)
+                {
+                    Log.Write("Applying mods failed: " + ex.Message);
+                    Toast("Keystrap couldn't apply your mods, so Roblox starts with its own font and sounds.");
+                }
 
                 ReportProgress("Applying flags…", 0.96);
                 Bootstrapper.WriteClientSettings(dir, flags);
@@ -3695,6 +4029,7 @@ namespace Keystrap
                 Bootstrapper.Start(dir, toAppHome ? null : link);
 
                 Post(new Dictionary<string, object> { { "type", "launch-done" } });
+                SendRefusedFlagsAsync(20000);
                 Post(new Dictionary<string, object>
                 {
                     { "type", "versions-size" },
