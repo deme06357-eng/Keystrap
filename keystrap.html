@@ -1308,6 +1308,7 @@ const I18N_ES = {
     'Roblox refused 1 of this profile\'s flags when it last started. It\'s marked below and has no effect.':
       'Roblox rechazó 1 de los flags de este perfil la última vez que se inició. Está marcado abajo y no tiene efecto.',
     'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.': 'Keystrap ahora muestra dónde está el servidor de Roblox en el que juegas, en la página Tiempo de juego.',
+    'Custom Skies\' name no longer gets cut off in the sidebar.': 'El nombre de Cielos personalizados ya no se corta en la barra lateral.',
     'Mods: swap Roblox\'s font and ten of its sounds, like the death sound and jumping, for your own.': 'Mods: cambia la fuente de Roblox y diez de sus sonidos, como el de muerte y el de salto, por los tuyos.',
     'A flag builder on the Flags page, and flags Roblox refused at its last start are marked.': 'Un generador de flags en la página Flags, y los flags que Roblox rechazó en su último inicio aparecen marcados.',
     'Crosshairs': 'Miras',
@@ -1437,31 +1438,16 @@ const I18N_ES = {
   const COLORS = [['#fffcc7', '#fffba6'], ['#6ee7b7', '#3b9fd6'], ['#c4b5fd', '#818cf8'], ['#fda4af', '#fb7185'], ['#fdba74', '#f59e0b'], ['#e5e7eb', '#9ca3af']];
   // [name in the language itself, English name, code once it's translated]
   const LANGS = [['English', 'English', 'en'], ['Español', 'Spanish', 'es'],['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
-  // What's new in this release: shown once after an update, and any time from About. Every line also needs its Spanish
-  // version in I18N_ES.strings, or it stays in English there.
+  // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
+  // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
     Added: [
-      'Keystrap in Spanish: pick Español on the Language page and everything switches over straight away, menus, dialogs and messages included.',
-      'Cap Menu at 60 FPS in Settings: Roblox opens its home screen at 60 FPS to keep your GPU quiet, while game links keep your Unlock FPS choice.',
-      'Crosshairs: pick a style and color, size it anywhere from 50% to 200%, or import your own .png or .cur, and Keystrap uses it for every Roblox mouse cursor on every launch.',
       'Mods: swap Roblox\'s font and ten of its sounds, like the death sound and jumping, for your own.',
       'A flag builder on the Flags page, and flags Roblox refused at its last start are marked.',
-      'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.',
-      'Every Keystrap update is announced in the changelog channel of the Keystrap Discord.'
-    ],
-    Changed: [
-      'The sidebar now runs Play, Profiles, Playtime, Custom Skies, Crosshairs, Mods, Flags, Language, ToS, About, Settings.',
-      '"Experiences" are now called "Games" everywhere.',
-      'Playtime shows only your 10 most played games. The totals still count every game.',
-      'The "Inspired by Bloxstrap" line is gone: Keystrap is its own launcher.',
-      'Custom Skies is coming soon: it\'s switched off while it\'s being finished, and Roblox keeps its own sky until then.'
+      'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.'
     ],
     Fixed: [
-      'Unlock FPS works again: Roblox now ignores the frame rate flag, so Keystrap sets the Maximum Frame Rate in Roblox\'s own settings instead.',
-      'A missing WebView2 file now shows how to fix it instead of a crash report, and errors Keystrap recovers from are no longer reported as crashes.',
-      'If Roblox gets too many requests, Keystrap waits and tries again, and tells you how long to wait if it has to stop.',
-      'The updater installs only real releases, and shows the notes for the version it\'s installing instead of older ones.',
-      'Playtime\'s total time, games and sessions count every game you\'ve played again, not just the top 10.'
+      'Custom Skies\' name no longer gets cut off in the sidebar.'
     ]
   };
 
