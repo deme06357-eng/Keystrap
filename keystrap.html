@@ -707,7 +707,7 @@ html.native.shown .window { opacity: 1; }
     <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
     <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M10 4.5a2 2 0 0 1 4 0V6h3.5a1 1 0 0 1 1 1v3.5H17a2 2 0 0 0 0 4h1.5V18a1 1 0 0 1-1 1H14v-1.5a2 2 0 0 0-4 0V19H6.5a1 1 0 0 1-1-1v-3.5H7a2 2 0 0 0 0-4H5.5V7a1 1 0 0 1 1-1H10z"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
-    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M10.4 5.08L10.4 2.43 L13.6 2.43 L13.6 5.08 A7.1 7.1 0 0 1 15.76 5.98 L17.63 4.1 L19.9 6.37 L18.02 8.24 A7.1 7.1 0 0 1 18.92 10.4 L21.57 10.4 L21.57 13.6 L18.92 13.6 A7.1 7.1 0 0 1 18.02 15.76 L19.9 17.63 L17.63 19.9 L15.76 18.02 A7.1 7.1 0 0 1 13.6 18.92 L13.6 21.57 L10.4 21.57 L10.4 18.92 A7.1 7.1 0 0 1 8.24 18.02 L6.37 19.9 L4.1 17.63 L5.98 15.76 A7.1 7.1 0 0 1 5.08 13.6 L2.43 13.6 L2.43 10.4 L5.08 10.4 A7.1 7.1 0 0 1 5.98 8.24 L4.1 6.37 L6.37 4.1 L8.24 5.98 A7.1 7.1 0 0 1 10.4 5.08 Z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z"/></symbol>
     <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
     <symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></symbol>
@@ -761,7 +761,7 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
           <button class="nav-item" data-page="about"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
-          <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-sliders"/></svg><span class="lbl">Settings</span></button>
+          <button class="nav-item" data-page="settings"><svg class="ico"><use href="#i-gear"/></svg><span class="lbl">Settings</span></button>
         </nav>
       </div>
 
@@ -1396,7 +1396,8 @@ const I18N_ES = {
     'Crosshair color': 'Color de la mira', 'Custom crosshair color': 'Color personalizado de la mira',
     'Sends test messages to one of the developers\' Discord channels, in that channel\'s real format, to check it\'s set up.':
       'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
-    'How many': 'Cuántos', 'Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
+    'Settings has a gear icon in the sidebar.': 'Ajustes tiene un icono de engranaje en la barra lateral.',
+    'How many': 'Cuántos','Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
     'Developer mode\'s test notifications can go to Crash reports, Commits or Suggestions, 1 to 3 at a time.':
       'Las notificaciones de prueba del modo desarrollador pueden ir a Informes de errores, Commits o Sugerencias, de 1 a 3 a la vez.',
     'Pick a custom crosshair color':'Elige un color personalizado para la mira', 'Crosshair color hex code': 'Código hex del color de la mira',
@@ -1514,7 +1515,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.5';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.6';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1526,7 +1527,7 @@ const I18N_ES = {
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
     Changed: [
-      'Developer mode\'s test notifications can go to Crash reports, Commits or Suggestions, 1 to 3 at a time.'
+      'Settings has a gear icon in the sidebar.'
     ]
   };
 
