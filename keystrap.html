@@ -697,6 +697,16 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
   .stats { grid-template-columns: 1fr 1fr; }
   .titlebar .ver { display: none; }
 }
+/* ---------- tooltips: one shared bubble for every [title] (see "tooltips" in the script) ---------- */
+.tip {
+  position: fixed; left: 0; top: 0; z-index: 40; width: max-content; max-width: min(260px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 7px;
+  background: #1e1e1e; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  color: var(--fg); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; pointer-events: none;
+  opacity: 0; transform: translateY(var(--tip-shift, 3px)); transition: opacity .09s ease-in, transform .09s ease-in;
+}
+.tip.above { --tip-shift: -3px; }
+.tip.on { opacity: 1; transform: none; transition-duration: .14s; transition-timing-function: ease-out; }
+
 /* ---------- desktop app (Keystrap.exe): the window is the whole viewport ---------- */
 html.native, html.native body { overflow: hidden; }
 html.native body { margin: 0; padding: 0; display: block; background: var(--mica); }
@@ -1437,8 +1447,8 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'The link warning has a "Don\'t ask again" box, and Settings → Safety turns it back on.':
-      'El aviso de enlaces tiene una casilla "No volver a preguntar", y Ajustes → Seguridad lo vuelve a activar.',
+    'Tooltips are Keystrap\'s own now: dark, rounded, a quick fade, and they stay inside the window.':
+      'Las descripciones emergentes ahora son de Keystrap: oscuras, redondeadas, con un fundido rápido y siempre dentro de la ventana.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Links to websites now ask first and show where they go, so nothing opens without you saying so.':
@@ -1567,7 +1577,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.10';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.0';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1578,8 +1588,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Added: [
-      'The link warning has a "Don\'t ask again" box, and Settings → Safety turns it back on.'
+    Changed: [
+      'Tooltips are Keystrap\'s own now: dark, rounded, a quick fade, and they stay inside the window.'
     ]
   };
 
@@ -3064,6 +3074,67 @@ const I18N_ES = {
   }
   document.addEventListener('click', interceptLink, true);
   document.addEventListener('auxclick', e => { if (e.button === 1) interceptLink(e); }, true);   // middle-click
+
+  // ---------- tooltips ----------
+  // Anything with a title gets Keystrap's own bubble instead of the browser's. The title is lifted off the element
+  // while it's hovered (so the browser's own tooltip never shows) and put back after, which keeps the translator and
+  // the render code working on plain title attributes. The bubble sits below the element, flips above when there's
+  // no room, and is kept inside the window.
+  (function tooltips() {
+    const GAP = 8, EDGE = 8, DELAY = 450;
+    const tip = document.createElement('div');
+    tip.className = 'tip';
+    tip.setAttribute('aria-hidden', 'true');
+    tip.setAttribute('translate', 'no');   // the title it shows is already translated
+    document.body.appendChild(tip);
+    let target = null, text = '', timer = 0;
+
+    function take(el) {
+      release();
+      target = el;
+      text = el.getAttribute('title') || '';
+      el.removeAttribute('title');
+    }
+    function release() {
+      clearTimeout(timer);
+      tip.classList.remove('on');
+      if (target && !target.hasAttribute('title') && text) target.setAttribute('title', text);
+      target = null;
+    }
+    function show() {
+      if (!target || !text || !target.isConnected) return;
+      tip.textContent = text;
+      tip.classList.remove('above');
+      const r = target.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+      let top = r.bottom + GAP;
+      if (top + h > innerHeight - EDGE && r.top - GAP - h >= EDGE) { top = r.top - GAP - h; tip.classList.add('above'); }
+      const left = Math.min(Math.max(r.left + r.width / 2 - w / 2, EDGE), innerWidth - w - EDGE);
+      tip.style.left = Math.round(left) + 'px';
+      tip.style.top = Math.round(top) + 'px';
+      tip.classList.add('on');   // it was measured while hidden, so this still fades in
+    }
+
+    document.addEventListener('pointerover', e => {
+      const el = e.target.closest && e.target.closest('[title]');
+      if (!el || el === target || e.pointerType === 'touch') return;
+      take(el);
+      timer = setTimeout(show, DELAY);
+    });
+    document.addEventListener('pointerout', e => {
+      if (target && !(e.relatedTarget && target.contains(e.relatedTarget))) release();
+    });
+    document.addEventListener('focusin', e => {
+      const el = e.target;
+      if (el === target || !el.matches || !el.matches(':focus-visible') || !el.hasAttribute('title')) return;
+      take(el);
+      show();
+    });
+    document.addEventListener('focusout', release);
+    document.addEventListener('pointerdown', release, true);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') release(); }, true);
+    addEventListener('scroll', release, true);
+    addEventListener('blur', release);
+  })();
 
   // ---------- crosshairs ----------
   // The page draws the crosshair itself, so the preview is exactly what Roblox gets. The app is sent two PNGs:
