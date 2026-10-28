@@ -2900,26 +2900,9 @@ namespace Keystrap
         {
             try
             {
-                if (!File.Exists(StoreFile)) return;
-                var d = json.Deserialize<Dictionary<string, object>>(File.ReadAllText(StoreFile));
-                object o;
-                if (d.TryGetValue("titles", out o) && o is Dictionary<string, object>)
-                    foreach (var kv in (Dictionary<string, object>)o) titles[kv.Key] = kv.Value as string;
-                if (d.TryGetValue("places", out o) && o is Dictionary<string, object>)
-                    foreach (var kv in (Dictionary<string, object>)o)
-                        placeUniverse[long.Parse(kv.Key, CultureInfo.InvariantCulture)] = Convert.ToInt64(kv.Value, CultureInfo.InvariantCulture);
-                if (d.TryGetValue("sessions", out o) && o is ArrayList)
-                    foreach (Dictionary<string, object> r in (ArrayList)o)
-                    {
-                        var s = new Session();
-                        s.Universe = Convert.ToInt64(r["u"], CultureInfo.InvariantCulture);
-                        s.Place = Convert.ToInt64(r["p"], CultureInfo.InvariantCulture);
-                        s.JobId = r["job"] as string;
-                        s.Start = Epoch.AddMilliseconds(Convert.ToDouble(r["start"], CultureInfo.InvariantCulture));
-                        s.End = Epoch.AddMilliseconds(Convert.ToDouble(r["end"], CultureInfo.InvariantCulture));
-                        sessions.Add(s);
-                        recorded.Add(s.JobId + "|" + s.Start.Ticks);
-                    }
+                if (!File.Exists(StoreFile)) { Log.Write("Playtime: no history file yet at " + StoreFile); return; }
+                ReadFromDisk();
+                Log.Write("Playtime: loaded " + sessions.Count + " sessions, " + titles.Count + " titles");
             }
             catch (Exception ex)
             {
@@ -2928,10 +2911,41 @@ namespace Keystrap
             }
         }
 
+        // Reads titles, places and sessions from the store file, adding only sessions we don't already hold
+        // (deduped by job + start, the same key Close uses). Safe to call repeatedly. Save calls it right before
+        // writing, so anything another Keystrap instance saved is absorbed first and a save can only ever grow the
+        // history — it can't shrink it or wipe it, even if this instance somehow loaded an incomplete view.
+        void ReadFromDisk()
+        {
+            if (!File.Exists(StoreFile)) return;
+            var d = json.Deserialize<Dictionary<string, object>>(File.ReadAllText(StoreFile));
+            object o;
+            if (d.TryGetValue("titles", out o) && o is Dictionary<string, object>)
+                foreach (var kv in (Dictionary<string, object>)o) if (kv.Value is string) titles[kv.Key] = (string)kv.Value;
+            if (d.TryGetValue("places", out o) && o is Dictionary<string, object>)
+                foreach (var kv in (Dictionary<string, object>)o)
+                    placeUniverse[long.Parse(kv.Key, CultureInfo.InvariantCulture)] = Convert.ToInt64(kv.Value, CultureInfo.InvariantCulture);
+            if (d.TryGetValue("sessions", out o) && o is ArrayList)
+                foreach (Dictionary<string, object> r in (ArrayList)o)
+                {
+                    var s = new Session();
+                    s.Universe = Convert.ToInt64(r["u"], CultureInfo.InvariantCulture);
+                    s.Place = Convert.ToInt64(r["p"], CultureInfo.InvariantCulture);
+                    s.JobId = r["job"] as string;
+                    s.Start = Epoch.AddMilliseconds(Convert.ToDouble(r["start"], CultureInfo.InvariantCulture));
+                    s.End = Epoch.AddMilliseconds(Convert.ToDouble(r["end"], CultureInfo.InvariantCulture));
+                    if (recorded.Add(s.JobId + "|" + s.Start.Ticks)) sessions.Add(s);   // skip ones we already have
+                }
+        }
+
         void Save()
         {
             try
             {
+                // Pull in anything on disk we don't already have (another instance, or history this run didn't load)
+                // before overwriting, so a save can only grow the file. If the file is unreadable right now, skip the
+                // merge and write what we have — never block saving on it.
+                try { ReadFromDisk(); } catch (Exception ex) { Log.Write("Playtime: couldn't merge on save: " + ex.Message); }
                 var data = new Dictionary<string, object>
                 {
                     { "version", 1 },                    // file format

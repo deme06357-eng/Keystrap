@@ -1441,8 +1441,8 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'The developer-only test tools moved out of Settings into their own Developer tab, shown only in developer mode.':
-      'Las herramientas de prueba solo para desarrolladores se movieron de Ajustes a su propia pestaña Desarrollador, visible solo en modo desarrollador.',
+    'Your Playtime history is safer: when Keystrap saves it, it only ever adds to it, so it can\'t be overwritten or lost.':
+      'Tu historial de Tiempo de juego es más seguro: cuando Keystrap lo guarda, solo le añade datos, así que no se puede sobrescribir ni perder.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
@@ -1554,7 +1554,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.2';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.3';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1565,8 +1565,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Changed: [
-      'The developer-only test tools moved out of Settings into their own Developer tab, shown only in developer mode.'
+    Fixed: [
+      'Your Playtime history is safer: when Keystrap saves it, it only ever adds to it, so it can\'t be overwritten or lost.'
     ]
   };
 
