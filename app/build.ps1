@@ -68,6 +68,7 @@ namespace Keystrap
     {
         public const string NotificationsWebhook = $(Lit $(if ($secrets) { $secrets.notificationsWebhook }));
         public const string FeedbackWebhook = $(Lit $(if ($secrets) { $secrets.feedbackWebhook }));
+        public const string CrashWebhook = $(Lit $(if ($secrets) { $secrets.crashWebhook }));   // optional; empty sends crashes to NotificationsWebhook
     }
 }
 "@ | Set-Content $secretsCs -Encoding UTF8

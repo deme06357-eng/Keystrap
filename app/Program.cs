@@ -2423,6 +2423,26 @@ namespace Keystrap
             if (now - lastSentUtc < Cooldown)
                 throw new InvalidOperationException("You just sent a suggestion. Wait a minute before sending another.");
 
+            await PostAsync(Payload(raw, s, user, now));
+            lastSentUtc = now;
+        }
+
+        // Developer mode's test: a made-up suggestion in the real format, without the one-minute cooldown.
+        public static Task SendTestAsync(int number)
+        {
+            var s = new Suggestion
+            {
+                Category = "Test",
+                Summary = "Test suggestion " + number + " from developer mode.",
+                Details = "This is a test from Settings → Test notifications, to check the suggestion box's channel and format.",
+                Benefit = "Nothing; it's only a test.",
+                NextStep = "Delete this message.",
+            };
+            return PostAsync(Payload("test suggestion " + number, s, "Developer test", DateTime.UtcNow));
+        }
+
+        static Dictionary<string, object> Payload(string raw, Suggestion s, string user, DateTime now)
+        {
             long unix = (long)(now - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
             string polished = "**" + s.Summary + "**\n\n" + s.Details +
                 "\n\n**Why it helps**\n" + s.Benefit + "\n\n**Suggested next step**\n" + s.NextStep;
@@ -2442,13 +2462,16 @@ namespace Keystrap
                 { "footer", new Dictionary<string, object> { { "text", "Keystrap suggestion box · polished automatically" } } },
                 { "timestamp", now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") },
             };
-            var payload = new Dictionary<string, object>
+            return new Dictionary<string, object>
             {
                 { "username", "Keystrap Suggestions" },
                 { "allowed_mentions", new Dictionary<string, object> { { "parse", new string[0] } } }, // no @everyone from user text
                 { "embeds", new object[] { embed } },
             };
+        }
 
+        static async Task PostAsync(Dictionary<string, object> payload)
+        {
             if (WebhookUrl.Length == 0) throw new InvalidOperationException("The suggestion box isn't set up in this build of Keystrap.");
             var body = new StringContent(new JavaScriptSerializer().Serialize(payload), Encoding.UTF8, "application/json");
             using (HttpResponseMessage resp = await http.PostAsync(WebhookUrl, body))
@@ -2461,7 +2484,6 @@ namespace Keystrap
                     throw new InvalidOperationException("The suggestion box didn't accept the message (error " + (int)resp.StatusCode + "). Try again later.");
                 }
             }
-            lastSentUtc = now;
         }
 
         static Dictionary<string, object> Field(string name, string value, bool inline)
@@ -3351,7 +3373,8 @@ namespace Keystrap
                     OnPageReadyAsync();
                     break;
                 case "webhook-test":
-                    if (Program.DevMode) SendTestNotificationsAsync();
+                    if (Program.DevMode)
+                        SendTestNotificationsAsync(msg.ContainsKey("target") ? msg["target"] as string : "crash", Int(msg, "count"));
                     break;
                 case "save":
                     SaveState(msg.ContainsKey("state") ? msg["state"] : null);
@@ -3795,36 +3818,47 @@ namespace Keystrap
             CheckRobloxAsync();
         }
 
-        // One sample per category, spaced out so Discord's webhook rate limit (5 per 2 s) isn't hit.
-        async void SendTestNotificationsAsync()
+        // Developer mode: 1 to 3 test messages to one channel, in that channel's real format, spaced out so
+        // Discord's webhook rate limit (5 per 2 s) isn't hit. target: "crash", "commits" or "suggestions".
+        async void SendTestNotificationsAsync(string target, int count)
         {
-            string version = AppInfo.Version;
-            Exception sample;
-            try { throw new InvalidOperationException("This is a test crash from Settings → Test notifications."); }
-            catch (Exception ex) { sample = ex; }
-            var tests = new[]
-            {
-                new Notification(NotificationKind.MinorUpdate, "Test · " + version + " polish", "Small improvements.")
-                    .Field(version + " Update", "Smoother loading screen and tidier Settings."),
-                new Notification(NotificationKind.MajorUpdate, "Test · Keystrap v2", "An installed copy of Keystrap updated itself.")
-                    .Field("v2 Update", "Installed over " + version + " from Keystrap.zip.")
-                    .Field("Windows", Environment.OSVersion.Version.ToString()),
-                new Notification(NotificationKind.MinorFix, "Test · " + version + " fix", "A small fix.")
-                    .Field(version + " Fix", "Profile colours no longer reset after a restart."),
-                new Notification(NotificationKind.MajorFix, "Test · " + version + " launch fix", "A fix for an issue that stopped Roblox from launching.")
-                    .Field(version + " Fix", "Roblox starts again when the protocol handler was missing."),
-                CrashReporter.BuildNotification(sample, "Test notification", false),
-                CrashReporter.BuildNotification(sample, "Test notification", true),
-            };
+            count = Math.Max(1, Math.Min(3, count));
             int sent = 0;
-            foreach (var n in tests)
+            string error = null;
+            for (int i = 1; i <= count; i++)
             {
-                if (await WebhookService.SendAsync(n)) sent++;
-                else Log.Write("Test notification (" + WebhookService.Label(n.Kind) + ") failed: " + WebhookService.LastError);
-                await Task.Delay(700);
+                try
+                {
+                    if (target == "suggestions") await Feedback.SendTestAsync(i);
+                    else if (!await WebhookService.SendAsync(TestNotification(target, i))) throw new InvalidOperationException(WebhookService.LastError);
+                    sent++;
+                }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                    Log.Write("Test notification " + i + " to " + target + " failed: " + ex.Message);
+                }
+                if (i < count) await Task.Delay(700);
             }
-            Log.Write("Test notifications: " + sent + " of " + tests.Length + " sent");
-            Post(new Dictionary<string, object> { { "type", "webhook-test-done" }, { "sent", sent }, { "total", tests.Length }, { "error", sent < tests.Length ? WebhookService.LastError : null } });
+            Log.Write("Test notifications to " + target + ": " + sent + " of " + count + " sent");
+            Post(new Dictionary<string, object>
+            {
+                { "type", "webhook-test-done" }, { "target", target }, { "sent", sent }, { "total", count }, { "error", error },
+                { "crashChannel", WebhookService.HasCrashChannel },
+            });
+        }
+
+        // Test messages look like the real ones: crashes alternate between kept-running and closed, commits
+        // read like the changelog hook's posts.
+        static Notification TestNotification(string target, int number)
+        {
+            if (target == "commits")
+                return new Notification(NotificationKind.Commits, "Keystrap " + AppInfo.Version.TrimStart('v') + " (test)", "1 new commit, 1 file changed")
+                    .Field("Test commit " + number, "Developer mode test from Settings → Test notifications.");
+            Exception sample;
+            try { throw new InvalidOperationException("Test crash " + number + " from Settings → Test notifications."); }
+            catch (Exception ex) { sample = ex; }
+            return CrashReporter.BuildNotification(sample, "Test notification", number % 2 == 0);
         }
 
         async void SendVersionsSizeAsync()

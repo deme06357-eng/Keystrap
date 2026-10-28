@@ -11,7 +11,7 @@ using System.Web.Script.Serialization;
 
 namespace Keystrap
 {
-    enum NotificationKind { MinorUpdate, MajorUpdate, MinorFix, MajorFix, MinorCrash, MajorCrash }
+    enum NotificationKind { MinorUpdate, MajorUpdate, MinorFix, MajorFix, MinorCrash, MajorCrash, Commits }
 
     // One changelog-style message: a title, a line or two of text, "- **Name**: value" bullets and optionally a code
     // block (a stack trace, say), in that order.
@@ -45,8 +45,15 @@ namespace Keystrap
 
     static class WebhookService
     {
-        // From secrets.json (not in the repository); build.ps1 writes it into Secrets.g.cs. Empty: nothing is sent.
-        const string Url = Secrets.NotificationsWebhook;
+        // From secrets.json (not in the repository); build.ps1 writes them into Secrets.g.cs. Empty: nothing is sent.
+        // Crash reports get their own channel when crashWebhook is set; everything else shares the notifications one.
+        static string UrlFor(NotificationKind kind)
+        {
+            bool crash = kind == NotificationKind.MinorCrash || kind == NotificationKind.MajorCrash;
+            return crash && Secrets.CrashWebhook.Length > 0 ? Secrets.CrashWebhook : Secrets.NotificationsWebhook;
+        }
+
+        public static bool HasCrashChannel { get { return Secrets.CrashWebhook.Length > 0; } }
 
         // The small icon in the author header. Empty shows the header as text only; put a hosted image of the
         // Keystrap logo here (a direct .png link) to show it.
@@ -72,6 +79,7 @@ namespace Keystrap
             { NotificationKind.MajorFix,    new Style("Major fix", "fix · major", "Keystrap Changelog", "Keystrap Fixes") },
             { NotificationKind.MinorCrash,  new Style("Minor crash", "error", "Keystrap Status", "Keystrap Crashes") },
             { NotificationKind.MajorCrash,  new Style("Major crash", "crash · major", "Keystrap Status", "Keystrap Crashes") },
+            { NotificationKind.Commits,     new Style("Commits", "commits", "Keystrap Changelog", "Keystrap Commits") },   // as tools\commit-changelog.ps1 posts them
         };
 
         public static string Label(NotificationKind kind) { return Styles[kind].Label; }
@@ -120,7 +128,8 @@ namespace Keystrap
         // Posts in the background. True when Discord accepted it; never throws.
         public static async Task<bool> SendAsync(Notification n, TimeSpan timeout)
         {
-            if (Url.Length == 0) { LastError = "no webhook set up (secrets.json)"; return false; }
+            string url = UrlFor(n.Kind);
+            if (url.Length == 0) { LastError = "no webhook set up (secrets.json)"; return false; }
             try
             {
                 using (var http = new HttpClient())
@@ -128,7 +137,7 @@ namespace Keystrap
                     http.Timeout = timeout;
                     http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent());
                     var body = new StringContent(BuildPayload(n), Encoding.UTF8, "application/json");
-                    using (HttpResponseMessage resp = await http.PostAsync(Url, body).ConfigureAwait(false))
+                    using (HttpResponseMessage resp = await http.PostAsync(url, body).ConfigureAwait(false))
                     {
                         if (resp.IsSuccessStatusCode) return true;
                         LastError = "HTTP " + (int)resp.StatusCode;

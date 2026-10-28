@@ -486,6 +486,14 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .sky-body .d { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
 .sky-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
 .sky-actions .btn { padding: 6px 14px; }
+/* developer: test notifications */
+.dev-test { align-items: flex-end; }
+.dev-test-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; align-items: flex-end; }
+.dev-test-controls .fb-field { width: 180px; }
+.dev-test-controls .fb-field:last-child { width: auto; }
+.dev-test-controls .fps-opts { margin-top: 0; }
+.dev-test-controls .seg { min-width: 34px; }
+
 /* flag builder */
 .fb { display: flex; flex-direction: column; gap: 14px; }
 .fb .t { font-weight: 600; }
@@ -1015,8 +1023,24 @@ html.native.shown .window { opacity: 1; }
             <button class="btn" data-open-logs><svg class="ico"><use href="#i-folder"/></svg>Open logs folder</button></div>
           <div class="row"><div class="txt"><div class="t">Send crash reports</div><div class="d">If Keystrap crashes, it sends the error, the Keystrap version and your active profile's name to the developers. Your Windows user name and folders are removed first.</div></div>
             <label class="switch"><input type="checkbox" id="s-crash" aria-label="Send crash reports"><span></span></label></div>
-          <div class="row" id="devWebhookRow" hidden><div class="txt"><div class="t">Test notifications <span class="badge beta">Developer</span></div><div class="d" id="devWebhookDesc">Sends one sample of each category (minor and major update, fix and crash) to the developers' Discord webhook, to check the formatting.</div></div>
-            <button class="btn" id="devWebhookTest">Send test notifications</button></div>
+          <div class="row dev-test" id="devWebhookRow" hidden>
+            <div class="txt">
+              <div class="t">Test notifications <span class="badge beta">Developer</span></div>
+              <div class="d" id="devWebhookDesc">Sends test messages to one of the developers' Discord channels, in that channel's real format, to check it's set up.</div>
+              <div class="dev-test-controls">
+                <label class="fb-field"><span>Channel</span>
+                  <select id="devWebhookTarget"><option value="crash">Crash reports</option><option value="commits">Commits</option><option value="suggestions">Suggestions</option></select></label>
+                <div class="fb-field"><span id="devWebhookCountLabel">How many</span>
+                  <div class="fps-opts" id="devWebhookCount" role="radiogroup" aria-labelledby="devWebhookCountLabel">
+                    <button class="seg" role="radio" data-count="1" aria-checked="true">1</button>
+                    <button class="seg" role="radio" data-count="2" aria-checked="false">2</button>
+                    <button class="seg" role="radio" data-count="3" aria-checked="false">3</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="btn" id="devWebhookTest">Send</button>
+          </div>
         </div>
       </section>
 
@@ -1370,7 +1394,12 @@ const I18N_ES = {
     'Style': 'Estilo', 'Crosshair style': 'Estilo de mira', 'Dot': 'Punto', 'Cross': 'Cruz', 'Cross and dot': 'Cruz y punto',
     'Circle': 'Círculo', 'Circle and dot': 'Círculo y punto', 'Your image': 'Tu imagen',
     'Crosshair color': 'Color de la mira', 'Custom crosshair color': 'Color personalizado de la mira',
-    'Pick a custom crosshair color': 'Elige un color personalizado para la mira', 'Crosshair color hex code': 'Código hex del color de la mira',
+    'Sends test messages to one of the developers\' Discord channels, in that channel\'s real format, to check it\'s set up.':
+      'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
+    'How many': 'Cuántos', 'Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
+    'Developer mode\'s test notifications can go to Crash reports, Commits or Suggestions, 1 to 3 at a time.':
+      'Las notificaciones de prueba del modo desarrollador pueden ir a Informes de errores, Commits o Sugerencias, de 1 a 3 a la vez.',
+    'Pick a custom crosshair color':'Elige un color personalizado para la mira', 'Crosshair color hex code': 'Código hex del color de la mira',
     'The crosshair\'s color picker is now Keystrap\'s own dark one, with a box for hex codes, and both color pickers have a cleaner dark look.':
       'El selector de color de la mira ahora es el selector oscuro de Keystrap, con un cuadro para códigos hex, y los dos selectores de color tienen un aspecto oscuro más limpio.',
     'White': 'Blanco', 'Cyan': 'Cian', 'Pink': 'Rosa', 'Yellow': 'Amarillo',
@@ -1443,6 +1472,9 @@ const I18N_ES = {
     [/^Builder settings saved to (.+)$/, (tr, p) => 'Ajustes del generador guardados en ' + p],
     [/^Roblox refused (\d+) of this profile's flags when it last started\. They're marked below and have no effect\.$/, (tr, n) =>
       'Roblox rechazó ' + n + ' de los flags de este perfil la última vez que se inició. Están marcados abajo y no tienen efecto.'],
+    [/^(\d+) of (\d+) sent to (Crash reports|Commits|Suggestions)\.(.*)$/, (tr, a, b, ch, rest) =>
+      a + ' de ' + b + ' enviados a ' + tr(ch) + '.' + rest.replace(' Last error: ', ' Último error: ')
+        .replace(' Crash reports share the commits channel until crashWebhook is set in secrets.json.', ' Los informes de errores comparten el canal de commits hasta que se configure crashWebhook en secrets.json.')],
     [/^Server in (.+)\. Press Shift\+F3 in Roblox for live ping\.$/, (tr, where) => 'Servidor en ' + where + '. Pulsa Shift+F3 en Roblox para ver el ping en vivo.'],
     [/^(.+) and (\d+) more$/, (tr, g, n) => g + ' y ' + n + ' más'],
     // skies
@@ -1482,7 +1514,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.4';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.5';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1494,7 +1526,7 @@ const I18N_ES = {
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
     Changed: [
-      'The crosshair\'s color picker is now Keystrap\'s own dark one, with a box for hex codes, and both color pickers have a cleaner dark look.'
+      'Developer mode\'s test notifications can go to Crash reports, Commits or Suggestions, 1 to 3 at a time.'
     ]
   };
 
@@ -1722,10 +1754,7 @@ const I18N_ES = {
         if (state) renderPlaytime();
         break;
       case 'toast': toast(msg.text); break;
-      case 'webhook-test-done':
-        $('#devWebhookTest').disabled = false;
-        $('#devWebhookDesc').textContent = msg.sent + ' of ' + msg.total + ' test notifications sent' + (msg.error ? ' (last error: ' + msg.error + ')' : '') + '.';
-        break;
+      case 'webhook-test-done': devTestDone(msg); break;
       case 'suggest-done': suggestFinished(msg); break;
       case 'suggest-error': suggestFinished(null, msg.message || 'Your suggestion couldn\'t be sent.'); break;
     }
@@ -2429,12 +2458,28 @@ const I18N_ES = {
   $('#s-menucap').addEventListener('change', e => { state.settings.menuCap60 = e.target.checked; save(); toast('Menu FPS cap ' + (e.target.checked ? 'on' : 'off')); });
 
   // ---------- discord rich presence ----------
+  // Developer mode only: test messages to one channel, 1 to 3 at a time.
+  const DEV_CHANNELS = { crash: 'Crash reports', commits: 'Commits', suggestions: 'Suggestions' };
+  let devTestCount = 1;
+  $('#devWebhookCount').addEventListener('click', e => {
+    const b = e.target.closest('[data-count]');
+    if (!b) return;
+    devTestCount = +b.dataset.count;
+    $$('#devWebhookCount .seg').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+  });
   $('#devWebhookTest').addEventListener('click', () => {
     if (!host) return;
     $('#devWebhookTest').disabled = true;
     $('#devWebhookDesc').textContent = 'Sending…';
-    host.postMessage({ type: 'webhook-test' });
+    host.postMessage({ type: 'webhook-test', target: $('#devWebhookTarget').value, count: devTestCount });
   });
+  function devTestDone(msg) {
+    $('#devWebhookTest').disabled = false;
+    let text = msg.sent + ' of ' + msg.total + ' sent to ' + DEV_CHANNELS[msg.target] + '.';
+    if (msg.error) text += ' Last error: ' + msg.error.replace(/\.?$/, '.');
+    if (msg.target === 'crash' && !msg.crashChannel) text += ' Crash reports share the commits channel until crashWebhook is set in secrets.json.';
+    $('#devWebhookDesc').textContent = text;
+  }
   $('#s-crash').addEventListener('change', e => {
     state.settings.crashReports = e.target.checked; save();
     toast('Crash reports ' + (e.target.checked ? 'on' : 'off'));
