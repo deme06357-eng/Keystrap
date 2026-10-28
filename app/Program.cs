@@ -1,6 +1,7 @@
 ﻿// Keystrap desktop app: a borderless WinForms window hosting keystrap.html in WebView2, plus the
-// backend the page drives through chrome.webview messages: saved state, the Roblox installer,
-// launching, refresh rate, logs, the Support page's suggestion box and the Playtime tracker.
+// backend the page drives through chrome.webview messages: saved state, the Roblox installer and
+// launcher, skies, crosshairs and mods, refused-flag checks, Discord presence, the Playtime tracker,
+// the Support page's suggestion box, crash reports and logs.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -4029,84 +4030,22 @@ namespace Keystrap
             catch (InvalidOperationException) { } // window closing
         }
 
+        // One launch, start to finish: settings that must be written before Roblox starts, the right Roblox version,
+        // the user's customisations on top of it, then Roblox itself.
         async void LaunchAsync(Dictionary<string, object> msg)
         {
             if (launching) return;
             launching = true;
             try
             {
-                var flags = new Dictionary<string, string>();
-                object raw;
-                if (msg.TryGetValue("flags", out raw) && raw is Dictionary<string, object>)
-                    foreach (var kv in (Dictionary<string, object>)raw)
-                        flags[kv.Key] = Convert.ToString(kv.Value, System.Globalization.CultureInfo.InvariantCulture);
-
-                // The frame rate goes into Roblox's Maximum Frame Rate, the setting Roblox actually honours, and into the
-                // flag as well in case Roblox allows it again; the flag wins over the same one in a profile. Both are
-                // written before Roblox starts, since that's the only time it reads them. Nothing to set: Roblox keeps
-                // its own limit (ClientAppSettings.json is rewritten every launch).
+                var flags = LaunchFlags(msg);
                 string link = msg.ContainsKey("link") ? msg["link"] as string : null;
                 bool toAppHome = !RobloxLink.IsLink(link);
-                int fps = LaunchFps(msg, toAppHome);
-                if (fps > 0)
-                {
-                    string value = fps.ToString(CultureInfo.InvariantCulture);
-                    string fromProfile;
-                    if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)
-                        Log.Write("Frame rate setting replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
-                    flags[FpsFlag] = value;
-                    Log.Write(toAppHome && Bool(msg, "menuCap") ? "Cap menu: opening the Roblox app home at " + fps + " FPS"
-                        : fps == UncappedFps ? "Unlock FPS: uncapped" : "Unlock FPS: capped at " + fps);
-                    Bootstrapper.SetFramerateCap(fps);
-                }
+                ApplyFrameRate(msg, flags, toAppHome);
 
-                ReportProgress("Checking for Roblox updates…", 0.02);
-                RobloxVersion latest = null;
-                RateLimitedException limited = null;
-                try { latest = await Bootstrapper.GetLatestAsync(); }
-                catch (Exception ex)
-                {
-                    Log.Write("Version check failed, using the installed copy: " + ex.Message);
-                    limited = ex as RateLimitedException;
-                }
-                RobloxVersion version = latest ?? Bootstrapper.GetInstalled();
-                if (version == null)
-                {
-                    if (limited != null) throw limited;
-                    throw new InvalidOperationException("Couldn't reach Roblox to download it. Check your internet connection and try again.");
-                }
-                if (limited != null)
-                    Toast("Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.");
-
+                RobloxVersion version = await PickVersionAsync();
                 string dir = await Task.Run(() => Bootstrapper.InstallAsync(version, ReportProgress));
-
-                // The saved Custom Skies choice, re-applied every launch so freshly installed versions get it too.
-                string sky = msg.ContainsKey("sky") ? msg["sky"] as string : null;
-                if (!string.IsNullOrEmpty(sky))
-                {
-                    sky = Skies.Resolve(sky);
-                    ReportProgress(sky == Skies.Default ? "Checking Roblox's sky…" : "Applying your sky…", 0.95);
-                    try { await Task.Run(() => Skies.ApplyTo(dir, sky, text => ReportProgress(text, 0.95))); }
-                    catch (Exception ex)
-                    {
-                        Log.Write("Applying the sky failed: " + ex.Message);
-                        Toast("Keystrap couldn't apply your custom sky, so Roblox starts with its usual sky.");
-                    }
-                }
-
-                // The saved crosshair (or Roblox's own), re-applied every launch for the same reason as the sky.
-                try { await Task.Run(() => Crosshairs.ApplyTo(dir)); }
-                catch (Exception ex)
-                {
-                    Log.Write("Applying the crosshair failed: " + ex.Message);
-                    Toast("Keystrap couldn't apply your crosshair, so Roblox starts with its usual one.");
-                }
-                try { await Task.Run(() => Mods.ApplyTo(dir)); }
-                catch (Exception ex)
-                {
-                    Log.Write("Applying mods failed: " + ex.Message);
-                    Toast("Keystrap couldn't apply your mods, so Roblox starts with its own font and sounds.");
-                }
+                await ApplyCustomisationsAsync(dir, msg);
 
                 ReportProgress("Applying flags…", 0.96);
                 Bootstrapper.WriteClientSettings(dir, flags);
@@ -4135,25 +4074,105 @@ namespace Keystrap
             catch (Exception ex)
             {
                 Log.Write("Launch failed: " + ex);
+                var error = new Dictionary<string, object> { { "type", "launch-error" }, { "message", LaunchErrorText(ex) } };
+                // The page locks the Launch button for the wait, so retrying can't make the block longer.
                 var limited = ex as RateLimitedException;
-                if (limited != null)
-                {
-                    // The page locks the Launch button for the wait, so retrying can't make the block longer.
-                    Post(new Dictionary<string, object> { { "type", "launch-error" }, { "message", limited.Message },
-                        { "retryAfter", (int)Math.Ceiling(limited.Wait.TotalSeconds) } });
-                    return;
-                }
-                string text = ex is HttpRequestException || ex is WebException || ex is TaskCanceledException
-                    ? "Couldn't download Roblox. Check your internet connection and try again."
-                    : ex is IOException || ex is UnauthorizedAccessException
-                        ? "Couldn't write Roblox's files. Close Roblox if it's running, then try again."
-                        : ex.Message;
-                Post(new Dictionary<string, object> { { "type", "launch-error" }, { "message", text } });
+                if (limited != null) error["retryAfter"] = (int)Math.Ceiling(limited.Wait.TotalSeconds);
+                Post(error);
             }
             finally
             {
                 launching = false;
             }
+        }
+
+        // The profile's flags, as strings, ready for ClientAppSettings.json.
+        static Dictionary<string, string> LaunchFlags(Dictionary<string, object> msg)
+        {
+            var flags = new Dictionary<string, string>();
+            object raw;
+            if (msg.TryGetValue("flags", out raw) && raw is Dictionary<string, object>)
+                foreach (var kv in (Dictionary<string, object>)raw)
+                    flags[kv.Key] = Convert.ToString(kv.Value, CultureInfo.InvariantCulture);
+            return flags;
+        }
+
+        // The frame rate goes into Roblox's Maximum Frame Rate, the setting Roblox actually honours, and into the
+        // flag as well in case Roblox allows it again; the flag wins over the same one in a profile. Both are
+        // written before Roblox starts, since that's the only time it reads them. Nothing to set: Roblox keeps
+        // its own limit (ClientAppSettings.json is rewritten every launch).
+        void ApplyFrameRate(Dictionary<string, object> msg, Dictionary<string, string> flags, bool toAppHome)
+        {
+            int fps = LaunchFps(msg, toAppHome);
+            if (fps <= 0) return;
+            string value = fps.ToString(CultureInfo.InvariantCulture);
+            string fromProfile;
+            if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)
+                Log.Write("Frame rate setting replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
+            flags[FpsFlag] = value;
+            Log.Write(toAppHome && Bool(msg, "menuCap") ? "Cap menu: opening the Roblox app home at " + fps + " FPS"
+                : fps == UncappedFps ? "Unlock FPS: uncapped" : "Unlock FPS: capped at " + fps);
+            Bootstrapper.SetFramerateCap(fps);
+        }
+
+        // The latest Roblox, or the installed one when the check fails. Only throws when there's neither.
+        async Task<RobloxVersion> PickVersionAsync()
+        {
+            ReportProgress("Checking for Roblox updates…", 0.02);
+            RobloxVersion latest = null;
+            RateLimitedException limited = null;
+            try { latest = await Bootstrapper.GetLatestAsync(); }
+            catch (Exception ex)
+            {
+                Log.Write("Version check failed, using the installed copy: " + ex.Message);
+                limited = ex as RateLimitedException;
+            }
+            RobloxVersion version = latest ?? Bootstrapper.GetInstalled();
+            if (version == null)
+            {
+                if (limited != null) throw limited;
+                throw new InvalidOperationException("Couldn't reach Roblox to download it. Check your internet connection and try again.");
+            }
+            if (limited != null)
+                Toast("Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.");
+            return version;
+        }
+
+        // The saved sky, crosshair and mods, re-applied every launch so a freshly installed version gets them too.
+        // Each one failing on its own only costs that one: Roblox still starts, with its own look for it.
+        async Task ApplyCustomisationsAsync(string dir, Dictionary<string, object> msg)
+        {
+            string sky = msg.ContainsKey("sky") ? msg["sky"] as string : null;
+            if (!string.IsNullOrEmpty(sky))
+            {
+                sky = Skies.Resolve(sky);
+                ReportProgress(sky == Skies.Default ? "Checking Roblox's sky…" : "Applying your sky…", 0.95);
+                await TryApplyAsync(() => Skies.ApplyTo(dir, sky, text => ReportProgress(text, 0.95)),
+                    "the sky", "Keystrap couldn't apply your custom sky, so Roblox starts with its usual sky.");
+            }
+            await TryApplyAsync(() => Crosshairs.ApplyTo(dir),
+                "the crosshair", "Keystrap couldn't apply your crosshair, so Roblox starts with its usual one.");
+            await TryApplyAsync(() => Mods.ApplyTo(dir),
+                "mods", "Keystrap couldn't apply your mods, so Roblox starts with its own font and sounds.");
+        }
+
+        async Task TryApplyAsync(Action apply, string what, string toast)
+        {
+            try { await Task.Run(apply); }
+            catch (Exception ex)
+            {
+                Log.Write("Applying " + what + " failed: " + ex.Message);
+                Toast(toast);
+            }
+        }
+
+        static string LaunchErrorText(Exception ex)
+        {
+            if (ex is HttpRequestException || ex is WebException || ex is TaskCanceledException)
+                return "Couldn't download Roblox. Check your internet connection and try again.";
+            if (ex is IOException || ex is UnauthorizedAccessException)
+                return "Couldn't write Roblox's files. Close Roblox if it's running, then try again.";
+            return ex.Message;   // RateLimitedException's message already says how long to wait
         }
 
         // Resize from the thin frame around the web view.
