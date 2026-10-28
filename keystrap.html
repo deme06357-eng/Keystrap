@@ -312,6 +312,42 @@ textarea.input { width: 100%; resize: vertical; font-family: var(--f-mono); font
 .dd-opt .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dd-opt .ico { width: 14px; height: 14px; color: var(--accent); visibility: hidden; }
 .dd-opt[aria-selected="true"] .ico { visibility: visible; }
+
+/* dropdowns: each <select> stays hidden underneath (it holds the value), and .sel draws it in Keystrap's style
+   instead of the light grey list Windows would show */
+.sel { width: 100%; }
+.sel > select { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.sel-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: var(--card-hi); border: 1px solid var(--stroke); border-radius: var(--r-ctl); padding: 7px 10px;
+  color: var(--fg); font: inherit; font-size: 13px; cursor: pointer; transition: border-color .15s ease, background-color .15s ease;
+}
+.sel-btn:hover { border-color: rgba(255,255,255,.2); }
+.sel-btn[aria-expanded="true"], .sel-btn:focus-visible { outline: none; border-color: rgba(var(--accent-rgb),.5); }
+.sel-btn .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-btn .chev { width: 14px; height: 14px; color: var(--fg-2); flex: none; transition: transform .15s ease; }
+.sel-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.sel .dd-menu { width: 100%; min-width: 0; animation: sel-in .12s ease-out; }
+.sel .dd-opt { font-weight: 400; color: var(--fg); }
+.sel .dd-opt[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); }
+@keyframes sel-in { from { opacity: 0; transform: translateY(-4px); } }
+
+/* sliders: a rounded dark track, filled up to the thumb (--fill, set by the page), and an accent thumb */
+input[type="range"] { -webkit-appearance: none; appearance: none; height: 22px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2)) 0 / var(--fill, 50%) 100% no-repeat, rgba(255,255,255,.1);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%; border: 0;
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  box-shadow: 0 1px 4px rgba(0,0,0,.55), 0 0 0 0 rgba(var(--accent-rgb),.2);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+input[type="range"]:hover::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0,0,0,.55), 0 0 0 6px rgba(var(--accent-rgb),.16); }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.12); }
+input[type="range"]:focus-visible { outline: none; }
+input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0,0,0,.55), 0 0 0 6px rgba(var(--accent-rgb),.28); }
 .table-wrap { overflow-x: auto; border: 1px solid var(--stroke); border-radius: var(--r-card); }
 table { width: 100%; border-collapse: collapse; background: var(--card); min-width: 560px; }
 th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--stroke); vertical-align: middle; }
@@ -486,7 +522,7 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .xh-colors { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 #xhColor { width: 36px; height: 30px; padding: 0 2px; border: 1px solid var(--stroke); border-radius: 8px; background: transparent; cursor: pointer; }
 .xh-slider { display: flex; align-items: center; gap: 12px; }
-.xh-slider input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.xh-slider input[type="range"] { flex: 1; min-width: 0; }
 .xh-slider output { width: 46px; text-align: right; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--fg); }
 .xh-marks { display: flex; justify-content: space-between; margin-top: -8px; font-size: 11.5px; color: var(--fg-3); padding-right: 116px; }
 .xh-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-2); cursor: pointer; }
@@ -1308,7 +1344,9 @@ const I18N_ES = {
     'Roblox refused 1 of this profile\'s flags when it last started. It\'s marked below and has no effect.':
       'Roblox rechazó 1 de los flags de este perfil la última vez que se inició. Está marcado abajo y no tiene efecto.',
     'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.': 'Keystrap ahora muestra dónde está el servidor de Roblox en el que juegas, en la página Tiempo de juego.',
-    'Custom Skies\' name no longer gets cut off in the sidebar.': 'El nombre de Cielos personalizados ya no se corta en la barra lateral.',
+    'Dropdowns and sliders match the rest of Keystrap: dark and rounded, in your accent color, with no more light grey lists.':
+      'Los menús desplegables y los controles deslizantes combinan con el resto de Keystrap: oscuros y redondeados, en tu color de acento, sin más listas gris claro.',
+    'Custom Skies\' name no longer gets cut off in the sidebar.':'El nombre de Cielos personalizados ya no se corta en la barra lateral.',
     'Mods: swap Roblox\'s font and ten of its sounds, like the death sound and jumping, for your own.': 'Mods: cambia la fuente de Roblox y diez de sus sonidos, como el de muerte y el de salto, por los tuyos.',
     'A flag builder on the Flags page, and flags Roblox refused at its last start are marked.': 'Un generador de flags en la página Flags, y los flags que Roblox rechazó en su último inicio aparecen marcados.',
     'Crosshairs': 'Miras',
@@ -1430,7 +1468,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.2';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.3';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1441,13 +1479,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Added: [
-      'Mods: swap Roblox\'s font and ten of its sounds, like the death sound and jumping, for your own.',
-      'A flag builder on the Flags page, and flags Roblox refused at its last start are marked.',
-      'Keystrap now shows where the Roblox server you\'re playing on is, on the Playtime page.'
-    ],
-    Fixed: [
-      'Custom Skies\' name no longer gets cut off in the sidebar.'
+    Changed: [
+      'Dropdowns and sliders match the rest of Keystrap: dark and rounded, in your accent color, with no more light grey lists.'
     ]
   };
 
@@ -2159,6 +2192,72 @@ const I18N_ES = {
       body.appendChild(tr);
     });
   }
+  // ---------- dropdowns and sliders ----------
+  // Windows draws a <select>'s list itself, in light grey. Each <select> stays (it holds the value and fires
+  // "change") but is hidden, and gets a button and list in Keystrap's style. Setting .value from code fires no
+  // event, so call refreshSelect afterwards.
+  function enhanceSelect(sel) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dd sel';
+    sel.parentNode.insertBefore(wrap, sel);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sel-btn';
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<span class="nm"></span><svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg>';
+    const menu = document.createElement('div');
+    menu.className = 'dd-menu';
+    menu.setAttribute('role', 'listbox');
+    menu.hidden = true;
+    wrap.append(btn, menu, sel);   // the button comes first, so a wrapping <label> belongs to it
+    sel.tabIndex = -1;
+    sel.setAttribute('aria-hidden', 'true');
+
+    // Option text is read from the <select> each time, so it follows the language the page is in.
+    function build() {
+      const opts = [...sel.options];
+      menu.innerHTML = opts.map((o, i) => '<button type="button" class="dd-opt" role="option" data-i="' + i + '" aria-selected="' + o.selected + '">' +
+        '<span class="nm"></span><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></button>').join('');
+      [...menu.children].forEach((b, i) => { b.querySelector('.nm').textContent = opts[i].textContent; });
+      btn.querySelector('.nm').textContent = sel.selectedIndex >= 0 ? opts[sel.selectedIndex].textContent : '';
+    }
+    function open(on) {
+      if (on) build();
+      menu.hidden = !on;
+      btn.setAttribute('aria-expanded', String(on));
+      if (on) (menu.querySelector('[aria-selected="true"]') || menu.firstElementChild).focus();
+    }
+    function choose(i) {
+      if (sel.selectedIndex !== i) { sel.selectedIndex = i; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+      open(false);
+      build();
+      btn.focus();
+    }
+    btn.addEventListener('click', () => open(menu.hidden));
+    btn.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(true); }
+    });
+    menu.addEventListener('click', e => { const o = e.target.closest('.dd-opt'); if (o) choose(+o.dataset.i); });
+    menu.addEventListener('keydown', e => {
+      const items = [...menu.children], i = items.indexOf(document.activeElement);
+      const to = e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowUp' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : null;
+      if (to !== null) { e.preventDefault(); items[(to + items.length) % items.length].focus(); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); open(false); btn.focus(); }
+      else if (e.key === 'Tab') open(false);
+    });
+    document.addEventListener('click', e => { if (!menu.hidden && !wrap.contains(e.target)) open(false); });
+    sel._refresh = build;
+    build();
+  }
+  function refreshSelect(sel) { if (sel._refresh) sel._refresh(); }
+  $$('select').forEach(enhanceSelect);
+
+  // The slider's track is filled up to the thumb.
+  function paintRange(r) { r.style.setProperty('--fill', ((r.value - r.min) / (r.max - r.min) * 100) + '%'); }
+  document.addEventListener('input', e => { if (e.target.type === 'range') paintRange(e.target); });
+  $$('input[type="range"]').forEach(paintRange);
+
   // ---------- flag builder ----------
   // Each choice is a set of flags. "auto" removes the group's flags, so Roblox decides.
   const FB = {
@@ -2179,6 +2278,7 @@ const I18N_ES = {
     Object.keys(FB).forEach(group => {
       const match = Object.keys(FB[group]).find(k => FB[group][k].length && FB[group][k].every(f => value(f[0]) === f[1]));
       $('#' + group).value = match || 'auto';
+      refreshSelect($('#' + group));
     });
   }
   $('#fbApply').addEventListener('click', () => {
@@ -2883,6 +2983,7 @@ const I18N_ES = {
     const slider = $('#xhScale');
     slider.max = max;
     slider.value = Math.min(c.scale, max);
+    paintRange(slider);
     $('#xhScaleOut').textContent = Math.min(c.scale, max) + '%';
     $('#xhScaleMax').textContent = max < XH_SCALE_MAX ? max + '%' : 'Oversized';
   }
