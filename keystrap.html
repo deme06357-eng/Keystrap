@@ -486,6 +486,18 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .sky-body .d { color: var(--fg-3); font-size: 12.5px; line-height: 1.45; }
 .sky-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 10px; }
 .sky-actions .btn { padding: 6px 14px; }
+/* cursor ring: the outer box only moves; the inner circle changes size, so the ring stays centred on the mouse */
+.cursor-ring { position: fixed; left: 0; top: 0; z-index: 9999; width: 0; height: 0; pointer-events: none; opacity: 0; transition: opacity .2s ease; will-change: transform; }
+.cursor-ring.on { opacity: 1; }
+.cursor-ring i {
+  position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid rgba(var(--accent-rgb), .7); box-shadow: 0 0 12px rgba(var(--accent-rgb), .12);
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1), border-color .2s ease;
+}
+.cursor-ring.hover i { transform: scale(1.45); border-color: rgba(var(--accent-rgb), 1); }
+.cursor-ring.down i { transform: scale(.8); }
+.cursor-ring.hover.down i { transform: scale(1.2); }
+
 /* developer: test notifications */
 .dev-test { align-items: flex-end; }
 .dev-test-controls { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; align-items: flex-end; }
@@ -997,6 +1009,10 @@ html.native.shown .window { opacity: 1; }
           </div>
           <div class="accent-note" id="accentNote" aria-live="polite"></div>
         </div>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Cursor ring</div><div class="d">A ring in your accent color that follows the mouse around Keystrap, a little behind it.</div></div>
+            <label class="switch"><input type="checkbox" id="s-ring" aria-label="Cursor ring"><span></span></label></div>
+        </div>
         <h2 class="sec">Launching</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Open Roblox links with Keystrap</div><div class="d" id="linksDesc">Play buttons on roblox.com start Roblox through Keystrap, with your active profile's flags.</div></div>
@@ -1397,6 +1413,9 @@ const I18N_ES = {
     'Sends test messages to one of the developers\' Discord channels, in that channel\'s real format, to check it\'s set up.':
       'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
     'Settings has a gear icon in the sidebar.': 'Ajustes tiene un icono de engranaje en la barra lateral.',
+    'Cursor ring': 'Anillo del cursor',
+    'A ring in your accent color that follows the mouse around Keystrap, a little behind it.': 'Un anillo en tu color de acento que sigue al ratón por Keystrap, un poco por detrás.',
+    'A cursor ring that follows your mouse around Keystrap, like on the website. Turn it off in Settings.': 'Un anillo que sigue a tu ratón por Keystrap, como en la web. Desactívalo en Ajustes.',
     'How many': 'Cuántos','Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
     'Developer mode\'s test notifications can go to Crash reports, Commits or Suggestions, 1 to 3 at a time.':
       'Las notificaciones de prueba del modo desarrollador pueden ir a Informes de errores, Commits o Sugerencias, de 1 a 3 a la vez.',
@@ -1449,8 +1468,8 @@ const I18N_ES = {
     [/^Roblox is still limiting requests\. Try again in (\d+) s\.$/, (tr, n) => 'Roblox sigue limitando las solicitudes. Reintenta en ' + n + ' s.'],
     [/^Roblox is getting too many requests from this PC\. Wait (\d+) (second|seconds|minutes), then try again\.$/, (tr, n, unit) =>
       'Roblox está recibiendo demasiadas solicitudes desde este PC. Espera ' + n + ' ' + ({ second: 'segundo', seconds: 'segundos', minutes: 'minutos' })[unit] + ' y vuelve a intentarlo.'],
-    [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
-      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
+    [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Cursor ring|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
+      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Cursor ring': 'Anillo del cursor', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
       ': ' + (on === 'on' ? 'activado' : 'desactivado')],
     [/^(.+) \(preview\)$/, (tr, t) => tr(t) + ' (vista previa)'],
     [/^Downloading Roblox \((.+)\)…$/, (tr, p) => 'Descargando Roblox (' + p + ')…'],
@@ -1515,7 +1534,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.6';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.7';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1526,8 +1545,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Changed: [
-      'Settings has a gear icon in the sidebar.'
+    Added: [
+      'A cursor ring that follows your mouse around Keystrap, like on the website. Turn it off in Settings.'
     ]
   };
 
@@ -1546,7 +1565,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
@@ -2443,6 +2462,7 @@ const I18N_ES = {
     renderDiscord();
     $('#s-close').checked = state.settings.closeAfterLaunch;
     $('#s-menucap').checked = !!state.settings.menuCap60;
+    $('#s-ring').checked = state.settings.cursorRing !== false;
     $('#s-links').checked = state.settings.handleLinks;
     $('#linksDesc').textContent = !host
       ? 'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.'
@@ -2457,6 +2477,50 @@ const I18N_ES = {
   }
   $('#s-close').addEventListener('change', e => { state.settings.closeAfterLaunch = e.target.checked; save(); toast('Close after launch ' + (e.target.checked ? 'on' : 'off')); });
   $('#s-menucap').addEventListener('change', e => { state.settings.menuCap60 = e.target.checked; save(); toast('Menu FPS cap ' + (e.target.checked ? 'on' : 'off')); });
+  $('#s-ring').addEventListener('change', e => { state.settings.cursorRing = e.target.checked; save(); cursorRing.update(); toast('Cursor ring ' + (e.target.checked ? 'on' : 'off')); });
+
+  // ---------- cursor ring ----------
+  // A ring that trails the mouse, like the one on the Keystrap website. The real pointer stays: the ring only
+  // follows it. It glides 14% of the way each frame (the same on 60Hz and 144Hz screens), and only animates
+  // while it's catching up.
+  const cursorRing = (() => {
+    const FOLLOW = 0.14;
+    const el = document.createElement('div');
+    el.className = 'cursor-ring';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<i></i>';
+    document.body.appendChild(el);
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)'), mouse = matchMedia('(pointer: fine)');
+    const CLICKABLE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="option"], [role="radio"], [role="slider"], [tabindex]';
+    let mx = 0, my = 0, rx = 0, ry = 0, shown = false, frame = 0, last = 0;
+    const enabled = () => !!state && state.settings.cursorRing !== false && mouse.matches;
+    function place() { el.style.transform = 'translate3d(' + rx + 'px,' + ry + 'px,0)'; }
+    function step(t) {
+      const dt = last ? Math.min(100, t - last) : 16.67;
+      last = t;
+      const k = reduce.matches ? 1 : 1 - Math.pow(1 - FOLLOW, dt / 16.67);
+      rx += (mx - rx) * k; ry += (my - ry) * k;
+      place();
+      frame = Math.abs(mx - rx) + Math.abs(my - ry) > 0.2 ? requestAnimationFrame(step) : 0;
+      if (!frame) last = 0;
+    }
+    function show(on) {
+      shown = on;
+      el.classList.toggle('on', on);
+    }
+    document.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse' || !enabled()) return;
+      mx = e.clientX; my = e.clientY;
+      if (!shown) { rx = mx; ry = my; place(); show(true); }   // appear where the mouse is, not glide in from a corner
+      el.classList.toggle('hover', !!(e.target.closest && e.target.closest(CLICKABLE)));
+      if (!frame) frame = requestAnimationFrame(step);
+    });
+    document.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') el.classList.add('down'); });
+    document.addEventListener('pointerup', () => el.classList.remove('down'));
+    document.documentElement.addEventListener('mouseleave', () => show(false));
+    window.addEventListener('blur', () => show(false));
+    return { update() { if (!enabled()) show(false); } };
+  })();
 
   // ---------- discord rich presence ----------
   // Developer mode only: test messages to one channel, 1 to 3 at a time.
