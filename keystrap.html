@@ -833,26 +833,9 @@ html.native.shown .window { opacity: 1; }
         <h2 class="sec">Quick options</h2>
         <div class="rows">
           <div class="row">
-            <svg class="ico"><use href="#i-monitor"/></svg>
-            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div>
-              <div class="fps-opts" id="fpsOpts" role="radiogroup" aria-label="Frame rate limit">
-                <button class="seg" data-fps="uncapped" role="radio">Uncapped</button>
-                <button class="seg" data-fps="monitor" role="radio">Match monitor</button>
-                <button class="seg" data-fps="custom" role="radio">Custom cap</button>
-                <input class="input fps-num" id="fpsCap" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Custom frame rate cap in FPS"><span class="fps-unit" id="fpsCapUnit">FPS</span>
-              </div>
-            </div>
-            <label class="switch"><input type="checkbox" id="q-fps" aria-label="Unlock FPS"><span></span></label>
-          </div>
-          <div class="row">
             <svg class="ico"><use href="#i-layers"/></svg>
             <div class="txt"><div class="t">Multi-instance</div><div class="d">Run more than one Roblox window. Keep Keystrap open while you play.</div></div>
             <label class="switch"><input type="checkbox" id="q-multi" aria-label="Multi-instance"><span></span></label>
-          </div>
-          <div class="row">
-            <svg class="ico"><use href="#i-chat"/></svg>
-            <div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="qDiscordDesc">Show the game you're playing on your Discord profile.</div></div>
-            <label class="switch"><input type="checkbox" id="q-discord" aria-label="Discord Rich Presence"><span></span></label>
           </div>
         </div>
       </section>
@@ -1034,27 +1017,12 @@ html.native.shown .window { opacity: 1; }
           </div>
           <div class="accent-note" id="accentNote" aria-live="polite"></div>
         </div>
-        <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Cursor ring</div><div class="d">A ring in your accent color that follows the mouse around Keystrap, a little behind it.</div></div>
-            <label class="switch"><input type="checkbox" id="s-ring" aria-label="Cursor ring"><span></span></label></div>
-        </div>
         <h2 class="sec">Launching</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Open Roblox links with Keystrap</div><div class="d" id="linksDesc">Play buttons on roblox.com start Roblox through Keystrap, with your active profile's flags.</div></div>
             <label class="switch"><input type="checkbox" id="s-links" aria-label="Open Roblox links with Keystrap"><span></span></label></div>
           <div class="row"><div class="txt"><div class="t">Close Keystrap after Roblox starts</div><div class="d">With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.</div></div>
             <label class="switch"><input type="checkbox" id="s-close" aria-label="Close Keystrap after Roblox starts"><span></span></label></div>
-          <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
-            <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
-        </div>
-        <h2 class="sec">Discord</h2>
-        <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="discordDesc">Shows what you're doing in Keystrap and Roblox on your Discord profile.</div></div>
-            <label class="switch"><input type="checkbox" id="s-discord" aria-label="Discord Rich Presence"><span></span></label></div>
-          <div class="row discord-id-row"><div class="txt"><div class="t"><label for="discordAppId">Discord application ID</label></div>
-            <div class="d">In the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a>, create an application named <b>Roblox</b> so your status reads "Playing Roblox". Under Rich Presence → Art Assets, upload the Keystrap logo with the name <code>keystrap</code>. Then paste the Application ID here.</div>
-            <div class="err" id="discordIdErr"></div></div>
-            <input class="input" id="discordAppId" inputmode="numeric" maxlength="20" spellcheck="false" autocomplete="off" placeholder="123456789012345678"></div>
         </div>
         <h2 class="sec">Safety</h2>
         <div class="rows">
@@ -1076,6 +1044,37 @@ html.native.shown .window { opacity: 1; }
       <section class="page" id="page-dev">
         <h1>Dev/Testing</h1>
         <p class="sub">Internal tools for building Keystrap, shown only when it's run in developer mode. These aren't part of the normal app.</p>
+        <h2 class="sec">Performance</h2>
+        <div class="rows">
+          <div class="row">
+            <svg class="ico"><use href="#i-monitor"/></svg>
+            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div>
+              <div class="fps-opts" id="fpsOpts" role="radiogroup" aria-label="Frame rate limit">
+                <button class="seg" data-fps="uncapped" role="radio">Uncapped</button>
+                <button class="seg" data-fps="monitor" role="radio">Match monitor</button>
+                <button class="seg" data-fps="custom" role="radio">Custom cap</button>
+                <input class="input fps-num" id="fpsCap" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Custom frame rate cap in FPS"><span class="fps-unit" id="fpsCapUnit">FPS</span>
+              </div>
+            </div>
+            <label class="switch"><input type="checkbox" id="q-fps" aria-label="Unlock FPS"><span></span></label>
+          </div>
+          <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
+            <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
+        </div>
+        <h2 class="sec">Appearance</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Cursor ring</div><div class="d">A ring in your accent color that follows the mouse around Keystrap, a little behind it.</div></div>
+            <label class="switch"><input type="checkbox" id="s-ring" aria-label="Cursor ring"><span></span></label></div>
+        </div>
+        <h2 class="sec">Discord</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="discordDesc">Shows what you're doing in Keystrap and Roblox on your Discord profile.</div></div>
+            <label class="switch"><input type="checkbox" id="s-discord" aria-label="Discord Rich Presence"><span></span></label></div>
+          <div class="row discord-id-row"><div class="txt"><div class="t"><label for="discordAppId">Discord application ID</label></div>
+            <div class="d">In the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a>, create an application named <b>Roblox</b> so your status reads "Playing Roblox". Under Rich Presence → Art Assets, upload the Keystrap logo with the name <code>keystrap</code>. Then paste the Application ID here.</div>
+            <div class="err" id="discordIdErr"></div></div>
+            <input class="input" id="discordAppId" inputmode="numeric" maxlength="20" spellcheck="false" autocomplete="off" placeholder="123456789012345678"></div>
+        </div>
         <h2 class="sec">Notifications</h2>
         <div class="rows">
           <div class="row dev-test" id="devWebhookRow">
@@ -1342,7 +1341,7 @@ const I18N_ES = {
     'If Keystrap crashes, it sends the error, the Keystrap version and your active profile\'s name to the developers. Your Windows user name and folders are removed first.': 'Si Keystrap falla, envía el error, la versión de Keystrap y el nombre de tu perfil activo a los desarrolladores. Antes se eliminan tu nombre de usuario de Windows y tus carpetas.',
     'Keystrap couldn\'t save your settings. Details are in the log.': 'Keystrap no pudo guardar tus ajustes. Los detalles están en el registro.',
     'Test notifications': 'Notificaciones de prueba', 'Dev/Testing': 'Desarrollo/Pruebas', 'Sending…': 'Enviando…',
-    'Notifications': 'Notificaciones',
+    'Notifications': 'Notificaciones', 'Performance': 'Rendimiento',
     'Internal tools for building Keystrap, shown only when it\'s run in developer mode. These aren\'t part of the normal app.':
       'Herramientas internas para crear Keystrap, visibles solo cuando se ejecuta en modo desarrollador. No forman parte de la app normal.',
 
@@ -1441,8 +1440,8 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'Renamed the developer-only tab to "Dev/Testing".':
-      'Se renombró la pestaña solo para desarrolladores a "Dev/Testing".',
+    'Unlock FPS, the 60 FPS menu cap, the cursor ring and Discord Rich Presence moved into the developer-only Dev/Testing tab.':
+      'Desbloquear FPS, el límite del menú a 60 FPS, el anillo del cursor y Discord Rich Presence se movieron a la pestaña Dev/Testing, solo para desarrolladores.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
@@ -1554,7 +1553,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.4';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.5';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1566,7 +1565,7 @@ const I18N_ES = {
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
     Changed: [
-      'Renamed the developer-only tab to "Dev/Testing".'
+      'Unlock FPS, the 60 FPS menu cap, the cursor ring and Discord Rich Presence moved into the developer-only Dev/Testing tab.'
     ]
   };
 
@@ -2575,7 +2574,7 @@ const I18N_ES = {
     const s = state.settings, d = env.discord || {};
     $('#s-crash').checked = s.crashReports !== false;
     $('#s-linkwarn').checked = s.linkWarning !== false;
-    $('#s-discord').checked = $('#q-discord').checked = !!s.discordRpc;
+    $('#s-discord').checked = !!s.discordRpc;
     if (document.activeElement !== $('#discordAppId')) $('#discordAppId').value = s.discordAppId || '';
     const text = !s.discordRpc ? 'Off. Turn it on to show what you\'re doing in Keystrap and Roblox on your Discord profile.'
       : !host ? 'Shows what you\'re doing in Keystrap and Roblox on your Discord profile.'
@@ -2587,16 +2586,12 @@ const I18N_ES = {
     const desc = $('#discordDesc');
     desc.textContent = text;
     desc.classList.toggle('bad-text', !!(s.discordRpc && host && d.state === 'error'));
-    $('#qDiscordDesc').textContent = s.discordRpc && d.state === 'connected'
-      ? 'On: your Discord profile shows the game you\'re playing.'
-      : 'Show the game you\'re playing on your Discord profile.';
   }
   function setDiscord(on) {
     state.settings.discordRpc = on; save(); renderDiscord();
     toast('Discord Rich Presence ' + (on ? 'on' : 'off'));
   }
   $('#s-discord').addEventListener('change', e => setDiscord(e.target.checked));
-  $('#q-discord').addEventListener('change', e => setDiscord(e.target.checked));
   $('#discordAppId').addEventListener('input', e => {
     const v = e.target.value.replace(/\D/g, '');
     if (v !== e.target.value) e.target.value = v;
