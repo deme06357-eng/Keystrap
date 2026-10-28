@@ -413,14 +413,15 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .cp-wrap { position: relative; }
 .cp {
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 15; width: 256px;
-  background: #2d2d2d; border: 1px solid #3a3a3a; border-radius: 4px; padding: 12px;
+  background: var(--card); border: 1px solid var(--stroke); border-radius: 10px; padding: 14px;
   display: flex; flex-direction: column; gap: 12px;
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: #ffffff;
-  box-shadow: 0 16px 40px -10px rgba(0,0,0,.7);
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--fg);
+  box-shadow: 0 18px 44px -12px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.2);
   animation: fade .12s ease-out both;
 }
 .cp-sv {
-  position: relative; height: 152px; border-radius: 4px; cursor: crosshair; touch-action: none;
+  position: relative; height: 152px; border-radius: 6px; cursor: crosshair; touch-action: none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
   background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(var(--cp-h, 0), 100%, 50%);
 }
 .cp-sv:focus-visible, .cp-hue:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,.18); }
@@ -431,12 +432,13 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 }
 .cp-tools { display: flex; align-items: center; gap: 10px; }
 .cp-drop {
-  width: 28px; height: 28px; flex: none; display: grid; place-items: center; padding: 0;
-  background: transparent; border: 0; border-radius: 4px; color: #ffffff; cursor: pointer; transition: background-color .12s ease;
+  width: 30px; height: 30px; flex: none; display: grid; place-items: center; padding: 0;
+  background: var(--card-hi); border: 1px solid var(--stroke); border-radius: 6px; color: var(--fg); cursor: pointer;
+  transition: border-color .12s ease, color .12s ease;
 }
-.cp-drop:hover { background: rgba(255,255,255,.1); }
-.cp-drop svg { width: 18px; height: 18px; fill: currentColor; }
-.cp-preview { width: 44px; height: 28px; flex: none; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.cp-drop:hover, .cp-drop:focus-visible { outline: none; border-color: rgba(var(--accent-rgb),.5); color: var(--accent); }
+.cp-drop svg { width: 16px; height: 16px; fill: currentColor; }
+.cp-preview { width: 44px; height: 30px; flex: none; border-radius: 6px; border: 1px solid var(--stroke); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
 .cp-hue {
   position: relative; flex: 1; height: 10px; border-radius: 5px; cursor: pointer; touch-action: none;
   background: linear-gradient(to right, #f00 0%, #ff0 16.67%, #0f0 33.33%, #0ff 50%, #00f 66.67%, #f0f 83.33%, #f00 100%);
@@ -448,13 +450,15 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 }
 .cp-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .cp-f { display: flex; flex-direction: column; gap: 4px; }
-.cp-f span { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: #9b9b9b; text-align: center; }
+.cp-f span { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--fg-3); text-align: center; }
 .cp-f input {
   width: 100%; min-width: 0; padding: 6px 4px; text-align: center;
-  background: #1a1a1a; border: 1px solid transparent; border-radius: 4px;
-  color: #ffffff; font: 400 13px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  background: rgba(0,0,0,.28); border: 1px solid var(--stroke); border-radius: 6px;
+  color: var(--fg); font: 400 13px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  transition: border-color .12s ease;
 }
-.cp-f input:focus { outline: none; border-color: rgba(var(--accent-rgb),.55); }
+.cp-f input:hover { border-color: rgba(255,255,255,.2); }
+.cp-f input:focus { outline: none; border-color: rgba(var(--accent-rgb),.6); }
 #accentHex { width: 92px; font-family: var(--f-mono); }
 
 /* unlock fps choices */
@@ -520,7 +524,9 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .xh-style canvas { width: 40px; height: 40px; border-radius: 6px; background: #0e0e11; }
 .xh-tune { display: flex; flex-direction: column; gap: 14px; }
 .xh-colors { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-#xhColor { width: 36px; height: 30px; padding: 0 2px; border: 1px solid var(--stroke); border-radius: 8px; background: transparent; cursor: pointer; }
+.xh-custom { display: flex; align-items: center; gap: 8px; }
+#xhPickerWrap .cp { right: auto; left: 0; }   /* opens to the right, over the controls, not across the preview */
+#xhHex { width: 92px; font-family: var(--f-mono); }
 .xh-slider { display: flex; align-items: center; gap: 12px; }
 .xh-slider input[type="range"] { flex: 1; min-width: 0; }
 .xh-slider output { width: 46px; text-align: right; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--fg); }
@@ -879,7 +885,12 @@ html.native.shown .window { opacity: 1; }
               <h2 class="sec">Color</h2>
               <div class="xh-colors">
                 <div class="swatches" id="xhSwatches" role="radiogroup" aria-label="Crosshair color"></div>
-                <input type="color" id="xhColor" aria-label="Custom crosshair color">
+                <div class="xh-custom">
+                  <div class="cp-wrap" id="xhPickerWrap">
+                    <button class="color-well" id="xhWell" title="Pick any color" aria-label="Pick a custom crosshair color" aria-haspopup="dialog" aria-expanded="false"></button>
+                  </div>
+                  <input class="input" id="xhHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Crosshair color hex code" placeholder="#ffffff">
+                </div>
               </div>
               <label class="xh-check"><input type="checkbox" id="xhOutline"><span>Dark outline, so it shows on bright skies</span></label>
             </div>
@@ -1359,6 +1370,9 @@ const I18N_ES = {
     'Style': 'Estilo', 'Crosshair style': 'Estilo de mira', 'Dot': 'Punto', 'Cross': 'Cruz', 'Cross and dot': 'Cruz y punto',
     'Circle': 'Círculo', 'Circle and dot': 'Círculo y punto', 'Your image': 'Tu imagen',
     'Crosshair color': 'Color de la mira', 'Custom crosshair color': 'Color personalizado de la mira',
+    'Pick a custom crosshair color': 'Elige un color personalizado para la mira', 'Crosshair color hex code': 'Código hex del color de la mira',
+    'The crosshair\'s color picker is now Keystrap\'s own dark one, with a box for hex codes, and both color pickers have a cleaner dark look.':
+      'El selector de color de la mira ahora es el selector oscuro de Keystrap, con un cuadro para códigos hex, y los dos selectores de color tienen un aspecto oscuro más limpio.',
     'White': 'Blanco', 'Cyan': 'Cian', 'Pink': 'Rosa', 'Yellow': 'Amarillo',
     'Size': 'Tamaño', 'Crosshair size': 'Tamaño de la mira', 'Compact': 'Compacta', 'Oversized': 'Enorme',
     'Dark outline, so it shows on bright skies': 'Contorno oscuro, para que se vea en cielos claros',
@@ -1468,7 +1482,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.3';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.4';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1480,7 +1494,7 @@ const I18N_ES = {
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
     Changed: [
-      'Dropdowns and sliders match the rest of Keystrap: dark and rounded, in your accent color, with no more light grey lists.'
+      'The crosshair\'s color picker is now Keystrap\'s own dark one, with a box for hex codes, and both color pickers have a cleaner dark look.'
     ]
   };
 
@@ -2612,6 +2626,8 @@ const I18N_ES = {
       opts.well.setAttribute('aria-expanded', String(on));
       if (!on) return;
       load(opts.get());
+      // Low on the page the panel would open past the bottom of the window, so bring all of it into view.
+      el.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
       if (viaKeyboard) sv.focus(); // a mouse click leaves focus on the well, so no focus ring appears on the square
     }
     opts.well.addEventListener('click', e => open(el.hidden, e.detail === 0));
@@ -2968,7 +2984,8 @@ const I18N_ES = {
     $$('#xhStyles canvas').forEach((cv, i) => drawCrosshair(cv.getContext('2d'), Object.assign({}, c, { style: styles[i][0] }), 40, 40, 80));
     $('#xhSwatches').innerHTML = XH_COLORS.map(x =>
       '<button class="swatch" role="radio" data-hex="' + x[1] + '" aria-label="' + x[0] + '" title="' + x[0] + '" aria-checked="' + (c.color === x[1]) + '" style="background:' + x[1] + '"></button>').join('');
-    $('#xhColor').value = c.color;
+    if (xhPicker.isOpen() && !xhPicker.driving()) xhPicker.load(c.color);   // a swatch was clicked with the picker open
+    if (document.activeElement !== $('#xhHex')) { $('#xhHex').value = c.color; $('#xhHex').classList.remove('bad'); }
     $$('#xhBgs .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.bg === (env.xhBg || 'sky'))));
     $('#xhOutline').checked = !!c.outline;
     $('#xhTune').hidden = c.style === 'default' || c.style === 'image';   // color and outline only change drawn styles
@@ -3010,7 +3027,26 @@ const I18N_ES = {
   }
   $('#xhStyles').addEventListener('click', e => { const b = e.target.closest('[data-style]'); if (b) setCrosshair({ style: b.dataset.style }); });
   $('#xhSwatches').addEventListener('click', e => { const b = e.target.closest('[data-hex]'); if (b) setCrosshair({ color: b.dataset.hex }); });
-  $('#xhColor').addEventListener('input', e => setCrosshair({ color: e.target.value }));
+  // Any color: Keystrap's own picker (the same one as the accent color), or a hex code typed in.
+  const xhPicker = makeColorPicker({
+    host: $('#xhPickerWrap'), well: $('#xhWell'), label: 'Custom crosshair color',
+    get: () => state.settings.crosshair.color, set: hex => setCrosshair({ color: hex })
+  });
+  $('#xhHex').addEventListener('input', e => {
+    e.target.classList.remove('bad');
+    const hex = normHex(e.target.value.trim());
+    if (hex && /^#?[0-9a-f]{6}$/i.test(e.target.value.trim())) setCrosshair({ color: hex });   // as soon as a full code is typed
+  });
+  $('#xhHex').addEventListener('change', e => {
+    const hex = normHex(e.target.value.trim());
+    if (hex) { setCrosshair({ color: hex }); return; }
+    e.target.classList.add('bad');
+    toast('Use a hex color like #7cc4fa.');
+  });
+  $('#xhHex').addEventListener('keydown', e => {
+    if (e.key === 'Enter') e.target.blur();
+    if (e.key === 'Escape') { e.target.value = state.settings.crosshair.color; e.target.blur(); }
+  });
   // Dragging redraws the preview on every step; the full re-render and the save wait for the drag to settle.
   $('#xhScale').addEventListener('input', e => {
     state.settings.crosshair.scale = +e.target.value;
