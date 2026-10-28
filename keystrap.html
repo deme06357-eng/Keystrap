@@ -1414,6 +1414,10 @@ const I18N_ES = {
       'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
     'Settings has a gear icon in the sidebar.': 'Ajustes tiene un icono de engranaje en la barra lateral.',
     'Cursor ring': 'Anillo del cursor',
+    'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
+      'La multiinstancia empieza a funcionar cuando cierras todas las ventanas de Roblox y vuelves a iniciar desde Keystrap.',
+    'Multi-instance no longer stays off without saying so when Roblox was already open; Keystrap tells you to close Roblox once.':
+      'La multiinstancia ya no se queda desactivada sin avisar cuando Roblox ya estaba abierto; Keystrap te dice que cierres Roblox una vez.',
     'A ring in your accent color that follows the mouse around Keystrap, a little behind it.': 'Un anillo en tu color de acento que sigue al ratón por Keystrap, un poco por detrás.',
     'A cursor ring that follows your mouse around Keystrap, like on the website. Turn it off in Settings.': 'Un anillo que sigue a tu ratón por Keystrap, como en la web. Desactívalo en Ajustes.',
     'How many': 'Cuántos','Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
@@ -1534,7 +1538,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.7';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.8';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1545,8 +1549,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Added: [
-      'A cursor ring that follows your mouse around Keystrap, like on the website. Turn it off in Settings.'
+    Fixed: [
+      'Multi-instance no longer stays off without saying so when Roblox was already open; Keystrap tells you to close Roblox once.'
     ]
   };
 

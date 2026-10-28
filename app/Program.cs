@@ -3653,6 +3653,33 @@ namespace Keystrap
             }
         }
 
+        // ---------- Multi-instance ----------
+
+        // Roblox opens only one window while it holds ROBLOX_singletonMutex. Keystrap takes it first, so every Roblox
+        // that starts finds it taken and runs anyway. If a Roblox started without Keystrap already holds it, Keystrap
+        // can't take it until that Roblox closes: false, and the next launch tries again.
+        bool HoldRobloxSingleton()
+        {
+            if (robloxSingleton != null) return true;
+            bool created;
+            var mutex = new Mutex(true, "ROBLOX_singletonMutex", out created);
+            if (!created)
+            {
+                bool owned;
+                try { owned = mutex.WaitOne(0); }
+                catch (AbandonedMutexException) { owned = true; }   // its owner closed without letting go: ours now
+                if (!owned)
+                {
+                    mutex.Dispose();
+                    Log.Write("Multi-instance: Roblox already holds its window lock; it works after every Roblox window closes");
+                    return false;
+                }
+            }
+            robloxSingleton = mutex;
+            Log.Write("Multi-instance: holding Roblox's window lock");
+            return true;
+        }
+
         // ---------- Refused flags ----------
 
         // After a launch, Roblox needs a few seconds to start and log what it refused.
@@ -4056,8 +4083,8 @@ namespace Keystrap
                 ReportProgress("Applying flags…", 0.96);
                 Bootstrapper.WriteClientSettings(dir, flags);
 
-                bool multi = Bool(msg, "multiInstance");
-                if (multi && robloxSingleton == null) robloxSingleton = new Mutex(true, "ROBLOX_singletonMutex");
+                if (Bool(msg, "multiInstance") && !HoldRobloxSingleton())
+                    Toast("Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.");
 
                 ReportProgress("Starting Roblox…", 0.99);
                 Bootstrapper.Start(dir, toAppHome ? null : link);
