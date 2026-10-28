@@ -491,6 +491,8 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .link-badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 4px;
   background: var(--accent-soft); color: var(--accent); }
 .link-badge .ico { width: 22px; height: 22px; }
+.link-modal .link-skip { margin-right: auto; }
+.link-modal .modal-foot { align-items: center; flex-wrap: wrap; }
 .link-target { padding: 12px 14px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid var(--stroke); }
 .link-target .host { font-weight: 600; color: var(--fg); overflow-wrap: anywhere; }
 .link-target .url { margin-top: 3px; font: 12px/1.45 var(--f-mono); color: var(--fg-3); overflow-wrap: anywhere; max-height: 5.8em; overflow-y: auto; }
@@ -1041,6 +1043,11 @@ html.native.shown .window { opacity: 1; }
             <div class="err" id="discordIdErr"></div></div>
             <input class="input" id="discordAppId" inputmode="numeric" maxlength="20" spellcheck="false" autocomplete="off" placeholder="123456789012345678"></div>
         </div>
+        <h2 class="sec">Safety</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Ask before opening websites</div><div class="d">Links to websites show where they go and wait for you to press Continue before your browser opens.</div></div>
+            <label class="switch"><input type="checkbox" id="s-linkwarn" aria-label="Ask before opening websites"><span></span></label></div>
+        </div>
         <h2 class="sec">Storage</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Downloaded Roblox versions</div><div class="d" id="versionsDesc">Calculating…</div></div>
@@ -1424,7 +1431,14 @@ const I18N_ES = {
       'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
     'Settings has a gear icon in the sidebar.': 'Ajustes tiene un icono de engranaje en la barra lateral.',
     'Cursor ring': 'Anillo del cursor',
-    'You\'re leaving Keystrap': 'Vas a salir de Keystrap', 'Continue': 'Continuar',
+    'You\'re leaving Keystrap': 'Vas a salir de Keystrap', 'Continue': 'Continuar', 'Don\'t ask again': 'No volver a preguntar',
+    'Safety': 'Seguridad', 'Ask before opening websites': 'Preguntar antes de abrir sitios web',
+    'Links to websites show where they go and wait for you to press Continue before your browser opens.':
+      'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
+    'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
+    'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
+    'The link warning has a "Don\'t ask again" box, and Settings → Safety turns it back on.':
+      'El aviso de enlaces tiene una casilla "No volver a preguntar", y Ajustes → Seguridad lo vuelve a activar.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Links to websites now ask first and show where they go, so nothing opens without you saying so.':
@@ -1553,7 +1567,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.1.9';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.1.10';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1565,7 +1579,7 @@ const I18N_ES = {
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
     Added: [
-      'Links to websites now ask first and show where they go, so nothing opens without you saying so.'
+      'The link warning has a "Don\'t ask again" box, and Settings → Safety turns it back on.'
     ]
   };
 
@@ -1584,7 +1598,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
@@ -2572,6 +2586,7 @@ const I18N_ES = {
   function renderDiscord() {
     const s = state.settings, d = env.discord || {};
     $('#s-crash').checked = s.crashReports !== false;
+    $('#s-linkwarn').checked = s.linkWarning !== false;
     $('#s-discord').checked = $('#q-discord').checked = !!s.discordRpc;
     if (document.activeElement !== $('#discordAppId')) $('#discordAppId').value = s.discordAppId || '';
     const text = !s.discordRpc ? 'Off. Turn it on to show what you\'re doing in Keystrap and Roblox on your Discord profile.'
@@ -3001,28 +3016,46 @@ const I18N_ES = {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
 
   // ---------- outside links ----------
-  // Every link to a website asks first, showing where it goes. Cancel is focused, so a stray Enter doesn't open
-  // anything; Continue hands the address to the app, which only opens web addresses. Links the page didn't open
-  // itself (a new window, or something navigating this one) come back from the app as "confirm-url".
+  // Every link to a website asks first, showing where it goes, unless "Ask before opening websites" is off
+  // (Settings, or "Don't ask again" here). Cancel is focused, so a stray Enter doesn't open anything; Continue hands
+  // the address to the app, which only opens web addresses. Links the page didn't open itself (a new window, or
+  // something navigating this one) come back from the app as "confirm-url".
+  function openWebsite(href) {
+    if (host) host.postMessage({ type: 'open-url', url: href });
+    else window.open(href, '_blank', 'noopener');
+  }
   function confirmLink(url) {
     let u;
     try { u = new URL(url); } catch (e) { return; }
     if (u.protocol !== 'https:' && u.protocol !== 'http:') return;
+    if (state && state.settings.linkWarning === false) { openWebsite(u.href); return; }
     const m = openModal(
       '<div class="link-badge"><svg class="ico"><use href="#i-external"/></svg></div>' +
       '<h2>You\'re leaving Keystrap</h2>' +
       '<p class="lead">This link opens a website in your browser. Only continue if you trust where it goes.</p>' +
       '<div class="link-target"><div class="host" translate="no"></div><div class="url" translate="no"></div></div>' +
-      '<div class="modal-foot"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="link-go">Continue</button></div>', 'link-modal');
+      '<div class="modal-foot"><label class="xh-check link-skip"><input type="checkbox" id="link-skip"><span>Don\'t ask again</span></label>' +
+        '<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="link-go">Continue</button></div>', 'link-modal');
     $('.host', m).textContent = u.hostname;
     $('.url', m).textContent = u.href;
     $('[data-close]', m).focus();
     $('#link-go', m).addEventListener('click', () => {
+      const skip = $('#link-skip', m).checked;
       closeModal();
-      if (host) host.postMessage({ type: 'open-url', url: u.href });
-      else window.open(u.href, '_blank', 'noopener');
+      if (skip) {
+        state.settings.linkWarning = false;
+        save();
+        renderSettings();
+        toast('Websites open without asking now. Turn it back on in Settings.');
+      }
+      openWebsite(u.href);
     });
   }
+  $('#s-linkwarn').addEventListener('change', e => {
+    state.settings.linkWarning = e.target.checked;
+    save();
+    toast(e.target.checked ? 'Keystrap asks before opening websites' : 'Websites open without asking');
+  });
   function interceptLink(e) {
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a || !/^https?:/i.test(a.href)) return;
