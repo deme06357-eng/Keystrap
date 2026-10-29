@@ -1218,6 +1218,7 @@ namespace Keystrap
                 bool custom = IsCustom;
                 if (!custom && !Directory.Exists(backup)) return;   // nothing has been replaced in this version
                 int done = 0;
+                Size farSize = Size.Empty;   // the game-world cursor's size; Shift Lock reuses it so it doesn't shrink
                 foreach (string cursor in Cursors)
                 {
                     string target = Path.Combine(versionDir, cursor);
@@ -1231,7 +1232,12 @@ namespace Keystrap
                     if (!File.Exists(original)) continue;
                     if (custom)
                     {
-                        Size size = SizeOf(original);
+                        string name = Path.GetFileName(cursor);
+                        Size own = SizeOf(original);
+                        if (name == FarFile && farSize == Size.Empty) farSize = own;   // ArrowFarCursor comes before MouseLockedCursor
+                        // Shift Lock and first person use MouseLockedCursor, which Roblox ships small. Draw the crosshair
+                        // there at the game-world cursor's size instead, so it keeps the same size and doesn't shrink.
+                        Size size = name == LockedFile && farSize != Size.Empty ? farSize : own;
                         File.WriteAllBytes(target, Sized(Path.Combine(Dir, size.Width <= 32 && size.Height <= 32 ? LockedFile : FarFile), size));
                     }
                     else File.Copy(original, target, true);

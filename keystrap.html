@@ -470,8 +470,6 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 }
 .seg:hover { background: rgba(255,255,255,.06); color: var(--white); }
 .seg[aria-checked="true"] { background: var(--accent-soft); border-color: rgba(var(--accent-rgb),.45); color: var(--accent); }
-.fps-num { width: 72px; text-align: center; font-variant-numeric: tabular-nums; padding: 5px 8px; }
-.fps-unit { font-size: 12.5px; color: var(--fg-3); }
 
 /* custom skies */
 .sky-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -1048,14 +1046,7 @@ html.native.shown .window { opacity: 1; }
         <div class="rows">
           <div class="row">
             <svg class="ico"><use href="#i-monitor"/></svg>
-            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div>
-              <div class="fps-opts" id="fpsOpts" role="radiogroup" aria-label="Frame rate limit">
-                <button class="seg" data-fps="uncapped" role="radio">Uncapped</button>
-                <button class="seg" data-fps="monitor" role="radio">Match monitor</button>
-                <button class="seg" data-fps="custom" role="radio">Custom cap</button>
-                <input class="input fps-num" id="fpsCap" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Custom frame rate cap in FPS"><span class="fps-unit" id="fpsCapUnit">FPS</span>
-              </div>
-            </div>
+            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div></div>
             <label class="switch"><input type="checkbox" id="q-fps" aria-label="Unlock FPS"><span></span></label>
           </div>
           <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
@@ -1440,8 +1431,10 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'Unlock FPS, the 60 FPS menu cap, the cursor ring and Discord Rich Presence moved into the developer-only Dev/Testing tab.':
-      'Desbloquear FPS, el límite del menú a 60 FPS, el anillo del cursor y Discord Rich Presence se movieron a la pestaña Dev/Testing, solo para desarrolladores.',
+    'Custom crosshairs no longer shrink when you turn on Shift Lock or go first person in Roblox.':
+      'Las miras personalizadas ya no se encogen al activar el bloqueo de desplazamiento (Shift Lock) ni en primera persona en Roblox.',
+    'Unlock FPS is now a single on/off switch: on runs Roblox uncapped, off keeps its own limit.':
+      'Desbloquear FPS ahora es un único interruptor: activado ejecuta Roblox sin límite, desactivado mantiene su propio límite.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
@@ -1553,7 +1546,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.5';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.6';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1564,8 +1557,11 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
+    Fixed: [
+      'Custom crosshairs no longer shrink when you turn on Shift Lock or go first person in Roblox.'
+    ],
     Changed: [
-      'Unlock FPS, the 60 FPS menu cap, the cursor ring and Discord Rich Presence moved into the developer-only Dev/Testing tab.'
+      'Unlock FPS is now a single on/off switch: on runs Roblox uncapped, off keeps its own limit.'
     ]
   };
 
@@ -1584,7 +1580,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, fpsMode: 'uncapped', fpsCap: 144, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
@@ -1980,43 +1976,16 @@ const I18N_ES = {
     $('#q-multi').checked = state.settings.multiInstance;
   }
   // ---------- unlock fps ----------
-  // What DFIntTaskSchedulerTargetFps is set to at launch: 0 = uncapped, otherwise a cap in FPS.
-  function fpsTarget() {
-    const s = state.settings;
-    if (s.fpsMode === 'monitor') return env.refreshRate || 0;   // unknown refresh rate: launch uncapped
-    if (s.fpsMode === 'custom') return s.fpsCap;
-    return 0;
-  }
+  // Unlock FPS is a single master switch: on sets DFIntTaskSchedulerTargetFps to 9999 (uncapped) at launch, off
+  // leaves Roblox's own 60 FPS limit. The app sends 0 as the target; the backend turns 0 into the uncapped value.
   function renderFps() {
     const s = state.settings;
     $('#q-fps').checked = s.unlockFps;
-    $('#fpsOpts').hidden = !s.unlockFps;
-    $$('#fpsOpts .seg').forEach(b => b.setAttribute('aria-checked', String(b.dataset.fps === s.fpsMode)));
-    const monitor = $('#fpsOpts [data-fps="monitor"]');
-    monitor.textContent = env.refreshRate ? 'Match monitor (' + env.refreshRate + ' Hz)' : 'Match monitor';
-    $('#fpsCap').hidden = $('#fpsCapUnit').hidden = s.fpsMode !== 'custom';
-    if (document.activeElement !== $('#fpsCap')) $('#fpsCap').value = s.fpsCap;
-    $('#fpsDesc').textContent = !s.unlockFps
-      ? 'Off: Roblox uses its own 60 FPS limit.'
-      : s.fpsMode === 'monitor'
-        ? (env.refreshRate ? 'Capped at your monitor\'s refresh rate, ' + env.refreshRate + ' FPS.' : 'Keystrap couldn\'t read your monitor\'s refresh rate, so Roblox launches uncapped.')
-        : s.fpsMode === 'custom'
-          ? 'Capped at ' + s.fpsCap + ' FPS.'
-          : 'Uncapped: Roblox draws as many frames as your PC can.';
+    $('#fpsDesc').textContent = s.unlockFps
+      ? 'On: Roblox runs uncapped — as many frames as your PC can draw.'
+      : 'Off: Roblox uses its own 60 FPS limit.';
   }
   $('#q-fps').addEventListener('change', e => { state.settings.unlockFps = e.target.checked; save(); renderFps(); toast('Unlock FPS ' + (e.target.checked ? 'on' : 'off')); });
-  $('#fpsOpts').addEventListener('click', e => {
-    const b = e.target.closest('.seg');
-    if (!b) return;
-    state.settings.fpsMode = b.dataset.fps; save(); renderFps();
-    if (b.dataset.fps === 'custom') $('#fpsCap').focus();
-  });
-  $('#fpsCap').addEventListener('change', e => {
-    const v = parseInt(e.target.value, 10);
-    if (!(v >= 30 && v <= 1000)) { toast('Use a cap between 30 and 1000 FPS.'); e.target.value = state.settings.fpsCap; return; }
-    state.settings.fpsCap = v; save(); renderFps();
-  });
-  $('#fpsCap').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
 
   function setProgress(text, pct) {
     const st = $('#launchStatus');
@@ -2059,7 +2028,7 @@ const I18N_ES = {
     if (!host) { simulateLaunch(); return; }
     const flags = {};
     p.flags.forEach(f => { if (f.on) flags[f.name] = f.value; });
-    host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: fpsTarget(), multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
+    host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: 0, multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
       menuCap: !!state.settings.menuCap60, link: typeof link === 'string' ? link : null,
       sky: skiesUnlocked() ? state.settings.sky : 'default' });   // locked: Roblox's own sky, even if one was picked before
   }
