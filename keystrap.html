@@ -706,6 +706,32 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .tip.above { --tip-shift: -3px; }
 .tip.on { opacity: 1; transform: none; transition-duration: .14s; transition-timing-function: ease-out; }
 
+/* ---------- About FAQ ---------- */
+.faq { padding: 2px 0; }
+.faq-item { border-bottom: 1px solid rgba(255,255,255,.07); }
+.faq-item:last-child { border-bottom: 0; }
+.faq-item > summary { list-style: none; cursor: pointer; padding: 13px 16px; font-size: 13.5px; font-weight: 550; color: var(--white); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.faq-item > summary::-webkit-details-marker { display: none; }
+.faq-item > summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid var(--fg-2); border-bottom: 2px solid var(--fg-2); transform: rotate(45deg); transition: transform .15s ease; flex: none; margin: -3px 3px 0 0; }
+.faq-item[open] > summary::after { transform: rotate(-135deg); margin-top: 1px; }
+.faq-item > summary:hover { color: var(--accent); }
+.faq-item > p { margin: 0; padding: 0 16px 14px; color: var(--fg-2); line-height: 1.55; font-size: 13px; max-width: 60ch; }
+
+/* ---------- What's new version browser ---------- */
+.cl-modal .cl-browser { display: grid; grid-template-columns: 116px 1fr; gap: 16px; margin: 6px 0 2px; }
+.cl-vlist { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; padding-right: 4px; }
+.cl-ver { text-align: left; border: 0; background: transparent; color: var(--fg-2); font: inherit; font-size: 12.5px; padding: 6px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cl-ver:hover { background: rgba(255,255,255,.05); color: var(--white); }
+.cl-ver[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.cl-notes { min-height: 130px; max-height: 320px; overflow-y: auto; }
+.cl-vtitle { margin: 2px 0 10px; font-size: 14px; color: var(--white); }
+.cl-notes ul { margin: 0; padding-left: 18px; color: var(--fg-2); line-height: 1.6; font-size: 13px; }
+.cl-notes li { margin-bottom: 5px; }
+@media (max-width: 520px) {
+  .cl-modal .cl-browser { grid-template-columns: 1fr; }
+  .cl-vlist { flex-direction: row; flex-wrap: wrap; max-height: 96px; }
+}
+
 /* ---------- desktop app (Keystrap.exe): the window is the whole viewport ---------- */
 html.native, html.native body { overflow: hidden; }
 html.native body { margin: 0; padding: 0; display: block; background: var(--mica); }
@@ -732,13 +758,13 @@ html.native.shown .window { opacity: 1; }
         d="M128 128H896V896H128Z M422 402H602A20 20 0 0 1 622 422V602A20 20 0 0 1 602 622H422A20 20 0 0 1 402 602V422A20 20 0 0 1 422 402Z"/>
     </symbol>
     <!-- sidebar + UI icons: 24px grid, 1.75 stroke, round caps (styled by .ico) -->
-    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.86l11.6-7.2a1 1 0 0 0 0-1.72L8.5 3.94A1 1 0 0 0 7 4.8Z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6 18.7 11.57a.5.5 0 0 1 0 .86L8 18.4Z"/></symbol>
     <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.3a6.5 6.5 0 0 1 3.5 5.7"/></symbol>
     <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.2 2.2"/><path d="M9.5 2.5h5"/></symbol>
     <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6 4.75 4.75 0 0 1 17.25 19Z"/></symbol>
     <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5"/></symbol>
     <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
-    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M10 4.5a2 2 0 0 1 4 0V6h3.5a1 1 0 0 1 1 1v3.5H17a2 2 0 0 0 0 4h1.5V18a1 1 0 0 1-1 1H14v-1.5a2 2 0 0 0-4 0V19H6.5a1 1 0 0 1-1-1v-3.5H7a2 2 0 0 0 0-4H5.5V7a1 1 0 0 1 1-1H10z"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M11 5a1.5 1.5 0 0 1 3 0v.5a1 1 0 0 0 1 1h2.5a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1h-.5a1.5 1.5 0 0 0 0 3h.5a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1H15a1 1 0 0 1-1-1V17a1.5 1.5 0 0 0-3 0v.5a1 1 0 0 1-1 1H6.5a1 1 0 0 1-1-1V15a1 1 0 0 1 1-1H7a1.5 1.5 0 0 0 0-3h-.5a1 1 0 0 1-1-1V7.5a1 1 0 0 1 1-1H10a1 1 0 0 0 1-1V5Z"/></symbol>
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
     <symbol id="i-gear" viewBox="0 0 24 24"><path d="M10.4 5.08L10.4 2.43 L13.6 2.43 L13.6 5.08 A7.1 7.1 0 0 1 15.76 5.98 L17.63 4.1 L19.9 6.37 L18.02 8.24 A7.1 7.1 0 0 1 18.92 10.4 L21.57 10.4 L21.57 13.6 L18.92 13.6 A7.1 7.1 0 0 1 18.02 15.76 L19.9 17.63 L17.63 19.9 L15.76 18.02 A7.1 7.1 0 0 1 13.6 18.92 L13.6 21.57 L10.4 21.57 L10.4 18.92 A7.1 7.1 0 0 1 8.24 18.02 L6.37 19.9 L4.1 17.63 L5.98 15.76 A7.1 7.1 0 0 1 5.08 13.6 L2.43 13.6 L2.43 10.4 L5.08 10.4 A7.1 7.1 0 0 1 5.98 8.24 L4.1 6.37 L6.37 4.1 L8.24 5.98 A7.1 7.1 0 0 1 10.4 5.08 Z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z"/></symbol>
@@ -927,6 +953,11 @@ html.native.shown .window { opacity: 1; }
             </div>
             <div><button class="btn" id="xhImport"><svg class="ico"><use href="#i-plus"/></svg>Import .png or .cur</button></div>
             <p class="sky-help">Roblox centers the image on the mouse, so the middle of your image is where you aim. Images bigger than 64 pixels are scaled down to fit.</p>
+            <h2 class="sec">Keystrap cursor</h2>
+            <div class="rows">
+              <div class="row"><div class="txt"><div class="t">Cursor ring</div><div class="d">A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.</div></div>
+                <label class="switch"><input type="checkbox" id="s-ring" aria-label="Cursor ring"><span></span></label></div>
+            </div>
           </div>
         </div>
       </section>
@@ -1052,11 +1083,6 @@ html.native.shown .window { opacity: 1; }
           <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
             <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
         </div>
-        <h2 class="sec">Appearance</h2>
-        <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Cursor ring</div><div class="d">A ring in your accent color that follows the mouse around Keystrap, a little behind it.</div></div>
-            <label class="switch"><input type="checkbox" id="s-ring" aria-label="Cursor ring"><span></span></label></div>
-        </div>
         <h2 class="sec">Discord</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="discordDesc">Shows what you're doing in Keystrap and Roblox on your Discord profile.</div></div>
@@ -1149,6 +1175,15 @@ html.native.shown .window { opacity: 1; }
             <dt>Data folder</dt><dd class="mono" id="aboutData">%LocalAppData%\Keystrap</dd>
             <dt>License</dt><dd>MIT</dd>
           </dl>
+        </div>
+        <h2 class="sec">FAQ</h2>
+        <div class="card faq">
+          <details class="faq-item"><summary>What does beta mean?</summary>
+            <p>Beta means it will still have bugs and is still getting tested.</p></details>
+          <details class="faq-item"><summary>Is my Roblox account safe?</summary>
+            <p>Yes. Keystrap never asks for your Roblox password and never reads your login cookie. You sign in to Roblox the normal way.</p></details>
+          <details class="faq-item"><summary>Why does my antivirus flag Keystrap?</summary>
+            <p>It's a false alarm. Keystrap downloads Roblox and changes its files, which some antivirus tools flag by habit, the same way they flag other Roblox launchers. Keystrap is open source, so you can read exactly what it does.</p></details>
         </div>
         <div class="flag-tools">
           <button class="btn" id="whatsNew"><svg class="ico"><use href="#i-sparkle"/></svg>What's new</button>
@@ -1334,6 +1369,49 @@ const I18N_ES = {
     'Keystrap couldn\'t save your settings. Details are in the log.': 'Keystrap no pudo guardar tus ajustes. Los detalles están en el registro.',
     'Test notifications': 'Notificaciones de prueba', 'Dev/Testing': 'Desarrollo/Pruebas', 'Sending…': 'Enviando…',
     'Notifications': 'Notificaciones', 'Performance': 'Rendimiento',
+    // About FAQ + cursor ring move
+    'FAQ': 'Preguntas frecuentes', 'What\'s new': 'Novedades', 'Keystrap cursor': 'Cursor de Keystrap',
+    'What does beta mean?': '¿Qué significa beta?',
+    'Beta means it will still have bugs and is still getting tested.': 'Beta significa que todavía tendrá errores y aún se está probando.',
+    'Is my Roblox account safe?': '¿Mi cuenta de Roblox está segura?',
+    'Yes. Keystrap never asks for your Roblox password and never reads your login cookie. You sign in to Roblox the normal way.':
+      'Sí. Keystrap nunca te pide tu contraseña de Roblox ni lee tu cookie de inicio de sesión. Inicias sesión en Roblox de la forma habitual.',
+    'Why does my antivirus flag Keystrap?': '¿Por qué mi antivirus marca Keystrap?',
+    'It\'s a false alarm. Keystrap downloads Roblox and changes its files, which some antivirus tools flag by habit, the same way they flag other Roblox launchers. Keystrap is open source, so you can read exactly what it does.':
+      'Es una falsa alarma. Keystrap descarga Roblox y cambia sus archivos, algo que algunos antivirus marcan por costumbre, igual que con otros lanzadores de Roblox. Keystrap es de código abierto, así que puedes leer exactamente lo que hace.',
+    'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
+      'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
+    // What's new version notes
+    'An FAQ on the About page.': 'Preguntas frecuentes en la página Acerca de.',
+    'What\'s new now lists every version — pick one to read its notes.': 'Novedades ahora muestra todas las versiones: elige una para leer sus notas.',
+    'The cursor ring moved to the Crosshairs page.': 'El anillo del cursor se movió a la página de Miras.',
+    'Refreshed the Play and Mods icons.': 'Se renovaron los iconos de Jugar y Mods.',
+    'Unlock FPS is back on the Play screen for everyone.': 'Desbloquear FPS vuelve a la pantalla de Jugar para todos.',
+    'Unlock FPS is a single uncapped on/off switch.': 'Desbloquear FPS es un único interruptor de encendido/apagado sin límite.',
+    'Custom crosshairs no longer shrink in Shift Lock or first person.': 'Las miras personalizadas ya no se encogen en Shift Lock ni en primera persona.',
+    'Moved some controls into the Dev/Testing tab.': 'Se movieron algunos controles a la pestaña Dev/Testing.',
+    'Renamed the developer tab to Dev/Testing.': 'Se renombró la pestaña de desarrollador a Dev/Testing.',
+    'Your Playtime history is protected when it saves, so it can\'t be lost.': 'Tu historial de Tiempo de juego está protegido al guardarse, así que no se puede perder.',
+    'Added a developer-only tab.': 'Se añadió una pestaña solo para desarrolladores.',
+    'Behind-the-scenes code tidy-up.': 'Limpieza interna del código.',
+    'Keystrap\'s own dark tooltips.': 'Descripciones emergentes oscuras propias de Keystrap.',
+    'The link warning has a "Don\'t ask again" box.': 'El aviso de enlaces tiene una casilla "No volver a preguntar".',
+    'Links to websites ask first and show where they go.': 'Los enlaces a sitios web preguntan primero y muestran a dónde van.',
+    'Multi-instance checks it really holds Roblox\'s lock.': 'Multi-instancia comprueba que realmente tiene el bloqueo de Roblox.',
+    'A cursor ring that follows your mouse around Keystrap.': 'Un anillo del cursor que sigue el ratón por Keystrap.',
+    'A gear icon for Settings.': 'Un icono de engranaje para Ajustes.',
+    'Developer test notifications, by channel.': 'Notificaciones de prueba de desarrollador, por canal.',
+    'Dark color pickers.': 'Selectores de color oscuros.',
+    'Dark dropdowns and sliders.': 'Menús desplegables y controles deslizantes oscuros.',
+    'Server location on Playtime, Mods, and a flag builder.': 'Ubicación del servidor en Tiempo de juego, Mods y un creador de flags.',
+    'Custom Skies marked coming soon; the crosshair applies to every cursor.': 'Cielos personalizados marcados como próximamente; la mira se aplica a todos los cursores.',
+    'Version numbers roll over after 10 (1.0.10 becomes 1.1.0).': 'Los números de versión pasan de largo tras el 10 (1.0.10 se convierte en 1.1.0).',
+    'A crosshair size slider.': 'Un control deslizante para el tamaño de la mira.',
+    'Crosshairs: use your own for every Roblox cursor.': 'Miras: usa la tuya para todos los cursores de Roblox.',
+    'Playtime totals count every game again.': 'Los totales de Tiempo de juego vuelven a contar todos los juegos.',
+    'Custom Skies in Beta.': 'Cielos personalizados en Beta.',
+    'The updater shows the new release\'s notes.': 'El actualizador muestra las notas de la nueva versión.',
+    'Three-part version numbers.': 'Números de versión de tres partes.',
     'Internal tools for building Keystrap, shown only when it\'s run in developer mode. These aren\'t part of the normal app.':
       'Herramientas internas para crear Keystrap, visibles solo cuando se ejecuta en modo desarrollador. No forman parte de la app normal.',
 
@@ -1545,7 +1623,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.7';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.8';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1553,13 +1631,42 @@ const I18N_ES = {
   const COLORS = [['#fffcc7', '#fffba6'], ['#6ee7b7', '#3b9fd6'], ['#c4b5fd', '#818cf8'], ['#fda4af', '#fb7185'], ['#fdba74', '#f59e0b'], ['#e5e7eb', '#9ca3af']];
   // [name in the language itself, English name, code once it's translated]
   const LANGS = [['English', 'English', 'en'], ['Español', 'Spanish', 'es'],['Português (Brasil)', 'Portuguese'], ['Français', 'French'], ['Deutsch', 'German'], ['Русский', 'Russian'], ['Polski', 'Polish'], ['Türkçe', 'Turkish'], ['Tiếng Việt', 'Vietnamese'], ['日本語', 'Japanese'], ['한국어', 'Korean'], ['简体中文', 'Chinese (Simplified)']];
-  // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
-  // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
-  const CHANGELOG = {
-    Changed: [
-      'Unlock FPS is back on the Play screen for everyone, not just in developer mode.'
-    ]
-  };
+  // Every release, newest first. What's new shows this whole list and lets you pick a version to read its notes;
+  // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
+  // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
+  const HISTORY = [
+    { v: 'v1.2.8', notes: [
+      'An FAQ on the About page.',
+      'What\'s new now lists every version — pick one to read its notes.',
+      'The cursor ring moved to the Crosshairs page.',
+      'Refreshed the Play and Mods icons.'
+    ] },
+    { v: 'v1.2.7', notes: ['Unlock FPS is back on the Play screen for everyone.'] },
+    { v: 'v1.2.6', notes: ['Unlock FPS is a single uncapped on/off switch.', 'Custom crosshairs no longer shrink in Shift Lock or first person.'] },
+    { v: 'v1.2.5', notes: ['Moved some controls into the Dev/Testing tab.'] },
+    { v: 'v1.2.4', notes: ['Renamed the developer tab to Dev/Testing.'] },
+    { v: 'v1.2.3', notes: ['Your Playtime history is protected when it saves, so it can\'t be lost.'] },
+    { v: 'v1.2.2', notes: ['Added a developer-only tab.'] },
+    { v: 'v1.2.1', notes: ['Behind-the-scenes code tidy-up.'] },
+    { v: 'v1.2.0', notes: ['Keystrap\'s own dark tooltips.'] },
+    { v: 'v1.1.10', notes: ['The link warning has a "Don\'t ask again" box.'] },
+    { v: 'v1.1.9', notes: ['Links to websites ask first and show where they go.'] },
+    { v: 'v1.1.8', notes: ['Multi-instance checks it really holds Roblox\'s lock.'] },
+    { v: 'v1.1.7', notes: ['A cursor ring that follows your mouse around Keystrap.'] },
+    { v: 'v1.1.6', notes: ['A gear icon for Settings.'] },
+    { v: 'v1.1.5', notes: ['Developer test notifications, by channel.'] },
+    { v: 'v1.1.4', notes: ['Dark color pickers.'] },
+    { v: 'v1.1.3', notes: ['Dark dropdowns and sliders.'] },
+    { v: 'v1.1.2', notes: ['Server location on Playtime, Mods, and a flag builder.'] },
+    { v: 'v1.1.1', notes: ['Custom Skies marked coming soon; the crosshair applies to every cursor.'] },
+    { v: 'v1.1.0', notes: ['Version numbers roll over after 10 (1.0.10 becomes 1.1.0).'] },
+    { v: 'v1.0.13', notes: ['A crosshair size slider.'] },
+    { v: 'v1.0.12', notes: ['Crosshairs: use your own for every Roblox cursor.'] },
+    { v: 'v1.0.11', notes: ['Playtime totals count every game again.'] },
+    { v: 'v1.0.10', notes: ['Custom Skies in Beta.'] },
+    { v: 'v1.0.9', notes: ['The updater shows the new release\'s notes.'] },
+    { v: 'v1.0.8', notes: ['Three-part version numbers.'] }
+  ];
 
   const DEFAULT_ACCENT = '#fffba6';
   const ACCENT_PRESETS = [['Cream', '#fffba6'], ['Mint', '#6ee7b7'], ['Sky', '#7cc4fa'], ['Lavender', '#b4a7ff'], ['Rose', '#ff9fb4'], ['Peach', '#ffb57a'], ['Lime', '#c5f06b'], ['Silver', '#d4d7dd']];
@@ -2927,13 +3034,26 @@ const I18N_ES = {
     $('#aboutRoblox').textContent = env.installed ? (env.installed.version || '') + ' (' + env.installed.guid + ')' : 'Not installed yet';
     $('#aboutData').textContent = env.dataDir;
   }
+  function changelogNotes(entry) {
+    return '<h3 class="cl-vtitle" translate="no">' + esc(entry.v) + '</h3><ul>' +
+      entry.notes.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
+  }
   function openChangelog() {
-    const dots = { Added: 'var(--good)', Fixed: 'var(--accent)', Changed: 'var(--warn)' };
-    openModal(
-      '<h2>What\'s new in ' + APP_VERSION + '</h2>' +
-      Object.keys(CHANGELOG).map(k => '<div class="cl-sec"><h3><i style="background:' + dots[k] + '"></i>' + k + '</h3><ul>' +
-        CHANGELOG[k].map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>').join('') +
-      '<div class="modal-foot"><button class="btn primary" data-close>Got it</button></div>', 'wide');
+    const m = openModal(
+      '<h2>What\'s new</h2>' +
+      '<div class="cl-browser">' +
+        '<div class="cl-vlist" role="listbox" aria-label="Versions" translate="no">' +
+          HISTORY.map((h, i) => '<button class="cl-ver" role="option" data-i="' + i + '" aria-selected="' + (i === 0) + '">' + esc(h.v) + '</button>').join('') +
+        '</div>' +
+        '<div class="cl-notes" id="clNotes">' + changelogNotes(HISTORY[0]) + '</div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn primary" data-close>Got it</button></div>', 'wide cl-modal');
+    $('.cl-vlist', m).addEventListener('click', e => {
+      const b = e.target.closest('.cl-ver');
+      if (!b) return;
+      $$('.cl-ver', m).forEach(x => x.setAttribute('aria-selected', String(x === b)));
+      $('#clNotes', m).innerHTML = changelogNotes(HISTORY[+b.dataset.i]);
+    });
     if (state.lastSeenChangelog !== APP_VERSION) { state.lastSeenChangelog = APP_VERSION; save(); }
   }
   $('#whatsNew').addEventListener('click', openChangelog);
