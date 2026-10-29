@@ -831,6 +831,11 @@ html.native.shown .window { opacity: 1; }
         <h2 class="sec">Quick options</h2>
         <div class="rows">
           <div class="row">
+            <svg class="ico"><use href="#i-monitor"/></svg>
+            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div></div>
+            <label class="switch"><input type="checkbox" id="q-fps" aria-label="Unlock FPS"><span></span></label>
+          </div>
+          <div class="row">
             <svg class="ico"><use href="#i-layers"/></svg>
             <div class="txt"><div class="t">Multi-instance</div><div class="d">Run more than one Roblox window. Keep Keystrap open while you play.</div></div>
             <label class="switch"><input type="checkbox" id="q-multi" aria-label="Multi-instance"><span></span></label>
@@ -1044,11 +1049,6 @@ html.native.shown .window { opacity: 1; }
         <p class="sub">Internal tools for building Keystrap, shown only when it's run in developer mode. These aren't part of the normal app.</p>
         <h2 class="sec">Performance</h2>
         <div class="rows">
-          <div class="row">
-            <svg class="ico"><use href="#i-monitor"/></svg>
-            <div class="txt"><div class="t">Unlock FPS</div><div class="d" id="fpsDesc">Uncapped: Roblox draws as many frames as your PC can.</div></div>
-            <label class="switch"><input type="checkbox" id="q-fps" aria-label="Unlock FPS"><span></span></label>
-          </div>
           <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
             <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
         </div>
@@ -1189,6 +1189,7 @@ const I18N_ES = {
     'Unlock FPS': 'Desbloquear FPS',
     'Uncapped: Roblox draws as many frames as your PC can.': 'Sin límite: Roblox dibuja tantos fotogramas como pueda tu PC.',
     'Off: Roblox uses its own 60 FPS limit.': 'Desactivado: Roblox usa su propio límite de 60 FPS.',
+    'On: Roblox runs uncapped — as many frames as your PC can draw.': 'Activado: Roblox se ejecuta sin límite, tantos fotogramas como pueda dibujar tu PC.',
     'Keystrap couldn\'t read your monitor\'s refresh rate, so Roblox launches uncapped.': 'Keystrap no pudo leer la frecuencia de tu monitor, así que Roblox se inicia sin límite.',
     'Uncapped': 'Sin límite', 'Match monitor': 'Igual al monitor', 'Custom cap': 'Límite personalizado',
     'Frame rate limit': 'Límite de fotogramas', 'Custom frame rate cap in FPS': 'Límite de fotogramas personalizado en FPS',
@@ -1431,10 +1432,8 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'Custom crosshairs no longer shrink when you turn on Shift Lock or go first person in Roblox.':
-      'Las miras personalizadas ya no se encogen al activar el bloqueo de desplazamiento (Shift Lock) ni en primera persona en Roblox.',
-    'Unlock FPS is now a single on/off switch: on runs Roblox uncapped, off keeps its own limit.':
-      'Desbloquear FPS ahora es un único interruptor: activado ejecuta Roblox sin límite, desactivado mantiene su propio límite.',
+    'Unlock FPS is back on the Play screen for everyone, not just in developer mode.':
+      'Desbloquear FPS vuelve a la pantalla de Jugar para todos, no solo en modo desarrollador.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
@@ -1546,7 +1545,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.6';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.7';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1557,11 +1556,8 @@ const I18N_ES = {
   // What's new in this version only: shown once after an update, and any time from About. When the version moves on,
   // replace these lines with the new version's changes. Each line also needs its Spanish in I18N_ES.strings.
   const CHANGELOG = {
-    Fixed: [
-      'Custom crosshairs no longer shrink when you turn on Shift Lock or go first person in Roblox.'
-    ],
     Changed: [
-      'Unlock FPS is now a single on/off switch: on runs Roblox uncapped, off keeps its own limit.'
+      'Unlock FPS is back on the Play screen for everyone, not just in developer mode.'
     ]
   };
 
