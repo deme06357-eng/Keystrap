@@ -744,18 +744,18 @@ namespace Keystrap.Updater
             if (info.ProductName != "Keystrap") throw new UpdateException("The downloaded file isn't Keystrap, so it wasn't installed.");
             Log.Write("Installing Keystrap " + info.ProductVersion + " (" + files.Count + " file(s))");
 
-            var replaced = new List<string>();
+            var backups = new Dictionary<string, string>();   // dest -> the backup path we actually moved it to
             var added = new List<string>();
             try
             {
                 foreach (var f in files)
                 {
-                    string dest = f.Value, backup = dest + ".old";
+                    string dest = f.Value;
                     Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dest));
                     Retry(() =>
                     {
-                        if (File.Exists(backup)) File.Delete(backup);
-                        if (File.Exists(dest)) { File.Move(dest, backup); replaced.Add(dest); } else added.Add(dest);
+                        if (File.Exists(dest)) { string backup = BackupName(dest); File.Move(dest, backup); backups[dest] = backup; }
+                        else added.Add(dest);
                     });
                     Retry(() => File.Copy(f.Key, dest, true));
                 }
@@ -764,12 +764,23 @@ namespace Keystrap.Updater
             {
                 Log.Write("Install failed; restoring the previous version");
                 foreach (string dest in added) { try { File.Delete(dest); } catch { } }
-                foreach (string dest in replaced) { try { if (File.Exists(dest)) File.Delete(dest); File.Move(dest + ".old", dest); } catch { } }
+                foreach (var kv in backups) { try { if (File.Exists(kv.Key)) File.Delete(kv.Key); File.Move(kv.Value, kv.Key); } catch { } }
                 throw;
             }
-            foreach (string dest in replaced) { try { File.Delete(dest + ".old"); } catch { } }   // a locked .old is cleaned up next time
+            foreach (string backup in backups.Values) { try { File.Delete(backup); } catch { } }   // a locked backup (the running updater) is cleaned up next time
             try { if (temp != null) Directory.Delete(temp, true); File.Delete(staged); } catch { }
             Log.Write("Installed");
+        }
+
+        // Where to move a file we're about to replace. Normally "<file>.old"; but if that backup already exists and can't
+        // be deleted — typically Keystrap.Updater.exe.old, which is this running process after an earlier attempt —
+        // a unique name is used instead, so a retry never has to delete a locked backup.
+        static string BackupName(string dest)
+        {
+            string backup = dest + ".old";
+            if (!File.Exists(backup)) return backup;
+            try { File.Delete(backup); return backup; }
+            catch { return dest + ".old-" + DateTime.UtcNow.Ticks.ToString(); }
         }
 
         // A file Keystrap just let go of can stay locked for a moment (antivirus, Windows Search); try a few times.

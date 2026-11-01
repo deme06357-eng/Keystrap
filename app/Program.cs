@@ -798,6 +798,7 @@ namespace Keystrap
             }
             string src = id == Default ? backup : Ensure(id, progress);
             foreach (string f in Faces) File.Copy(Path.Combine(src, "sky512_" + f + ".tex"), Path.Combine(skyDir, "sky512_" + f + ".tex"), true);
+            if (id == Default) { try { Directory.Delete(backup, true); } catch { } }   // originals restored: drop the backup so later launches don't re-copy it
             Log.Write("Applied sky " + id + " to " + versionDir);
         }
 
@@ -1243,6 +1244,7 @@ namespace Keystrap
                     else File.Copy(original, target, true);
                     done++;
                 }
+                if (!custom && done > 0) { try { Directory.Delete(backup, true); } catch { } }   // originals restored: drop the backup so later launches don't re-copy it
                 Log.Write((custom ? "Applied the custom crosshair to " : "Put Roblox's own cursors back in ") + done + " cursors in " + versionDir);
             }
         }
@@ -1512,7 +1514,7 @@ namespace Keystrap
                     { "id", s[0] },
                     { "name", s[1] },
                     { "custom", File.Exists(custom) ? (File.Exists(nameFile) ? File.ReadAllText(nameFile) : s[0]) : null },
-                    { "preview", source != null ? "data:audio/" + (s[0].EndsWith(".ogg") ? "ogg" : "mpeg") + ";base64," + Convert.ToBase64String(File.ReadAllBytes(source)) : null },
+                    { "preview", source != null ? "data:" + AudioMime(source) + ";base64," + Convert.ToBase64String(File.ReadAllBytes(source)) : null },
                 };
             }).ToList();
             return new Dictionary<string, object>
@@ -1523,6 +1525,25 @@ namespace Keystrap
                     { "data", new FileInfo(font).Length < 8 * 1024 * 1024 ? "data:font/" + Path.GetExtension(font).TrimStart('.') + ";base64," + Convert.ToBase64String(File.ReadAllBytes(font)) : null } } },
                 { "sounds", sounds },
             };
+        }
+
+        // The audio type from the file's own first bytes, not the Roblox slot's extension, so a .wav (or an .mp3 put in
+        // an .ogg slot, and the other way round) previews with the right type instead of a guessed one.
+        static string AudioMime(string file)
+        {
+            try
+            {
+                var b = new byte[4];
+                using (var fs = File.OpenRead(file))
+                    if (fs.Read(b, 0, 4) >= 2)
+                    {
+                        if (b[0] == 'O' && b[1] == 'g' && b[2] == 'g' && b[3] == 'S') return "audio/ogg";
+                        if (b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F') return "audio/wav";
+                        if ((b[0] == 'I' && b[1] == 'D' && b[2] == '3') || (b[0] == 0xFF && (b[1] & 0xE0) == 0xE0)) return "audio/mpeg";
+                    }
+            }
+            catch { }
+            return "audio/mpeg";
         }
 
         // Roblox's own copy of a content file: its backup if a mod replaced it, otherwise the file itself.
@@ -1615,9 +1636,11 @@ namespace Keystrap
     static class RobloxGames
     {
         public class Info { public string Creator; public string Icon; }
-        static readonly Dictionary<long, Info> cache = new Dictionary<long, Info>();
+        static readonly Dictionary<long, Info> cache = new Dictionary<long, Info>();     // only complete results (icon found)
+        static readonly Dictionary<long, DateTime> retryAfter = new Dictionary<long, DateTime>();   // failed lookups, when to try again
         static readonly HashSet<long> loading = new HashSet<long>();
         static readonly HttpClient http = CreateClient();
+        static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(60);
 
         static HttpClient CreateClient()
         {
@@ -1633,6 +1656,8 @@ namespace Keystrap
             if (universe <= 0) return null;
             Info info;
             if (cache.TryGetValue(universe, out info)) return info;
+            DateTime until;
+            if (retryAfter.TryGetValue(universe, out until) && DateTime.UtcNow < until) return null;   // a recent lookup failed; wait
             if (loading.Add(universe)) Load(universe, loaded);
             return null;
         }
@@ -1657,8 +1682,9 @@ namespace Keystrap
                 if (img != null && img.ContainsKey("imageUrl")) info.Icon = img["imageUrl"] as string;
             }
             catch (Exception ex) { Log.Write("Couldn't look up the icon of universe " + universe + ": " + ex.Message); }
-            cache[universe] = info;
             loading.Remove(universe);
+            if (info.Icon != null) { cache[universe] = info; retryAfter.Remove(universe); }   // keep a good result for the session
+            else retryAfter[universe] = DateTime.UtcNow + RetryDelay;   // failed or still pending: let it be looked up again later
             loaded();
         }
     }
@@ -2560,6 +2586,7 @@ namespace Keystrap
         static readonly string StoreFile = Path.Combine(Paths.Data, "playtime.json");
         static readonly TimeSpan MinSession = TimeSpan.FromSeconds(10);
         static readonly TimeSpan CatchUp = TimeSpan.FromMinutes(30);   // logs this recent are read in full at startup
+        static readonly TimeSpan StaleSession = TimeSpan.FromMinutes(3);   // an open session whose log went this quiet is over
         static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         static readonly Regex Stamp = new Regex(@"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)", RegexOptions.Compiled);
@@ -2642,10 +2669,15 @@ namespace Keystrap
                     }
                     if (fi.Length < st.Pos) st.Pos = 0;   // log was replaced
                     if (fi.Length > st.Pos) any |= ReadNew(fi.FullName, st);
+                    // An instance that crashed or was force-closed stops writing to its log without a leave line. If its
+                    // session is still open but the log has gone quiet, end it — so one dead window doesn't stay in
+                    // "Playing now" while other multi-instance windows keep Roblox running.
+                    if (st.Open != null && fi.LastWriteTimeUtc < DateTime.UtcNow - StaleSession)
+                        any |= Close(st, st.LastStamp);
                 }
             }
 
-            // Roblox closed (or crashed) without a leave line: end its session at the last line it logged.
+            // Roblox fully closed (or crashed): end any session still open, without waiting out the stale timeout.
             if (!running)
                 foreach (LogState st in logs.Values)
                     if (st.Open != null) any |= Close(st, st.LastStamp);
@@ -3359,6 +3391,7 @@ namespace Keystrap
         const string FpsFlag = "DFIntTaskSchedulerTargetFps";
         const int UncappedFps = 9999;
         const int MenuFps = 60;
+        const int DefaultFps = 60;   // where Roblox's Maximum Frame Rate goes back to when Unlock FPS is turned off
 
         // The frame rate this launch starts Roblox at, or 0 to leave Roblox's own setting alone. Roblox reads it once at
         // startup, so it holds for the whole session: joining a game from inside the app home stays at the menu cap.
@@ -4124,7 +4157,15 @@ namespace Keystrap
         void ApplyFrameRate(Dictionary<string, object> msg, Dictionary<string, string> flags, bool toAppHome)
         {
             int fps = LaunchFps(msg, toAppHome);
-            if (fps <= 0) return;
+            if (fps <= 0)
+            {
+                // Unlock FPS is off. Roblox reads its Maximum Frame Rate from GlobalBasicSettings, which an earlier
+                // launch may have set to 9999, so put it back to the normal 60 — otherwise turning Unlock FPS off
+                // would leave Roblox uncapped anyway.
+                Bootstrapper.SetFramerateCap(DefaultFps);
+                Log.Write("Unlock FPS: off — Roblox's Maximum Frame Rate set back to " + DefaultFps);
+                return;
+            }
             string value = fps.ToString(CultureInfo.InvariantCulture);
             string fromProfile;
             if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)

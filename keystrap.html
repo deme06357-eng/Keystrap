@@ -1382,6 +1382,14 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Turning off Unlock FPS now puts Roblox\'s frame rate back to its normal limit instead of leaving it uncapped.':
+      'Desactivar Desbloquear FPS ahora devuelve la frecuencia de fotogramas de Roblox a su límite normal en vez de dejarla sin límite.',
+    'Discord Rich Presence recovers a game\'s icon and name after a network hiccup instead of losing them for the session.':
+      'Discord Rich Presence recupera el icono y el nombre de un juego tras un fallo de red, en vez de perderlos durante la sesión.',
+    'With multi-instance on, a Roblox window that crashes or is force-closed no longer stays stuck in "Playing now".':
+      'Con multi-instancia activada, una ventana de Roblox que se cierra o falla ya no se queda atascada en "Jugando ahora".',
+    'Sound mod previews play .wav files correctly, and resetting a sky or crosshair to default no longer re-copies files every launch.':
+      'Las vistas previas de los mods de sonido reproducen bien los archivos .wav, y restablecer un cielo o una mira a su valor predeterminado ya no recopia archivos en cada inicio.',
     'An FAQ on the About page.': 'Preguntas frecuentes en la página Acerca de.',
     'What\'s new now lists every version — pick one to read its notes.': 'Novedades ahora muestra todas las versiones: elige una para leer sus notas.',
     'The cursor ring moved to the Crosshairs page.': 'El anillo del cursor se movió a la página de Miras.',
@@ -1623,7 +1631,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.8';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.2.9';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1635,6 +1643,12 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.2.9', notes: [
+      'Turning off Unlock FPS now puts Roblox\'s frame rate back to its normal limit instead of leaving it uncapped.',
+      'Discord Rich Presence recovers a game\'s icon and name after a network hiccup instead of losing them for the session.',
+      'With multi-instance on, a Roblox window that crashes or is force-closed no longer stays stuck in "Playing now".',
+      'Sound mod previews play .wav files correctly, and resetting a sky or crosshair to default no longer re-copies files every launch.'
+    ] },
     { v: 'v1.2.8', notes: [
       'An FAQ on the About page.',
       'What\'s new now lists every version — pick one to read its notes.',
