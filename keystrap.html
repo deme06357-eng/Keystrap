@@ -1127,7 +1127,7 @@ html.native.shown .window { opacity: 1; }
       <!-- TOS -->
       <section class="page" id="page-tos">
         <h1>Terms of Service</h1>
-        <p class="sub">Last updated 24 October 2026</p>
+        <p class="sub">Last updated 1 November 2026</p>
         <div class="card prose">
           <h4>1. What Keystrap is</h4>
           <p>Keystrap is an independent, open-source launcher for Roblox. It is not made by, affiliated with, or endorsed by Roblox Corporation.</p>
@@ -1138,8 +1138,7 @@ html.native.shown .window { opacity: 1; }
           <h4>4. Flags</h4>
           <p>FastFlags are applied at your own risk. Roblox may change, ignore or remove any flag without notice, and some games may behave differently.</p>
           <h4>5. Data</h4>
-          <p>Profiles, settings and logs are stored only on your computer. Keystrap sends the developers' Discord only these:</p>
-          <p>A suggestion, when you submit one from the Support page: its text, your Windows user name and the Keystrap version.</p>
+          <p>Profiles, settings and logs are stored only on your computer. Keystrap sends only one thing to the developers' Discord:</p>
           <p>A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile's name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.</p>
           <h4>6. No warranty</h4>
           <p>Keystrap is provided as is, without warranty of any kind.</p>
@@ -1387,6 +1386,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'The Terms of Service were tidied up to match Keystrap\'s current features.':
+      'Se ordenaron los Términos del servicio para que coincidan con las funciones actuales de Keystrap.',
     'Turning off Unlock FPS now puts Roblox\'s frame rate back to its normal limit instead of leaving it uncapped.':
       'Desactivar Desbloquear FPS ahora devuelve la frecuencia de fotogramas de Roblox a su límite normal en vez de dejarla sin límite.',
     'Discord Rich Presence recovers a game\'s icon and name after a network hiccup instead of losing them for the session.':
@@ -1435,7 +1436,7 @@ const I18N_ES = {
     'Turkish': 'Turco', 'Vietnamese': 'Vietnamita', 'Japanese': 'Japonés', 'Korean': 'Coreano', 'Chinese (Simplified)': 'Chino (simplificado)',
 
     // terms
-    'Terms of Service': 'Términos del servicio', 'Last updated 24 October 2026': 'Última actualización: 24 de octubre de 2026',
+    'Terms of Service': 'Términos del servicio', 'Last updated 1 November 2026': 'Última actualización: 1 de noviembre de 2026',
     '1. What Keystrap is': '1. Qué es Keystrap',
     'Keystrap is an independent, open-source launcher for Roblox. It is not made by, affiliated with, or endorsed by Roblox Corporation.': 'Keystrap es un launcher independiente y de código abierto para Roblox. No está creado, afiliado ni respaldado por Roblox Corporation.',
     '2. Downloading Roblox': '2. Descarga de Roblox',
@@ -1445,8 +1446,7 @@ const I18N_ES = {
     '4. Flags': '4. Flags',
     'FastFlags are applied at your own risk. Roblox may change, ignore or remove any flag without notice, and some games may behave differently.': 'Las FastFlags se aplican bajo tu propia responsabilidad. Roblox puede cambiar, ignorar o eliminar cualquier flag sin previo aviso, y algunos juegos pueden comportarse de otra forma.',
     '5. Data': '5. Datos',
-    'Profiles, settings and logs are stored only on your computer. Keystrap sends the developers\' Discord only these:': 'Los perfiles, los ajustes y los registros se guardan solo en tu computadora. Keystrap solo envía esto al Discord de los desarrolladores:',
-    'A suggestion, when you submit one from the Support page: its text, your Windows user name and the Keystrap version.': 'Una sugerencia, cuando envías una desde la página de Soporte: su texto, tu nombre de usuario de Windows y la versión de Keystrap.',
+    'Profiles, settings and logs are stored only on your computer. Keystrap sends only one thing to the developers\' Discord:': 'Los perfiles, los ajustes y los registros se guardan solo en tu computadora. Keystrap solo envía una cosa al Discord de los desarrolladores:',
     'A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile\'s name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.': 'Un informe de errores, si Keystrap falla: el error y sus detalles técnicos, la versión de Keystrap, el nombre de tu perfil activo, tu versión de Windows y la hora. Antes se eliminan tu nombre de usuario de Windows y las rutas de carpetas. Puedes desactivar los informes de errores en Ajustes.',
     '6. No warranty': '6. Sin garantía',
     'Keystrap is provided as is, without warranty of any kind.': 'Keystrap se ofrece tal cual, sin garantía de ningún tipo.',
@@ -1636,7 +1636,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.2.10';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.0';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1648,6 +1648,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.0', notes: [
+      'The Terms of Service were tidied up to match Keystrap\'s current features.'
+    ] },
     { v: 'v1.2.10', notes: [
       'A "Rejoin last server" button on the Play screen that tries to put you back in the Roblox server you were last in. It opens through your browser (Keystrap never touches your login), and Roblox sometimes lands you in a different server.'
     ] },
