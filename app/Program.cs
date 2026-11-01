@@ -2893,6 +2893,16 @@ namespace Keystrap
 
         public const int TopGames = 10;
 
+        // The server being played now, or the last one that was played — place and job id, for a best-effort rejoin.
+        public class ServerRef { public long Place; public string JobId; public string Title; }
+        public ServerRef LastServer()
+        {
+            Session s = logs.Values.Where(x => x.Open != null).Select(x => x.Open).OrderByDescending(x => x.Start).FirstOrDefault()
+                      ?? sessions.OrderByDescending(x => x.End).FirstOrDefault();
+            if (s == null || string.IsNullOrEmpty(s.JobId) || s.Place <= 0) return null;
+            return new ServerRef { Place = s.Place, JobId = s.JobId, Title = TitleOf(s) };
+        }
+
         // What the Playtime page shows: the 10 most played games (one entry per game, most played first), totals across
         // every game, and any game being played now.
         public Dictionary<string, object> Snapshot()
@@ -2923,6 +2933,7 @@ namespace Keystrap
                 { "server", st.Open.Server },
                 { "region", st.Open.Server != null && regions.ContainsKey(st.Open.Server) ? regions[st.Open.Server] : null },
             }).ToList();
+            ServerRef recent = LastServer();
             return new Dictionary<string, object>
             {
                 { "type", "playtime" },
@@ -2931,6 +2942,7 @@ namespace Keystrap
                 { "totalSeconds", all.Sum(d => (long)d["seconds"]) },
                 { "gameCount", all.Count },
                 { "sessionCount", all.Sum(d => (int)d["sessions"]) },
+                { "lastServer", recent == null ? null : new Dictionary<string, object> { { "placeId", recent.Place }, { "title", recent.Title } } },
             };
         }
 
@@ -3456,6 +3468,9 @@ namespace Keystrap
                 case "open-url":
                     OpenWebsite(msg.ContainsKey("url") ? msg["url"] as string : null);
                     break;
+                case "rejoin":
+                    RejoinLastServer();
+                    break;
                 case "open-logs":
                     OpenLogs();
                     break;
@@ -3723,6 +3738,18 @@ namespace Keystrap
 
         // Opens a website in the user's browser, after they said Continue on the page's warning. Only real web
         // addresses: anything else (a file, a program, another kind of link) is refused.
+        // Best-effort rejoin of the last server. Joining a specific instance needs an auth ticket only Roblox can mint,
+        // and Keystrap never touches your login, so this opens the Roblox join page in your browser: it signs you in and
+        // hands the launch back to Keystrap (when Keystrap handles Roblox links). Roblox may still drop you in another
+        // server — it sometimes ignores gameInstanceId — and a server that has shut down can't be rejoined.
+        void RejoinLastServer()
+        {
+            PlaytimeTracker.ServerRef s = playtime != null ? playtime.LastServer() : null;
+            if (s == null) { Toast("No Roblox server to rejoin yet — play one first."); return; }
+            OpenWebsite("https://www.roblox.com/games/start?placeId=" + s.Place + "&gameInstanceId=" + Uri.EscapeDataString(s.JobId));
+            Toast("Opening Roblox in your browser to rejoin your last server…");
+        }
+
         void OpenWebsite(string url)
         {
             Uri uri;
