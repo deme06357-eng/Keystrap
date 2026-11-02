@@ -1090,6 +1090,15 @@ html.native.shown .window { opacity: 1; }
           <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
             <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
         </div>
+        <h2 class="sec">Sound</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Interface sound volume</div><div class="d">How loud the interface clicks and hovers play. Turn interface sounds on in Settings → Sound.</div>
+            <div class="xh-slider">
+              <input type="range" id="s-sfxvol" min="0" max="100" step="5" aria-label="Interface sound volume">
+              <output id="s-sfxvolOut" for="s-sfxvol">100%</output>
+            </div>
+          </div></div>
+        </div>
         <h2 class="sec">Discord</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Discord Rich Presence</div><div class="d" id="discordDesc">Shows what you're doing in Keystrap and Roblox on your Discord profile.</div></div>
@@ -1391,6 +1400,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'A volume slider for the interface sounds, in the Dev/Testing tab.':
+      'Un control de volumen para los sonidos de la interfaz, en la pestaña Dev/Testing.',
     'Optional interface sounds — soft clicks and hovers as you move around Keystrap. Turn them on in Settings → Sound (off by default).':
       'Sonidos de interfaz opcionales: clics suaves al moverte por Keystrap. Actívalos en Ajustes → Sonido (desactivados por defecto).',
     'The Terms of Service were tidied up to match Keystrap\'s current features.':
@@ -1527,6 +1538,9 @@ const I18N_ES = {
     'Sound': 'Sonido', 'Interface sounds': 'Sonidos de la interfaz',
     'Soft clicks as you press things and hovers over the sidebar. Off by default.':
       'Clics suaves al pulsar y al pasar por la barra lateral. Desactivado por defecto.',
+    'Interface sound volume': 'Volumen de los sonidos de la interfaz',
+    'How loud the interface clicks and hovers play. Turn interface sounds on in Settings → Sound.':
+      'Qué tan fuerte suenan los clics y los hovers de la interfaz. Activa los sonidos de la interfaz en Ajustes → Sonido.',
     'You\'re leaving Keystrap': 'Vas a salir de Keystrap', 'Continue': 'Continuar', 'Don\'t ask again': 'No volver a preguntar',
     'Safety': 'Seguridad', 'Ask before opening websites': 'Preguntar antes de abrir sitios web',
     'Links to websites show where they go and wait for you to press Continue before your browser opens.':
@@ -1646,7 +1660,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.1';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.2';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1658,6 +1672,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.2', notes: [
+      'A volume slider for the interface sounds, in the Dev/Testing tab.'
+    ] },
     { v: 'v1.3.1', notes: [
       'Optional interface sounds — soft clicks and hovers as you move around Keystrap. Turn them on in Settings → Sound (off by default).'
     ] },
@@ -1721,7 +1738,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, uiSounds: false, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, uiSounds: false, uiSoundVolume: 100, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
@@ -2671,6 +2688,7 @@ const I18N_ES = {
   const sfx = (() => {
     let ctx = null;
     const on = () => !!state && state.settings.uiSounds === true;
+    const vol = () => { const v = state ? state.settings.uiSoundVolume : 100; return (typeof v === 'number' ? v : 100) / 100; };
     function context() {
       if (!on()) return null;
       try {
@@ -2682,11 +2700,13 @@ const I18N_ES = {
     function blip(freq, dur, gain, type) {
       const c = context();
       if (!c) return;
+      const peak = gain * vol();
+      if (peak <= 0) return;   // volume at 0: nothing to play
       try {
         const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
         o.type = type; o.frequency.value = freq;
         g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(gain, t + 0.004);
+        g.gain.linearRampToValueAtTime(peak, t + 0.004);
         g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
         o.connect(g); g.connect(c.destination);
         o.start(t); o.stop(t + dur + 0.02);
@@ -2715,6 +2735,11 @@ const I18N_ES = {
     save();
     toast('Interface sounds ' + (e.target.checked ? 'on' : 'off'));
   });
+  $('#s-sfxvol').addEventListener('input', e => {
+    state.settings.uiSoundVolume = +e.target.value;
+    $('#s-sfxvolOut').textContent = e.target.value + '%';
+  });
+  $('#s-sfxvol').addEventListener('change', () => { save(); sfx.click(); });   // preview the new level
 
   // ---------- discord rich presence ----------
   // Developer mode only: test messages to one channel, 1 to 3 at a time.
@@ -2747,6 +2772,8 @@ const I18N_ES = {
     const s = state.settings, d = env.discord || {};
     $('#s-crash').checked = s.crashReports !== false;
     $('#s-sfx').checked = s.uiSounds === true;
+    const sv = typeof s.uiSoundVolume === 'number' ? s.uiSoundVolume : 100;
+    $('#s-sfxvol').value = sv; $('#s-sfxvolOut').textContent = sv + '%'; paintRange($('#s-sfxvol'));
     $('#s-linkwarn').checked = s.linkWarning !== false;
     $('#s-discord').checked = !!s.discordRpc;
     if (document.activeElement !== $('#discordAppId')) $('#discordAppId').value = s.discordAppId || '';
