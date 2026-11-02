@@ -1060,6 +1060,11 @@ html.native.shown .window { opacity: 1; }
           <div class="row"><div class="txt"><div class="t">Close Keystrap after Roblox starts</div><div class="d">With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.</div></div>
             <label class="switch"><input type="checkbox" id="s-close" aria-label="Close Keystrap after Roblox starts"><span></span></label></div>
         </div>
+        <h2 class="sec">Sound</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Interface sounds</div><div class="d">Soft clicks as you press things and hovers over the sidebar. Off by default.</div></div>
+            <label class="switch"><input type="checkbox" id="s-sfx" aria-label="Interface sounds"><span></span></label></div>
+        </div>
         <h2 class="sec">Safety</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Ask before opening websites</div><div class="d">Links to websites show where they go and wait for you to press Continue before your browser opens.</div></div>
@@ -1386,6 +1391,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Optional interface sounds — soft clicks and hovers as you move around Keystrap. Turn them on in Settings → Sound (off by default).':
+      'Sonidos de interfaz opcionales: clics suaves al moverte por Keystrap. Actívalos en Ajustes → Sonido (desactivados por defecto).',
     'The Terms of Service were tidied up to match Keystrap\'s current features.':
       'Se ordenaron los Términos del servicio para que coincidan con las funciones actuales de Keystrap.',
     'Turning off Unlock FPS now puts Roblox\'s frame rate back to its normal limit instead of leaving it uncapped.':
@@ -1517,6 +1524,9 @@ const I18N_ES = {
     'Sends test messages to one of the developers\' Discord channels, in that channel\'s real format, to check it\'s set up.':
       'Envía mensajes de prueba a uno de los canales de Discord de los desarrolladores, con el formato real de ese canal, para comprobar que está configurado.',
     'Cursor ring': 'Anillo del cursor',
+    'Sound': 'Sonido', 'Interface sounds': 'Sonidos de la interfaz',
+    'Soft clicks as you press things and hovers over the sidebar. Off by default.':
+      'Clics suaves al pulsar y al pasar por la barra lateral. Desactivado por defecto.',
     'You\'re leaving Keystrap': 'Vas a salir de Keystrap', 'Continue': 'Continuar', 'Don\'t ask again': 'No volver a preguntar',
     'Safety': 'Seguridad', 'Ask before opening websites': 'Preguntar antes de abrir sitios web',
     'Links to websites show where they go and wait for you to press Continue before your browser opens.':
@@ -1570,8 +1580,8 @@ const I18N_ES = {
     [/^Roblox is still limiting requests\. Try again in (\d+) s\.$/, (tr, n) => 'Roblox sigue limitando las solicitudes. Reintenta en ' + n + ' s.'],
     [/^Roblox is getting too many requests from this PC\. Wait (\d+) (second|seconds|minutes), then try again\.$/, (tr, n, unit) =>
       'Roblox está recibiendo demasiadas solicitudes desde este PC. Espera ' + n + ' ' + ({ second: 'segundo', seconds: 'segundos', minutes: 'minutos' })[unit] + ' y vuelve a intentarlo.'],
-    [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Cursor ring|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
-      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Cursor ring': 'Anillo del cursor', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
+    [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Cursor ring|Interface sounds|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
+      ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Cursor ring': 'Anillo del cursor', 'Interface sounds': 'Sonidos de la interfaz', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
       ': ' + (on === 'on' ? 'activado' : 'desactivado')],
     [/^(.+) \(preview\)$/, (tr, t) => tr(t) + ' (vista previa)'],
     [/^Downloading Roblox \((.+)\)…$/, (tr, p) => 'Descargando Roblox (' + p + ')…'],
@@ -1636,7 +1646,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.0';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.1';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1648,6 +1658,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.1', notes: [
+      'Optional interface sounds — soft clicks and hovers as you move around Keystrap. Turn them on in Settings → Sound (off by default).'
+    ] },
     { v: 'v1.3.0', notes: [
       'The Terms of Service were tidied up to match Keystrap\'s current features.'
     ] },
@@ -1708,7 +1721,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, uiSounds: false, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
@@ -2651,6 +2664,58 @@ const I18N_ES = {
     return { update() { if (!enabled()) show(false); } };
   })();
 
+  // ---------- interface sounds ----------
+  // Short clicks and hovers synthesised with the Web Audio API: no audio files to ship, and no lag. Off by default
+  // (Settings → Sound). The audio context only starts on a real gesture, so nothing plays until the first click, and
+  // it stays silent if there's no audio device or the browser won't allow it.
+  const sfx = (() => {
+    let ctx = null;
+    const on = () => !!state && state.settings.uiSounds === true;
+    function context() {
+      if (!on()) return null;
+      try {
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      } catch (e) { return null; }
+    }
+    function blip(freq, dur, gain, type) {
+      const c = context();
+      if (!c) return;
+      try {
+        const o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+        o.type = type; o.frequency.value = freq;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(gain, t + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        o.connect(g); g.connect(c.destination);
+        o.start(t); o.stop(t + dur + 0.02);
+      } catch (e) {}
+    }
+    return {
+      click: () => blip(660, 0.06, 0.06, 'triangle'),
+      hover: () => blip(900, 0.025, 0.018, 'sine'),
+      toggle: v => blip(v ? 780 : 520, 0.07, 0.05, 'triangle'),
+    };
+  })();
+  // A click plays on anything button-like, a hover once per sidebar item, and a switch plays its own up/down tone.
+  document.addEventListener('pointerdown', e => {
+    if (e.button === 0 && e.target.closest && e.target.closest('button, .seg, .swatch, .cl-ver')) sfx.click();
+  });
+  let sfxHover = null;
+  document.addEventListener('pointerover', e => {
+    const n = e.target.closest && e.target.closest('.nav-item');
+    if (n !== sfxHover) { sfxHover = n; if (n) sfx.hover(); }
+  });
+  document.addEventListener('change', e => {
+    if (e.target.matches && e.target.matches('.switch input[type="checkbox"]')) sfx.toggle(e.target.checked);
+  });
+  $('#s-sfx').addEventListener('change', e => {
+    state.settings.uiSounds = e.target.checked;
+    save();
+    toast('Interface sounds ' + (e.target.checked ? 'on' : 'off'));
+  });
+
   // ---------- discord rich presence ----------
   // Developer mode only: test messages to one channel, 1 to 3 at a time.
   const DEV_CHANNELS = { crash: 'Crash reports', commits: 'Commits', suggestions: 'Suggestions' };
@@ -2681,6 +2746,7 @@ const I18N_ES = {
   function renderDiscord() {
     const s = state.settings, d = env.discord || {};
     $('#s-crash').checked = s.crashReports !== false;
+    $('#s-sfx').checked = s.uiSounds === true;
     $('#s-linkwarn').checked = s.linkWarning !== false;
     $('#s-discord').checked = !!s.discordRpc;
     if (document.activeElement !== $('#discordAppId')) $('#discordAppId').value = s.discordAppId || '';
