@@ -1060,11 +1060,6 @@ html.native.shown .window { opacity: 1; }
           <div class="row"><div class="txt"><div class="t">Close Keystrap after Roblox starts</div><div class="d">With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.</div></div>
             <label class="switch"><input type="checkbox" id="s-close" aria-label="Close Keystrap after Roblox starts"><span></span></label></div>
         </div>
-        <h2 class="sec">Sound</h2>
-        <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Interface sounds</div><div class="d">Soft clicks as you press things and hovers over the sidebar. Off by default.</div></div>
-            <label class="switch"><input type="checkbox" id="s-sfx" aria-label="Interface sounds"><span></span></label></div>
-        </div>
         <h2 class="sec">Safety</h2>
         <div class="rows">
           <div class="row"><div class="txt"><div class="t">Ask before opening websites</div><div class="d">Links to websites show where they go and wait for you to press Continue before your browser opens.</div></div>
@@ -1092,7 +1087,9 @@ html.native.shown .window { opacity: 1; }
         </div>
         <h2 class="sec">Sound</h2>
         <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Interface sound volume</div><div class="d">How loud the interface clicks and hovers play. Turn interface sounds on in Settings → Sound.</div>
+          <div class="row"><div class="txt"><div class="t">Interface sounds <span class="badge beta">Beta</span></div><div class="d">Soft clicks as you press things and hovers over the sidebar. Off by default.</div></div>
+            <label class="switch"><input type="checkbox" id="s-sfx" aria-label="Interface sounds"><span></span></label></div>
+          <div class="row"><div class="txt"><div class="t">Interface sound volume</div><div class="d">How loud the interface clicks and hovers play.</div>
             <div class="xh-slider">
               <input type="range" id="s-sfxvol" min="0" max="100" step="5" aria-label="Interface sound volume">
               <output id="s-sfxvolOut" for="s-sfxvol">100%</output>
@@ -1400,6 +1397,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'The interface sounds toggle and its volume slider now live together in the Dev/Testing tab.':
+      'El interruptor de sonidos de la interfaz y su control de volumen ahora están juntos en la pestaña Dev/Testing.',
     'A volume slider for the interface sounds, in the Dev/Testing tab.':
       'Un control de volumen para los sonidos de la interfaz, en la pestaña Dev/Testing.',
     'Optional interface sounds — soft clicks and hovers as you move around Keystrap. Turn them on in Settings → Sound (off by default).':
@@ -1539,8 +1538,8 @@ const I18N_ES = {
     'Soft clicks as you press things and hovers over the sidebar. Off by default.':
       'Clics suaves al pulsar y al pasar por la barra lateral. Desactivado por defecto.',
     'Interface sound volume': 'Volumen de los sonidos de la interfaz',
-    'How loud the interface clicks and hovers play. Turn interface sounds on in Settings → Sound.':
-      'Qué tan fuerte suenan los clics y los hovers de la interfaz. Activa los sonidos de la interfaz en Ajustes → Sonido.',
+    'How loud the interface clicks and hovers play.':
+      'Qué tan fuerte suenan los clics y los hovers de la interfaz.',
     'You\'re leaving Keystrap': 'Vas a salir de Keystrap', 'Continue': 'Continuar', 'Don\'t ask again': 'No volver a preguntar',
     'Safety': 'Seguridad', 'Ask before opening websites': 'Preguntar antes de abrir sitios web',
     'Links to websites show where they go and wait for you to press Continue before your browser opens.':
@@ -1660,7 +1659,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.2';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.3';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1672,6 +1671,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.3', notes: [
+      'The interface sounds toggle and its volume slider now live together in the Dev/Testing tab.'
+    ] },
     { v: 'v1.3.2', notes: [
       'A volume slider for the interface sounds, in the Dev/Testing tab.'
     ] },
