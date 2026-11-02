@@ -1230,7 +1230,7 @@ const I18N_ES = {
     'Keystrap installs the latest Roblox if needed, applies this profile\'s flags, then starts Roblox.': 'Keystrap instala la última versión de Roblox si hace falta, aplica las flags de este perfil y luego inicia Roblox.',
     'Launch Roblox': 'Iniciar Roblox', 'Launching…': 'Iniciando…',
     'Open with the Roblox app instead': 'Abrir con la app de Roblox',
-    'Channel': 'Canal', 'Installed Roblox': 'Roblox instalado', 'Not installed': 'No instalado', 'Not installed yet': 'Aún no instalado',
+    'Channel': 'Canal', 'LIVE': 'EN VIVO', 'Installed Roblox': 'Roblox instalado', 'Not installed': 'No instalado', 'Not installed yet': 'Aún no instalado',
     'Flags on in this profile': 'Flags activas en este perfil',
     'Quick options': 'Opciones rápidas',
     'Rejoin last server': 'Volver al último servidor',
@@ -1397,6 +1397,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'In Spanish, the Roblox channel now shows as "EN VIVO".':
+      'En español, el canal de Roblox ahora se muestra como "EN VIVO".',
     'The interface sounds toggle and its volume slider now live together in the Dev/Testing tab.':
       'El interruptor de sonidos de la interfaz y su control de volumen ahora están juntos en la pestaña Dev/Testing.',
     'A volume slider for the interface sounds, in the Dev/Testing tab.':
@@ -1659,7 +1661,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.3';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.4';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1671,6 +1673,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.4', notes: [
+      'In Spanish, the Roblox channel now shows as "EN VIVO".'
+    ] },
     { v: 'v1.3.3', notes: [
       'The interface sounds toggle and its volume slider now live together in the Dev/Testing tab.'
     ] },
