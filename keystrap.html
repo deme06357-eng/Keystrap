@@ -87,7 +87,6 @@ button { font: inherit; color: inherit; }
   display: flex; align-items: center; gap: 10px;
   padding-left: 14px;
   background: var(--nav);
-  border-bottom: 1px solid var(--stroke);
   user-select: none;
 }
 .titlebar .name { font-size: 12px; color: var(--fg-2); }
@@ -1400,6 +1399,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Removed the thin line under the title bar, so the header blends smoothly into the sidebar and window.':
+      'Se quitó la fina línea bajo la barra de título, para que el encabezado se funda con la barra lateral y la ventana.',
     'The menu FPS cap can now be set to 30, 60, 90 or 120 (Dev/Testing → Performance).':
       'El límite de FPS del menú ahora se puede ajustar a 30, 60, 90 o 120 (Dev/Testing → Rendimiento).',
     'Interface sounds are warmed up on your first interaction, so even the first click or hover is instant.':
@@ -1670,7 +1671,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.6';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.7';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1682,6 +1683,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.7', notes: [
+      'Removed the thin line under the title bar, so the header blends smoothly into the sidebar and window.'
+    ] },
     { v: 'v1.3.6', notes: [
       'The menu FPS cap can now be set to 30, 60, 90 or 120 (Dev/Testing → Performance).',
       'Interface sounds are warmed up on your first interaction, so even the first click or hover is instant.'
