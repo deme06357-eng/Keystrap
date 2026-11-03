@@ -3372,7 +3372,15 @@ namespace Keystrap
 
         void Post(object message)
         {
-            if (web.CoreWebView2 != null) web.CoreWebView2.PostWebMessageAsJson(json.Serialize(message));
+            // Reading CoreWebView2 can throw — the control is already gone while the window is closing, or the OS doesn't
+            // really support WebView2 (its COM controller doesn't offer the interface, as on Windows 8). Either way there
+            // is nothing to deliver to, so drop the message instead of letting a background Post crash Keystrap.
+            try
+            {
+                var core = web.CoreWebView2;
+                if (core != null) core.PostWebMessageAsJson(json.Serialize(message));
+            }
+            catch (Exception) { }
         }
 
         void Toast(string text)

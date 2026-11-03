@@ -1412,6 +1412,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Fixed a crash that could happen as Keystrap closed, or on older Windows that doesn\'t support WebView2.':
+      'Se corrigió un fallo que podía ocurrir al cerrar Keystrap, o en versiones antiguas de Windows que no admiten WebView2.',
     'A developer-only button posts the About page\'s FAQ to Discord and keeps that message up to date.':
       'Un botón solo para desarrolladores publica las preguntas frecuentes de la página Acerca de en Discord y mantiene ese mensaje actualizado.',
     'The title bar is slimmer (Windows 11 style): a faint highlight on minimize and maximize, and the standard red on the close button.':
@@ -1688,7 +1690,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.9';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.10';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1700,6 +1702,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.10', notes: [
+      'Fixed a crash that could happen as Keystrap closed, or on older Windows that doesn\'t support WebView2.'
+    ] },
     { v: 'v1.3.9', notes: [
       'A developer-only button posts the About page\'s FAQ to Discord and keeps that message up to date.'
     ] },
