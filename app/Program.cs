@@ -3451,6 +3451,10 @@ namespace Keystrap
                     if (Program.DevMode)
                         SendTestNotificationsAsync(msg.ContainsKey("target") ? msg["target"] as string : "crash", Int(msg, "count"));
                     break;
+                case "post-faq":
+                    if (Program.DevMode)
+                        PostFaqAsync(msg.ContainsKey("items") ? msg["items"] : null);
+                    break;
                 case "save":
                     SaveState(msg.ContainsKey("state") ? msg["state"] : null);
                     break;
@@ -3956,6 +3960,94 @@ namespace Keystrap
 
         // Developer mode: 1 to 3 test messages to one channel, in that channel's real format, spaced out so
         // Discord's webhook rate limit (5 per 2 s) isn't hit. target: "crash", "commits" or "suggestions".
+        // Posts the About page's FAQ to the FAQ webhook (Dev/Testing only). The id of the message it posts is kept in
+        // faq-message.txt, so the next press edits that same message ("refresh") instead of posting a new one; if the
+        // message was deleted (404), it posts a fresh one. Every network call is wrapped so a hiccup can't crash Keystrap.
+        async void PostFaqAsync(object rawItems)
+        {
+            if (Secrets.FaqWebhook.Length == 0) { Post(FaqResult(false, "No FAQ webhook is set up (secrets.json).")); return; }
+
+            var fields = new List<object>();
+            var items = rawItems as ArrayList;
+            if (items != null)
+                foreach (object it in items)
+                {
+                    var d = it as Dictionary<string, object>;
+                    if (d == null) continue;
+                    string q = (d.ContainsKey("q") ? d["q"] as string : null) ?? "";
+                    string a = (d.ContainsKey("a") ? d["a"] as string : null) ?? "";
+                    if (q.Length == 0) continue;
+                    fields.Add(new Dictionary<string, object> { { "name", WebhookService.Clip(q, 256) }, { "value", WebhookService.Clip(a, 1024) }, { "inline", false } });
+                }
+            if (fields.Count == 0) { Post(FaqResult(false, "There are no FAQ entries to post.")); return; }
+
+            var embed = new Dictionary<string, object>
+            {
+                { "title", "Keystrap — FAQ" },
+                { "color", 0xFDE68A },
+                { "fields", fields.ToArray() },
+                { "footer", new Dictionary<string, object> { { "text", "Keystrap FAQ · updated " + DateTime.UtcNow.ToString("MM/dd/yy, hh:mm tt", CultureInfo.InvariantCulture) + " UTC" } } },
+            };
+            var payload = new Dictionary<string, object>
+            {
+                { "username", "Keystrap" },
+                { "allowed_mentions", new Dictionary<string, object> { { "parse", new string[0] } } },
+                { "embeds", new object[] { embed } },
+            };
+            string body = new JavaScriptSerializer { MaxJsonLength = int.MaxValue }.Serialize(payload);
+
+            string idFile = Path.Combine(Paths.Data, "faq-message.txt");
+            string existingId = null;
+            try { if (File.Exists(idFile)) existingId = File.ReadAllText(idFile).Trim(); } catch (Exception) { }
+
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    http.Timeout = TimeSpan.FromSeconds(15);
+                    http.DefaultRequestHeaders.UserAgent.ParseAdd(WebhookService.UserAgent());
+
+                    if (!string.IsNullOrEmpty(existingId))
+                    {
+                        var patch = new HttpRequestMessage(new HttpMethod("PATCH"), Secrets.FaqWebhook + "/messages/" + existingId)
+                            { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+                        using (HttpResponseMessage resp = await http.SendAsync(patch).ConfigureAwait(false))
+                        {
+                            if (resp.IsSuccessStatusCode) { Post(FaqResult(true, "Refreshed the FAQ message in Discord.")); return; }
+                            if ((int)resp.StatusCode != 404) { Post(FaqResult(false, "Discord didn't accept the update (HTTP " + (int)resp.StatusCode + ").")); return; }
+                            // 404: the old message is gone, so post a fresh one below.
+                        }
+                    }
+
+                    using (HttpResponseMessage resp = await http.PostAsync(Secrets.FaqWebhook + "?wait=true",
+                        new StringContent(body, Encoding.UTF8, "application/json")).ConfigureAwait(false))
+                    {
+                        if (!resp.IsSuccessStatusCode) { Post(FaqResult(false, "Discord didn't accept the FAQ (HTTP " + (int)resp.StatusCode + ").")); return; }
+                        string json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        try
+                        {
+                            var sent = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(json);
+                            object id;
+                            if (sent != null && sent.TryGetValue("id", out id) && id != null)
+                                File.WriteAllText(idFile, Convert.ToString(id, CultureInfo.InvariantCulture));
+                        }
+                        catch (Exception) { }
+                        Post(FaqResult(true, "Posted the FAQ to Discord."));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Posting the FAQ failed: " + ex.Message);
+                Post(FaqResult(false, "Couldn't reach Discord. Check your internet connection and try again."));
+            }
+        }
+
+        static Dictionary<string, object> FaqResult(bool ok, string message)
+        {
+            return new Dictionary<string, object> { { "type", "faq-posted" }, { "ok", ok }, { "message", message } };
+        }
+
         async void SendTestNotificationsAsync(string target, int count)
         {
             count = Math.Max(1, Math.Min(3, count));

@@ -1128,6 +1128,11 @@ html.native.shown .window { opacity: 1; }
             <button class="btn" id="devWebhookTest">Send</button>
           </div>
         </div>
+        <h2 class="sec">FAQ</h2>
+        <div class="rows">
+          <div class="row"><div class="txt"><div class="t">Post the FAQ to Discord</div><div class="d" id="faqPostDesc">Posts the About page's FAQ to its Discord channel. Press it again to update that same message instead of posting a new one.</div></div>
+            <button class="btn" id="faqPost">Post</button></div>
+        </div>
       </section>
 
       <!-- LANGUAGE -->
@@ -1388,6 +1393,14 @@ const I18N_ES = {
     'Notifications': 'Notificaciones', 'Performance': 'Rendimiento',
     // About FAQ + cursor ring move
     'FAQ': 'Preguntas frecuentes', 'What\'s new': 'Novedades', 'Keystrap cursor': 'Cursor de Keystrap',
+    'Post the FAQ to Discord': 'Publicar las preguntas frecuentes en Discord', 'Post': 'Publicar', 'Posting…': 'Publicando…',
+    'Posts the About page\'s FAQ to its Discord channel. Press it again to update that same message instead of posting a new one.':
+      'Publica las preguntas frecuentes de la página Acerca de en su canal de Discord. Pulsa de nuevo para actualizar ese mismo mensaje en vez de publicar uno nuevo.',
+    'Posted the FAQ to Discord.': 'Se publicaron las preguntas frecuentes en Discord.',
+    'Refreshed the FAQ message in Discord.': 'Se actualizó el mensaje de preguntas frecuentes en Discord.',
+    'No FAQ webhook is set up (secrets.json).': 'No hay un webhook de preguntas frecuentes configurado (secrets.json).',
+    'There are no FAQ entries to post.': 'No hay preguntas frecuentes para publicar.',
+    'Couldn\'t reach Discord. Check your internet connection and try again.': 'No se pudo conectar con Discord. Revisa tu conexión a internet y vuelve a intentarlo.',
     'What does beta mean?': '¿Qué significa beta?',
     'Beta means it will still have bugs and is still getting tested.': 'Beta significa que todavía tendrá errores y aún se está probando.',
     'Is my Roblox account safe?': '¿Mi cuenta de Roblox está segura?',
@@ -1399,6 +1412,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'A developer-only button posts the About page\'s FAQ to Discord and keeps that message up to date.':
+      'Un botón solo para desarrolladores publica las preguntas frecuentes de la página Acerca de en Discord y mantiene ese mensaje actualizado.',
     'The title bar is slimmer (Windows 11 style): a faint highlight on minimize and maximize, and the standard red on the close button.':
       'La barra de título es más fina (estilo Windows 11): un resalte tenue en minimizar y maximizar, y el rojo estándar en el botón de cerrar.',
     'Removed the thin line under the title bar, so the header blends smoothly into the sidebar and window.':
@@ -1673,7 +1688,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.8';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.9';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1685,6 +1700,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.9', notes: [
+      'A developer-only button posts the About page\'s FAQ to Discord and keeps that message up to date.'
+    ] },
     { v: 'v1.3.8', notes: [
       'The title bar is slimmer (Windows 11 style): a faint highlight on minimize and maximize, and the standard red on the close button.'
     ] },
@@ -1981,6 +1999,7 @@ const I18N_ES = {
         break;
       case 'toast': toast(msg.text); break;
       case 'webhook-test-done': devTestDone(msg); break;
+      case 'faq-posted': faqPosted(msg); break;
       case 'suggest-done': suggestFinished(msg); break;
       case 'suggest-error': suggestFinished(null, msg.message || 'Your suggestion couldn\'t be sent.'); break;
     }
@@ -2802,6 +2821,22 @@ const I18N_ES = {
     if (msg.error) text += ' Last error: ' + msg.error.replace(/\.?$/, '.');
     if (msg.target === 'crash' && !msg.crashChannel) text += ' Crash reports share the commits channel until crashWebhook is set in secrets.json.';
     $('#devWebhookDesc').textContent = text;
+  }
+  // Post the About page's FAQ to its Discord channel (dev only). The questions and answers are read straight from the
+  // About page, so the message always matches what the app shows.
+  $('#faqPost').addEventListener('click', () => {
+    if (!host) return;
+    const items = $$('#page-about .faq-item').map(f => ({
+      q: $('summary', f) ? $('summary', f).textContent.trim() : '',
+      a: $('p', f) ? $('p', f).textContent.trim() : '',
+    })).filter(x => x.q);
+    $('#faqPost').disabled = true;
+    $('#faqPostDesc').textContent = 'Posting…';
+    host.postMessage({ type: 'post-faq', items });
+  });
+  function faqPosted(msg) {
+    $('#faqPost').disabled = false;
+    $('#faqPostDesc').textContent = msg.message || (msg.ok ? 'Posted.' : 'Couldn\'t post.');
   }
   $('#s-crash').addEventListener('change', e => {
     state.settings.crashReports = e.target.checked; save();
