@@ -3410,7 +3410,7 @@ namespace Keystrap
         // toAppHome: no game link, so Roblox opens on its home screen.
         static int LaunchFps(Dictionary<string, object> msg, bool toAppHome)
         {
-            if (toAppHome && Bool(msg, "menuCap")) return MenuFps;
+            if (toAppHome && Bool(msg, "menuCap")) { int m = Int(msg, "menuFps"); return m >= 10 && m <= 240 ? m : MenuFps; }
             if (!Bool(msg, "unlockFps")) return 0;
             int target = Int(msg, "fpsTarget");   // 0 means uncapped; otherwise the cap the user picked
             return target > 0 ? target : UncappedFps;

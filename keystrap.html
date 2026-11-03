@@ -1082,8 +1082,11 @@ html.native.shown .window { opacity: 1; }
         <p class="sub">Internal tools for building Keystrap, shown only when it's run in developer mode. These aren't part of the normal app.</p>
         <h2 class="sec">Performance</h2>
         <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Cap Menu at 60 FPS (Reduce Fan Noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.</div></div>
-            <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap Menu at 60 FPS (Reduce Fan Noise)"><span></span></label></div>
+          <div class="row"><div class="txt"><div class="t">Cap the menu's FPS (reduce fan noise)</div><div class="d">When Keystrap opens the Roblox home screen, Roblox starts at the menu rate below to keep your GPU quiet. Game links from roblox.com still start at your Unlock FPS target. Roblox reads this once at startup, so a game you join from inside the home screen keeps the menu rate until you launch again.</div>
+            <label class="fb-field" style="margin-top:8px;max-width:140px"><span>Menu FPS</span>
+              <select id="menuCapVal"><option value="30">30</option><option value="60">60</option><option value="90">90</option><option value="120">120</option></select></label>
+          </div>
+            <label class="switch"><input type="checkbox" id="s-menucap" aria-label="Cap the menu's FPS"><span></span></label></div>
         </div>
         <h2 class="sec">Sound</h2>
         <div class="rows">
@@ -1397,6 +1400,10 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'The menu FPS cap can now be set to 30, 60, 90 or 120 (Dev/Testing → Performance).':
+      'El límite de FPS del menú ahora se puede ajustar a 30, 60, 90 o 120 (Dev/Testing → Rendimiento).',
+    'Interface sounds are warmed up on your first interaction, so even the first click or hover is instant.':
+      'Los sonidos de la interfaz se preparan en tu primera interacción, así que incluso el primer clic o hover es instantáneo.',
     'In Spanish, the Flags tab is now "Indicadores".':
       'En español, la pestaña Flags ahora es "Indicadores".',
     'In Spanish, the Roblox channel now shows as "EN VIVO".':
@@ -1575,10 +1582,10 @@ const I18N_ES = {
     'That isn\'t a cursor or icon file Keystrap can read.': 'Ese no es un archivo de cursor o icono que Keystrap pueda leer.',
     'Keystrap couldn\'t read that file. Use a .png, .cur or .ico image.': 'Keystrap no pudo leer ese archivo. Usa una imagen .png, .cur o .ico.',
     'Preview only: the Keystrap app puts your crosshair into Roblox.': 'Solo vista previa: la app de Keystrap pone tu mira en Roblox.',
-    'Cap Menu at 60 FPS (Reduce Fan Noise)': 'Limitar el menú a 60 FPS (menos ruido del ventilador)',
+    'Cap the menu\'s FPS (reduce fan noise)': 'Limitar los FPS del menú (menos ruido del ventilador)', 'Menu FPS': 'FPS del menú',
     'Roblox is limiting update checks right now, so Keystrap started the Roblox you already have.': 'Roblox está limitando las comprobaciones de actualizaciones, así que Keystrap inició el Roblox que ya tienes.',
-    'When Keystrap opens the Roblox home screen, Roblox starts at 60 FPS to keep your GPU quiet. Game links from roblox.com still start with your Unlock FPS choice. Roblox only reads this when it starts, so a game you join from the home screen stays at 60 FPS until you launch again.':
-      'Cuando Keystrap abre la pantalla de inicio de Roblox, Roblox empieza a 60 FPS para que tu GPU vaya en silencio. Los enlaces de juegos de roblox.com siguen usando tu opción de Desbloquear FPS. Roblox solo lee esto al iniciarse, así que un juego al que entres desde la pantalla de inicio se queda en 60 FPS hasta que vuelvas a iniciarlo.',
+    'When Keystrap opens the Roblox home screen, Roblox starts at the menu rate below to keep your GPU quiet. Game links from roblox.com still start at your Unlock FPS target. Roblox reads this once at startup, so a game you join from inside the home screen keeps the menu rate until you launch again.':
+      'Cuando Keystrap abre la pantalla de inicio de Roblox, Roblox empieza a la frecuencia del menú de abajo para que tu GPU vaya en silencio. Los enlaces de juegos de roblox.com siguen usando tu objetivo de Desbloquear FPS. Roblox lee esto una vez al iniciarse, así que un juego al que entres desde la pantalla de inicio mantiene la frecuencia del menú hasta que vuelvas a iniciarlo.',
   },
   patterns: [
     // times (from ago())
@@ -1663,7 +1670,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.5';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.6';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1675,6 +1682,10 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.6', notes: [
+      'The menu FPS cap can now be set to 30, 60, 90 or 120 (Dev/Testing → Performance).',
+      'Interface sounds are warmed up on your first interaction, so even the first click or hover is instant.'
+    ] },
     { v: 'v1.3.5', notes: [
       'In Spanish, the Flags tab is now "Indicadores".'
     ] },
@@ -1750,7 +1761,7 @@ const I18N_ES = {
     const id = uid();
     return {
       version: 1, activeProfile: id, lastSeenChangelog: null,
-      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, cursorRing: true, uiSounds: false, uiSoundVolume: 100, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
+      settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, menuCapFps: 60, cursorRing: true, uiSounds: false, uiSoundVolume: 100, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
       profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
         { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
@@ -2210,7 +2221,7 @@ const I18N_ES = {
     const flags = {};
     p.flags.forEach(f => { if (f.on) flags[f.name] = f.value; });
     host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: 0, multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
-      menuCap: !!state.settings.menuCap60, link: typeof link === 'string' ? link : null,
+      menuCap: !!state.settings.menuCap60, menuFps: state.settings.menuCapFps || 60, link: typeof link === 'string' ? link : null,
       sky: skiesUnlocked() ? state.settings.sky : 'default' });   // locked: Roblox's own sky, even if one was picked before
   }
   function launchFinished(error) {
@@ -2633,6 +2644,7 @@ const I18N_ES = {
     renderDiscord();
     $('#s-close').checked = state.settings.closeAfterLaunch;
     $('#s-menucap').checked = !!state.settings.menuCap60;
+    $('#menuCapVal').value = String(state.settings.menuCapFps || 60); refreshSelect($('#menuCapVal'));
     $('#s-ring').checked = state.settings.cursorRing !== false;
     $('#s-links').checked = state.settings.handleLinks;
     $('#linksDesc').textContent = !host
@@ -2648,6 +2660,7 @@ const I18N_ES = {
   }
   $('#s-close').addEventListener('change', e => { state.settings.closeAfterLaunch = e.target.checked; save(); toast('Close after launch ' + (e.target.checked ? 'on' : 'off')); });
   $('#s-menucap').addEventListener('change', e => { state.settings.menuCap60 = e.target.checked; save(); toast('Menu FPS cap ' + (e.target.checked ? 'on' : 'off')); });
+  $('#menuCapVal').addEventListener('change', e => { state.settings.menuCapFps = +e.target.value; save(); });
   $('#s-ring').addEventListener('change', e => { state.settings.cursorRing = e.target.checked; save(); cursorRing.update(); toast('Cursor ring ' + (e.target.checked ? 'on' : 'off')); });
 
   // ---------- cursor ring ----------
@@ -2694,9 +2707,10 @@ const I18N_ES = {
   })();
 
   // ---------- interface sounds ----------
-  // Short clicks and hovers synthesised with the Web Audio API: no audio files to ship, and no lag. Off by default
-  // (Settings → Sound). The audio context only starts on a real gesture, so nothing plays until the first click, and
-  // it stays silent if there's no audio device or the browser won't allow it.
+  // Short clicks and hovers synthesised with the Web Audio API: no audio files to load, and nothing runs on the UI
+  // thread — each sound is scheduled on the browser's real-time audio thread, so there's no hitch on hover or click.
+  // Off by default (Dev/Testing → Sound). The audio engine is warmed up on the first interaction (browsers only let it
+  // start after a gesture), so even the first sound is instant; it stays silent with no audio device.
   const sfx = (() => {
     let ctx = null;
     const on = () => !!state && state.settings.uiSounds === true;
@@ -2725,11 +2739,14 @@ const I18N_ES = {
       } catch (e) {}
     }
     return {
+      warm: context,   // create/resume the audio engine ahead of time, inside a user gesture
       click: () => blip(660, 0.06, 0.06, 'triangle'),
       hover: () => blip(900, 0.025, 0.018, 'sine'),
       toggle: v => blip(v ? 780 : 520, 0.07, 0.05, 'triangle'),
     };
   })();
+  // Warm the audio engine on the very first interaction, so the first click or hover never waits on set-up.
+  document.addEventListener('pointerdown', () => sfx.warm(), { once: true, capture: true });
   // A click plays on anything button-like, a hover once per sidebar item, and a switch plays its own up/down tone.
   document.addEventListener('pointerdown', e => {
     if (e.button === 0 && e.target.closest && e.target.closest('button, .seg, .swatch, .cl-ver')) sfx.click();
@@ -2745,6 +2762,7 @@ const I18N_ES = {
   $('#s-sfx').addEventListener('change', e => {
     state.settings.uiSounds = e.target.checked;
     save();
+    if (e.target.checked) sfx.warm();   // ready immediately, within this click
     toast('Interface sounds ' + (e.target.checked ? 'on' : 'off'));
   });
   $('#s-sfxvol').addEventListener('input', e => {
