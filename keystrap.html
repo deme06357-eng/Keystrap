@@ -80,7 +80,7 @@ button { font: inherit; color: inherit; }
   border-radius: var(--r-win);
   box-shadow: 0 30px 80px -20px rgba(0,0,0,.7);
   display: grid;
-  grid-template-rows: 40px 1fr;
+  grid-template-rows: 32px 1fr;   /* Windows 11 title bar height */
   overflow: hidden;
 }
 .titlebar {
@@ -97,8 +97,8 @@ button { font: inherit; color: inherit; }
   width: 46px; height: 100%; border: 0; background: transparent; color: var(--fg-2);
   display: grid; place-items: center; cursor: default; transition: background .12s, color .12s;
 }
-.winctl button:hover { background: var(--card-hi); color: var(--white); }
-.winctl button.close:hover { background: #c42b1c; color: #fff; }
+.winctl button:hover { background: rgba(255,255,255,.09); color: var(--white); }   /* Windows 11: faint white on min/max */
+.winctl button.close:hover { background: #e81123; color: #fff; }                   /* Windows 11: standard close red */
 .winctl svg { width: 10px; height: 10px; }
 
 .body { display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
@@ -640,7 +640,7 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 
 /* modal */
 .modal-backdrop {
-  position: absolute; inset: 40px 0 0 0; z-index: 20;
+  position: absolute; inset: 32px 0 0 0; z-index: 20;   /* below the title bar, so it stays draggable */
   background: rgba(8,8,10,.6);
   display: grid; place-items: center; padding: 16px;
   animation: fade .14s ease-out both;
@@ -1399,6 +1399,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'The title bar is slimmer (Windows 11 style): a faint highlight on minimize and maximize, and the standard red on the close button.':
+      'La barra de título es más fina (estilo Windows 11): un resalte tenue en minimizar y maximizar, y el rojo estándar en el botón de cerrar.',
     'Removed the thin line under the title bar, so the header blends smoothly into the sidebar and window.':
       'Se quitó la fina línea bajo la barra de título, para que el encabezado se funda con la barra lateral y la ventana.',
     'The menu FPS cap can now be set to 30, 60, 90 or 120 (Dev/Testing → Performance).':
@@ -1671,7 +1673,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.3.7';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.3.8';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1683,6 +1685,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.3.8', notes: [
+      'The title bar is slimmer (Windows 11 style): a faint highlight on minimize and maximize, and the standard red on the close button.'
+    ] },
     { v: 'v1.3.7', notes: [
       'Removed the thin line under the title bar, so the header blends smoothly into the sidebar and window.'
     ] },
