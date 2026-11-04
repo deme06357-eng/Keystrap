@@ -49,8 +49,14 @@ try {
     $packaged = 'Keystrap.exe', 'Keystrap.Updater.exe', 'Microsoft.Web.WebView2.Core.dll', 'Microsoft.Web.WebView2.WinForms.dll', 'WebView2Loader.dll'
     New-Item -ItemType Directory -Force $release | Out-Null
     $zip = Join-Path $release 'Keystrap.zip'
-    if (Test-Path $zip) { Remove-Item $zip }
-    Compress-Archive -Path ($packaged | ForEach-Object { Join-Path $dist $_ }) -DestinationPath $zip
+    # Zips a copy: a running Keystrap locks its DLLs in dist, and Compress-Archive can't read locked files.
+    $stage = Join-Path $env:TEMP ('keystrap-zip-' + [guid]::NewGuid().ToString('n'))
+    New-Item -ItemType Directory $stage | Out-Null
+    try {
+        $packaged | ForEach-Object { Copy-Item (Join-Path $dist $_) $stage }
+        Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
+    }
+    finally { Remove-Item -Recurse -Force $stage }
 
     & $iscc /Q "/DAppVersion=$version" (Join-Path $root 'installer\keystrap.iss')
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed ($LASTEXITCODE)" }
