@@ -217,7 +217,7 @@ h2.sec { font-size: 12px; font-weight: 600; color: var(--fg-2); margin: 8px 0 -6
 .btn.danger { color: var(--bad); }
 .btn.danger.armed { background: rgba(255,122,122,.14); border-color: rgba(255,122,122,.4); }
 .btn.icon { padding: 6px; }
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
 .stat .k { font-size: 11.5px; color: var(--fg-3); }
 .stat .v { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .stat .v.mono { font-family: var(--f-mono); font-size: 12.5px; }
@@ -281,25 +281,9 @@ textarea.input { width: 100%; resize: vertical; font-family: var(--f-mono); font
 .cp.inline .cp-sv { height: 132px; }
 .profile.add:hover { color: var(--white); }
 
-/* flags */
-.flag-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.flag-tools .input[type="search"] { flex: 1; min-width: 160px; }
-.flag-head {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--fg-2);
-  background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card); padding: 6px 8px 6px 14px;
-}
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-/* profile dropdown: flat text button, subtle white wash on hover */
 .dd { position: relative; }
-.dd-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; border: 0; border-radius: 4px; padding: 6px 10px;
-  color: #ffffff; font: 600 13px/1.2 var(--f-ui); cursor: pointer;
-  transition: background-color .15s ease;
-}
-.dd-btn:hover, .dd-btn[aria-expanded="true"] { background: rgba(255,255,255,.1); }
-.dd-btn .chev { width: 14px; height: 14px; color: var(--fg-2); transition: transform .15s ease; }
-.dd-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
 .dd-menu {
   position: absolute; top: calc(100% + 4px); left: 0; z-index: 10; min-width: 200px; max-height: 260px; overflow-y: auto;
   background: var(--card); border: 1px solid var(--stroke); border-radius: 8px; padding: 4px;
@@ -312,7 +296,6 @@ textarea.input { width: 100%; resize: vertical; font-family: var(--f-mono); font
   color: #ffffff; font: 500 13px/1.2 var(--f-ui); cursor: pointer; transition: background-color .12s ease;
 }
 .dd-opt:hover, .dd-opt:focus-visible { background: rgba(255,255,255,.1); outline: none; }
-.dd-opt .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .dd-opt .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dd-opt .ico { width: 14px; height: 14px; color: var(--accent); visibility: hidden; }
 .dd-opt[aria-selected="true"] .ico { visibility: visible; }
@@ -352,22 +335,6 @@ input[type="range"]:hover::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0,0
 input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.12); }
 input[type="range"]:focus-visible { outline: none; }
 input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0,0,0,.55), 0 0 0 6px rgba(var(--accent-rgb),.28); }
-.table-wrap { overflow-x: auto; border: 1px solid var(--stroke); border-radius: var(--r-card); }
-table { width: 100%; border-collapse: collapse; background: var(--card); min-width: 560px; }
-th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--stroke); vertical-align: middle; }
-th { font-size: 11px; font-weight: 600; color: var(--fg-3); text-transform: uppercase; letter-spacing: .07em; background: var(--nav); padding-block: 10px; }
-tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: var(--card-hi); }
-td.name { font-family: var(--f-mono); font-size: 12.5px; overflow-wrap: anywhere; }
-td .val-input { width: 100%; font-family: var(--f-mono); font-size: 12.5px; background: transparent; border-color: transparent; color: var(--accent); padding: 5px 8px; }
-td .val-input:hover { border-color: var(--stroke); }
-td .val-input:focus { background: var(--card-hi); }
-td.empty { color: var(--fg-3); padding: 18px 14px; }
-.kind { font-size: 10.5px; padding: 2px 7px; border-radius: 5px; font-family: var(--f-mono); white-space: nowrap; }
-.kind.Flag { background: rgba(76,195,138,.14); color: var(--good); }
-.kind.Int, .kind.Log { background: rgba(242,184,75,.14); color: var(--warn); }
-.kind.String { background: var(--accent-soft); color: var(--accent); }
-
 /* language */
 .lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
 .lang { display: flex; align-items: center; gap: 12px; padding: 11px 14px; }
@@ -519,17 +486,8 @@ td.empty { color: var(--fg-3); padding: 18px 14px; }
 .dev-test-controls .fps-opts { margin-top: 0; }
 .dev-test-controls .seg { min-width: 34px; }
 
-/* flag builder */
-.fb { display: flex; flex-direction: column; gap: 14px; }
-.fb .t { font-weight: 600; }
-.fb .d { color: var(--fg-3); font-size: 12.5px; margin-top: 2px; }
-.fb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 12px; }
 .fb-field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--fg-2); min-width: 0; }
 .fb-field select { width: 100%; }
-.fb-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.fb-note { flex: 1; min-width: 220px; margin: 0; color: var(--fg-3); font-size: 12px; line-height: 1.5; }
-.fb-refused { margin: 0; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; color: var(--fg-2); background: rgba(255,122,122,.08); border: 1px solid rgba(255,122,122,.25); }
-.chip.refused { color: #ff9a9a; border-color: rgba(255,122,122,.35); background: rgba(255,122,122,.08); margin-left: 8px; font-family: var(--f-ui, inherit); }
 
 /* mods */
 .mod-font { display: flex; flex-direction: column; gap: 12px; }
@@ -769,7 +727,6 @@ html.native.shown .window { opacity: 1; }
     <symbol id="i-ring" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></symbol>
     <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
     <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M11 5a1.5 1.5 0 0 1 3 0v.5a1 1 0 0 0 1 1h2.5a1 1 0 0 1 1 1V10a1 1 0 0 1-1 1h-.5a1.5 1.5 0 0 0 0 3h.5a1 1 0 0 1 1 1v2.5a1 1 0 0 1-1 1H15a1 1 0 0 1-1-1V17a1.5 1.5 0 0 0-3 0v.5a1 1 0 0 1-1 1H6.5a1 1 0 0 1-1-1V15a1 1 0 0 1 1-1H7a1.5 1.5 0 0 0 0-3h-.5a1 1 0 0 1-1-1V7.5a1 1 0 0 1 1-1H10a1 1 0 0 0 1-1V5Z"/></symbol>
-    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5"/><path d="M5 4.5c4-2 6 1.6 10 0s4 0 4 0v9s-1-1.6-4 0-6-2-10 0"/></symbol>
     <symbol id="i-gear" viewBox="0 0 24 24"><path d="M10.4 5.08L10.4 2.43 L13.6 2.43 L13.6 5.08 A7.1 7.1 0 0 1 15.76 5.98 L17.63 4.1 L19.9 6.37 L18.02 8.24 A7.1 7.1 0 0 1 18.92 10.4 L21.57 10.4 L21.57 13.6 L18.92 13.6 A7.1 7.1 0 0 1 18.02 15.76 L19.9 17.63 L17.63 19.9 L15.76 18.02 A7.1 7.1 0 0 1 13.6 18.92 L13.6 21.57 L10.4 21.57 L10.4 18.92 A7.1 7.1 0 0 1 8.24 18.02 L6.37 19.9 L4.1 17.63 L5.98 15.76 A7.1 7.1 0 0 1 5.08 13.6 L2.43 13.6 L2.43 10.4 L5.08 10.4 A7.1 7.1 0 0 1 5.98 8.24 L4.1 6.37 L6.37 4.1 L8.24 5.98 A7.1 7.1 0 0 1 10.4 5.08 Z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a13.5 13.5 0 0 1 0 18 13.5 13.5 0 0 1 0-18Z"/></symbol>
     <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
@@ -822,7 +779,6 @@ html.native.shown .window { opacity: 1; }
           <button class="nav-item" data-page="skies"><svg class="ico"><use href="#i-cloud"/></svg><span class="lbl">Custom Skies</span><span class="badge beta" id="skiesNavBadge">Beta</span></button>
           <button class="nav-item" data-page="crosshairs"><svg class="ico"><use href="#i-crosshair"/></svg><span class="lbl">Crosshairs</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="mods"><svg class="ico"><use href="#i-puzzle"/></svg><span class="lbl">Mods</span><span class="badge beta">Beta</span></button>
-          <button class="nav-item" data-page="flags"><svg class="ico"><use href="#i-flag"/></svg><span class="lbl">Flags</span></button>
           <button class="nav-item" data-page="language"><svg class="ico"><use href="#i-globe"/></svg><span class="lbl">Language</span><span class="badge beta">Beta</span></button>
           <button class="nav-item" data-page="tos"><svg class="ico"><use href="#i-doc"/></svg><span class="lbl">ToS</span></button>
           <button class="nav-item" data-page="about"><svg class="ico"><use href="#i-info"/></svg><span class="lbl">About</span></button>
@@ -843,7 +799,7 @@ html.native.shown .window { opacity: 1; }
           <div>
             <div class="eyebrow" id="heroProfile">Profile · Main</div>
             <h3>Ready to launch</h3>
-            <p>Keystrap installs the latest Roblox if needed, applies this profile's flags, then starts Roblox.</p>
+            <p>Keystrap installs the latest Roblox if needed, then starts Roblox.</p>
             <div class="progress"><i id="bar"></i></div>
             <div class="launch-status" id="launchStatus"></div>
           </div>
@@ -857,7 +813,6 @@ html.native.shown .window { opacity: 1; }
         <div class="stats">
           <div class="card stat"><div class="k">Channel</div><div class="v">LIVE</div></div>
           <div class="card stat"><div class="k">Installed Roblox</div><div class="v mono" id="statClient">Not installed</div></div>
-          <div class="card stat"><div class="k">Flags on in this profile</div><div class="v" id="flagCount">0</div></div>
         </div>
 
         <h2 class="sec">Quick options</h2>
@@ -883,7 +838,7 @@ html.native.shown .window { opacity: 1; }
       <!-- PROFILES -->
       <section class="page" id="page-profiles">
         <h1>Profiles</h1>
-        <p class="sub">A profile holds its own set of flags. Click a profile to rename it, change its colour, edit its flags or make it the one Keystrap launches with.</p>
+        <p class="sub">Click a profile to rename it, change its colour or make it the one Keystrap launches with.</p>
         <div class="profiles" id="profiles"></div>
       </section>
 
@@ -988,55 +943,6 @@ html.native.shown .window { opacity: 1; }
         <p class="sky-help">Use .ogg, .mp3 or .wav files under 5 MB.</p>
       </section>
 
-      <!-- FLAGS -->
-      <section class="page" id="page-flags">
-        <h1>Flags</h1>
-        <p class="sub">FastFlags change how the Roblox client behaves. Each profile has its own flags; edits save straight away and apply on the next launch with that profile.</p>
-        <div class="flag-head">
-          <span id="flagProfileLabel">Editing flags for</span>
-          <div class="dd" id="flagProfileDd">
-            <button class="dd-btn" id="flagProfileBtn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="flagProfileLabel flagProfileName">
-              <span id="flagProfileName" translate="no">Main</span><svg class="ico chev"><use href="#i-chevron"/></svg>
-            </button>
-            <div class="dd-menu" id="flagProfileMenu" role="listbox" aria-labelledby="flagProfileLabel" hidden></div>
-          </div>
-          <span id="flagActiveNote" class="chip"></span>
-        </div>
-        <div class="card fb">
-          <div><div class="t">Flag builder</div>
-            <div class="d">Pick how Roblox should look and add it to this profile. "Automatic" leaves it to Roblox.</div></div>
-          <div class="fb-grid">
-            <label class="fb-field"><span>Graphics</span>
-              <select id="fbApi"><option value="auto">Automatic</option><option value="d3d11">DirectX 11</option><option value="vulkan">Vulkan</option><option value="opengl">OpenGL</option></select></label>
-            <label class="fb-field"><span>Texture quality</span>
-              <select id="fbTex"><option value="auto">Automatic</option><option value="0">Lowest</option><option value="1">Low</option><option value="2">Medium</option><option value="3">High</option></select></label>
-            <label class="fb-field"><span>Anti-aliasing</span>
-              <select id="fbAa"><option value="auto">Automatic</option><option value="0">Off</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
-            <label class="fb-field"><span>Post-processing</span>
-              <select id="fbPost"><option value="auto">Automatic</option><option value="off">Off</option></select></label>
-            <label class="fb-field"><span>Grass</span>
-              <select id="fbGrass"><option value="auto">Automatic</option><option value="off">Off</option></select></label>
-          </div>
-          <div class="fb-foot">
-            <p class="fb-note">Frame rate isn't a flag anymore: use Unlock FPS on the Play page. No flag lowers your ping; Roblox ignores network flags.</p>
-            <button class="btn primary" id="fbApply">Add to profile</button>
-          </div>
-        </div>
-        <p class="fb-refused" id="flagRefused" hidden></p>
-        <div class="flag-tools">
-          <input class="input" id="flagSearch" type="search" placeholder="Search flags" aria-label="Search flags">
-          <button class="btn" id="addFlag"><svg class="ico"><use href="#i-plus"/></svg>Add flag</button>
-          <button class="btn" id="importFlags">Import JSON</button>
-          <button class="btn" id="copyFlags">Copy JSON</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th style="width:84px">Type</th><th>Name</th><th style="width:30%">Value</th><th style="width:56px">On</th><th style="width:44px"><span class="sr" hidden>Remove</span></th></tr></thead>
-            <tbody id="flagBody"></tbody>
-          </table>
-        </div>
-      </section>
-
       <!-- SETTINGS -->
       <section class="page" id="page-settings">
         <h1>Settings</h1>
@@ -1059,7 +965,7 @@ html.native.shown .window { opacity: 1; }
         </div>
         <h2 class="sec">Launching</h2>
         <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Open Roblox links with Keystrap</div><div class="d" id="linksDesc">Play buttons on roblox.com start Roblox through Keystrap, with your active profile's flags.</div></div>
+          <div class="row"><div class="txt"><div class="t">Open Roblox links with Keystrap</div><div class="d" id="linksDesc">Play buttons on roblox.com start Roblox through Keystrap.</div></div>
             <label class="switch"><input type="checkbox" id="s-links" aria-label="Open Roblox links with Keystrap"><span></span></label></div>
           <div class="row"><div class="txt"><div class="t">Close Keystrap after Roblox starts</div><div class="d">With multi-instance on, Keystrap minimizes instead so extra windows keep working. Playtime is only tracked while Keystrap is open.</div></div>
             <label class="switch"><input type="checkbox" id="s-close" aria-label="Close Keystrap after Roblox starts"><span></span></label></div>
@@ -1150,7 +1056,7 @@ html.native.shown .window { opacity: 1; }
       <!-- TOS -->
       <section class="page" id="page-tos">
         <h1>Terms of Service</h1>
-        <p class="sub">Last updated 1 November 2026</p>
+        <p class="sub">Last updated 4 November 2026</p>
         <div class="card prose">
           <h4>1. What Keystrap is</h4>
           <p>Keystrap is an independent, open-source launcher for Roblox. It is not made by, affiliated with, or endorsed by Roblox Corporation.</p>
@@ -1158,12 +1064,10 @@ html.native.shown .window { opacity: 1; }
           <p>Keystrap downloads the Roblox client directly from Roblox's own servers, checks each file against Roblox's published checksums, and keeps it in its own folder.</p>
           <h4>3. Your account</h4>
           <p>Keystrap never asks for your Roblox password and never reads your login cookie. You remain bound by the Roblox Terms of Use while playing.</p>
-          <h4>4. Flags</h4>
-          <p>FastFlags are applied at your own risk. Roblox may change, ignore or remove any flag without notice, and some games may behave differently.</p>
-          <h4>5. Data</h4>
+          <h4>4. Data</h4>
           <p>Profiles, settings and logs are stored only on your computer. Keystrap sends only one thing to the developers' Discord:</p>
           <p>A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile's name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.</p>
-          <h4>6. No warranty</h4>
+          <h4>5. No warranty</h4>
           <p>Keystrap is provided as is, without warranty of any kind.</p>
         </div>
       </section>
@@ -1209,7 +1113,7 @@ html.native.shown .window { opacity: 1; }
           <details class="faq-item"><summary>Why does my antivirus flag Keystrap?</summary>
             <p>It's a false alarm. Keystrap downloads Roblox and changes its files, which some antivirus tools flag by habit, the same way they flag other Roblox launchers. Keystrap is open source, so you can read exactly what it does.</p></details>
         </div>
-        <div class="flag-tools">
+        <div class="tools">
           <button class="btn" id="whatsNew"><svg class="ico"><use href="#i-sparkle"/></svg>What's new</button>
           <button class="btn" data-open-logs><svg class="ico"><use href="#i-folder"/></svg>Open logs folder</button>
         </div>
@@ -1229,7 +1133,7 @@ const I18N_ES = {
   strings: {
     // sidebar
     'Roblox launcher': 'Launcher de Roblox',
-    'Play': 'Jugar', 'Profiles': 'Perfiles', 'Playtime': 'Tiempo de juego', 'Custom Skies': 'Cielos personalizados', 'Flags': 'Indicadores',
+    'Play': 'Jugar', 'Profiles': 'Perfiles', 'Playtime': 'Tiempo de juego', 'Custom Skies': 'Cielos personalizados',
     'Settings': 'Ajustes', 'Language': 'Idioma', 'Beta': 'Beta', 'ToS': 'Términos', 'Support': 'Soporte', 'About': 'Acerca de',
     'Checking for Roblox updates…': 'Buscando actualizaciones de Roblox…',
     'Preview · Roblox status shows in the app': 'Vista previa · el estado de Roblox se muestra en la app',
@@ -1239,11 +1143,10 @@ const I18N_ES = {
 
     // play
     'Ready to launch': 'Listo para iniciar',
-    'Keystrap installs the latest Roblox if needed, applies this profile\'s flags, then starts Roblox.': 'Keystrap instala la última versión de Roblox si hace falta, aplica las flags de este perfil y luego inicia Roblox.',
+    'Keystrap installs the latest Roblox if needed, then starts Roblox.': 'Keystrap instala la última versión de Roblox si hace falta y luego la inicia.',
     'Launch Roblox': 'Iniciar Roblox', 'Launching…': 'Iniciando…',
     'Open with the Roblox app instead': 'Abrir con la app de Roblox',
     'Channel': 'Canal', 'LIVE': 'EN VIVO', 'Installed Roblox': 'Roblox instalado', 'Not installed': 'No instalado', 'Not installed yet': 'Aún no instalado',
-    'Flags on in this profile': 'Flags activas en este perfil',
     'Quick options': 'Opciones rápidas',
     'Rejoin last server': 'Volver al último servidor',
     'No Roblox server to rejoin yet — play one first.': 'Aún no hay ningún servidor de Roblox al que volver: juega en uno primero.',
@@ -1252,18 +1155,13 @@ const I18N_ES = {
     'Uncapped: Roblox draws as many frames as your PC can.': 'Sin límite: Roblox dibuja tantos fotogramas como pueda tu PC.',
     'Off: Roblox uses its own 60 FPS limit.': 'Desactivado: Roblox usa su propio límite de 60 FPS.',
     'On: Roblox runs uncapped — as many frames as your PC can draw.': 'Activado: Roblox se ejecuta sin límite, tantos fotogramas como pueda dibujar tu PC.',
-    'Keystrap couldn\'t read your monitor\'s refresh rate, so Roblox launches uncapped.': 'Keystrap no pudo leer la frecuencia de tu monitor, así que Roblox se inicia sin límite.',
-    'Uncapped': 'Sin límite', 'Match monitor': 'Igual al monitor', 'Custom cap': 'Límite personalizado',
-    'Frame rate limit': 'Límite de fotogramas', 'Custom frame rate cap in FPS': 'Límite de fotogramas personalizado en FPS',
-    'Use a cap between 30 and 1000 FPS.': 'Usa un límite entre 30 y 1000 FPS.',
+    'Uncapped': 'Sin límite', 'Match monitor': 'Igual al monitor',
     'Multi-instance': 'Multiinstancia',
     'Run more than one Roblox window. Keep Keystrap open while you play.': 'Abre más de una ventana de Roblox. Mantén Keystrap abierto mientras juegas.',
     'Discord Rich Presence': 'Rich Presence de Discord',
-    'Show the game you\'re playing on your Discord profile.': 'Muestra el juego al que estás jugando en tu perfil de Discord.',
-    'On: your Discord profile shows the game you\'re playing.': 'Activado: tu perfil de Discord muestra el juego al que estás jugando.',
     'Not launched with this profile yet': 'Aún no se ha iniciado con este perfil',
     'Joining from the Roblox website…': 'Uniéndote desde la web de Roblox…',
-    'Starting…': 'Empezando…', 'Applying flags…': 'Aplicando flags…', 'Starting Roblox…': 'Iniciando Roblox…',
+    'Starting…': 'Empezando…', 'Starting Roblox…': 'Iniciando Roblox…',
     'Roblox is running': 'Roblox está en ejecución',
     'Preview only: Roblox starts from the Keystrap app': 'Solo vista previa: Roblox se inicia desde la app de Keystrap',
     'Roblox could not be started.': 'No se pudo iniciar Roblox.',
@@ -1279,15 +1177,15 @@ const I18N_ES = {
     'The Roblox app isn\'t installed on this PC.': 'La app de Roblox no está instalada en este PC.',
 
     // profiles
-    'A profile holds its own set of flags. Click a profile to rename it, change its colour, edit its flags or make it the one Keystrap launches with.': 'Cada perfil tiene su propio conjunto de flags. Haz clic en un perfil para cambiarle el nombre o el color, editar sus flags o hacer que Keystrap inicie con él.',
+    'Click a profile to rename it, change its colour or make it the one Keystrap launches with.': 'Haz clic en un perfil para cambiarle el nombre o el color, o para hacer que Keystrap inicie con él.',
     'Never launched': 'Nunca iniciado', 'Launches with this': 'Se inicia con este', 'New profile': 'Nuevo perfil', 'Edit profile': 'Editar perfil',
     'Name': 'Nombre', 'Competitive': 'Competitivo', 'Colour': 'Color',
     'Pick any colour': 'Elige cualquier color', 'Pick a custom colour': 'Elige un color personalizado', 'Profile colour hex code': 'Código hex del color del perfil',
     'Custom profile colour': 'Color de perfil personalizado',
     'Launch with this profile': 'Iniciar con este perfil',
     'This is the profile Keystrap launches with.': 'Este es el perfil con el que se inicia Keystrap.',
-    'Keystrap applies this profile\'s flags when you press Launch.': 'Keystrap aplica las flags de este perfil cuando pulsas Iniciar.',
-    'Edit flags': 'Editar flags', 'Duplicate': 'Duplicar', 'Delete': 'Eliminar', 'Cancel': 'Cancelar', 'Create profile': 'Crear perfil', 'Save': 'Guardar',
+    'Keystrap uses this profile when you press Launch.': 'Keystrap usa este perfil cuando pulsas Iniciar.',
+     'Duplicate': 'Duplicar', 'Delete': 'Eliminar', 'Cancel': 'Cancelar', 'Create profile': 'Crear perfil', 'Save': 'Guardar',
     'Use a hex colour like #FFD9FC.': 'Usa un color hex como #FFD9FC.',
     'Enter a name for this profile.': 'Escribe un nombre para este perfil.',
     'Another profile already uses that name.': 'Otro perfil ya usa ese nombre.',
@@ -1335,21 +1233,6 @@ const I18N_ES = {
     'Only imported skies can be deleted.': 'Solo se pueden eliminar los cielos importados.',
     'Sky': 'Cielo',
 
-    // flags
-    'FastFlags change how the Roblox client behaves. Each profile has its own flags; edits save straight away and apply on the next launch with that profile.': 'Las FastFlags cambian cómo se comporta el cliente de Roblox. Cada perfil tiene sus propias flags; los cambios se guardan al instante y se aplican en el próximo inicio con ese perfil.',
-    'Editing flags for': 'Editando las flags de', 'Not the launch profile': 'No es el perfil de inicio',
-    'Search flags': 'Buscar flags', 'Add flag': 'Añadir flag', 'Import JSON': 'Importar JSON', 'Copy JSON': 'Copiar JSON',
-    'Type': 'Tipo', 'Value': 'Valor', 'On': 'Activa', 'Remove': 'Quitar', 'Turn flag on': 'Activar flag', 'Remove flag': 'Quitar flag',
-    'No flags match that search.': 'Ninguna flag coincide con esa búsqueda.',
-    'Use True or False.': 'Usa True o False.', 'Use a whole number.': 'Usa un número entero.',
-    'value': 'valor',
-    'That isn\'t a flag name. It should start with FFlag, FInt, FString or FLog (optionally with D in front).': 'Eso no es un nombre de flag. Debe empezar por FFlag, FInt, FString o FLog (opcionalmente con una D delante).',
-    'Enter a value.': 'Escribe un valor.',
-    'Import flags': 'Importar flags', 'Import': 'Importar',
-    'That isn\'t a JSON object. It should look like { "FlagName": "value" }.': 'Eso no es un objeto JSON. Debería verse así: { "FlagName": "value" }.',
-    'None of those entries are valid flags.': 'Ninguna de esas entradas es una flag válida.',
-    'The JSON has no flags in it.': 'El JSON no contiene flags.',
-    'Couldn\'t copy to the clipboard.': 'No se pudo copiar al portapapeles.',
 
     // settings
     'Appearance': 'Apariencia', 'Accent color': 'Color de acento',
@@ -1364,7 +1247,7 @@ const I18N_ES = {
     'Red': 'Rojo', 'Green': 'Verde', 'Blue': 'Azul',
     'Launching': 'Inicio',
     'Open Roblox links with Keystrap': 'Abrir enlaces de Roblox con Keystrap',
-    'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.': 'Los botones de Jugar en roblox.com inician Roblox a través de Keystrap, con las flags de tu perfil activo.',
+    'Play buttons on roblox.com start Roblox through Keystrap.': 'Los botones de Jugar en roblox.com inician Roblox a través de Keystrap.',
     'Keystrap couldn\'t take over Roblox links. Details are in the log.': 'Keystrap no pudo encargarse de los enlaces de Roblox. Los detalles están en el registro.',
     'Roblox links open with the Roblox app. Turn this on to launch them through Keystrap.': 'Los enlaces de Roblox se abren con la app de Roblox. Activa esto para iniciarlos con Keystrap.',
     'Roblox links now open with Keystrap': 'Los enlaces de Roblox ahora se abren con Keystrap',
@@ -1483,19 +1366,17 @@ const I18N_ES = {
     'Turkish': 'Turco', 'Vietnamese': 'Vietnamita', 'Japanese': 'Japonés', 'Korean': 'Coreano', 'Chinese (Simplified)': 'Chino (simplificado)',
 
     // terms
-    'Terms of Service': 'Términos del servicio', 'Last updated 1 November 2026': 'Última actualización: 1 de noviembre de 2026',
+    'Terms of Service': 'Términos del servicio', 'Last updated 4 November 2026': 'Última actualización: 4 de noviembre de 2026',
     '1. What Keystrap is': '1. Qué es Keystrap',
     'Keystrap is an independent, open-source launcher for Roblox. It is not made by, affiliated with, or endorsed by Roblox Corporation.': 'Keystrap es un launcher independiente y de código abierto para Roblox. No está creado, afiliado ni respaldado por Roblox Corporation.',
     '2. Downloading Roblox': '2. Descarga de Roblox',
     'Keystrap downloads the Roblox client directly from Roblox\'s own servers, checks each file against Roblox\'s published checksums, and keeps it in its own folder.': 'Keystrap descarga el cliente de Roblox directamente desde los servidores de Roblox, comprueba cada archivo con las sumas de verificación que publica Roblox y lo guarda en su propia carpeta.',
     '3. Your account': '3. Tu cuenta',
     'Keystrap never asks for your Roblox password and never reads your login cookie. You remain bound by the Roblox Terms of Use while playing.': 'Keystrap nunca te pide la contraseña de Roblox ni lee tu cookie de inicio de sesión. Mientras juegas, sigues sujeto a los Términos de uso de Roblox.',
-    '4. Flags': '4. Flags',
-    'FastFlags are applied at your own risk. Roblox may change, ignore or remove any flag without notice, and some games may behave differently.': 'Las FastFlags se aplican bajo tu propia responsabilidad. Roblox puede cambiar, ignorar o eliminar cualquier flag sin previo aviso, y algunos juegos pueden comportarse de otra forma.',
-    '5. Data': '5. Datos',
+    '4. Data': '4. Datos',
     'Profiles, settings and logs are stored only on your computer. Keystrap sends only one thing to the developers\' Discord:': 'Los perfiles, los ajustes y los registros se guardan solo en tu computadora. Keystrap solo envía una cosa al Discord de los desarrolladores:',
     'A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile\'s name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.': 'Un informe de errores, si Keystrap falla: el error y sus detalles técnicos, la versión de Keystrap, el nombre de tu perfil activo, tu versión de Windows y la hora. Antes se eliminan tu nombre de usuario de Windows y las rutas de carpetas. Puedes desactivar los informes de errores en Ajustes.',
-    '6. No warranty': '6. Sin garantía',
+    '5. No warranty': '5. Sin garantía',
     'Keystrap is provided as is, without warranty of any kind.': 'Keystrap se ofrece tal cual, sin garantía de ningún tipo.',
 
     // support
@@ -1541,16 +1422,6 @@ const I18N_ES = {
     'Use an .ogg, .mp3 or .wav sound.': 'Usa un sonido .ogg, .mp3 o .wav.', 'Use a sound under 5 MB.': 'Usa un sonido de menos de 5 MB.',
     'Keystrap couldn\'t read that file. Details are in the log.': 'Keystrap no pudo leer ese archivo. Los detalles están en el registro.',
     'Keystrap couldn\'t apply your mods, so Roblox starts with its own font and sounds.': 'Keystrap no pudo aplicar tus mods, así que Roblox se inicia con su propia fuente y sus sonidos.',
-    // flag builder
-    'Flag builder': 'Generador de flags',
-    'Pick how Roblox should look and add it to this profile. "Automatic" leaves it to Roblox.': 'Elige cómo debe verse Roblox y añádelo a este perfil. "Automático" lo deja en manos de Roblox.',
-    'Graphics': 'Gráficos', 'Texture quality': 'Calidad de texturas', 'Anti-aliasing': 'Suavizado', 'Post-processing': 'Posprocesado', 'Grass': 'Hierba',
-    'Automatic': 'Automático', 'Lowest': 'Mínima', 'Low': 'Baja', 'Medium': 'Media', 'High': 'Alta', 'Off': 'Desactivado',
-    'Frame rate isn\'t a flag anymore: use Unlock FPS on the Play page. No flag lowers your ping; Roblox ignores network flags.':
-      'Los fotogramas ya no son un flag: usa Desbloquear FPS en la página Jugar. Ningún flag baja tu ping; Roblox ignora los flags de red.',
-    'Add to profile': 'Añadir al perfil', 'Roblox refused this': 'Roblox lo rechazó',
-    'Roblox refused 1 of this profile\'s flags when it last started. It\'s marked below and has no effect.':
-      'Roblox rechazó 1 de los flags de este perfil la última vez que se inició. Está marcado abajo y no tiene efecto.',
     'Crosshairs': 'Miras',
     'Use your crosshair for every Roblox mouse cursor: over the game, over buttons, in text boxes, while dragging, and in Shift Lock and first person. It\'s applied to Keystrap\'s copy of Roblox on every launch. Games that set their own cursor keep theirs.':
       'Usa tu mira para todos los cursores de Roblox: sobre el juego, sobre botones, en cuadros de texto, al arrastrar, y en Shift Lock y primera persona. Se aplica a la copia de Roblox de Keystrap en cada inicio. Los juegos que tienen su propio cursor mantienen el suyo.',
@@ -1576,13 +1447,10 @@ const I18N_ES = {
       'Los enlaces a sitios web muestran a dónde van y esperan a que pulses Continuar antes de abrir tu navegador.',
     'Websites open without asking now. Turn it back on in Settings.': 'Los sitios web se abren ahora sin preguntar. Vuelve a activarlo en Ajustes.',
     'Keystrap asks before opening websites': 'Keystrap pregunta antes de abrir sitios web', 'Websites open without asking': 'Los sitios web se abren sin preguntar',
-    'Unlock FPS is back on the Play screen for everyone, not just in developer mode.':
-      'Desbloquear FPS vuelve a la pantalla de Jugar para todos, no solo en modo desarrollador.',
     'This link opens a website in your browser. Only continue if you trust where it goes.': 'Este enlace abre un sitio web en tu navegador. Continúa solo si confías en su destino.',
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
       'La multiinstancia empieza a funcionar cuando cierras todas las ventanas de Roblox y vuelves a iniciar desde Keystrap.',
-    'A ring in your accent color that follows the mouse around Keystrap, a little behind it.': 'Un anillo en tu color de acento que sigue al ratón por Keystrap, un poco por detrás.',
     'How many': 'Cuántos','Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
     'Pick a custom crosshair color':'Elige un color personalizado para la mira', 'Crosshair color hex code': 'Código hex del color de la mira',
     'White': 'Blanco', 'Cyan': 'Cian', 'Pink': 'Rosa', 'Yellow': 'Amarillo',
@@ -1632,9 +1500,6 @@ const I18N_ES = {
     [/^The download finished, but (.+) is missing from it\.$/, (tr, f) => 'La descarga terminó, pero falta ' + f + '.'],
     [/^Roblox returned an unexpected version: (.+)$/, (tr, v) => 'Roblox devolvió una versión inesperada: ' + v],
     // profiles
-    [/^(\d+) flags? on$/, (tr, n) => n + (n === '1' ? ' flag activa' : ' flags activas')],
-    [/^(\d+) total$/, (tr, n) => n + ' en total'],
-    [/^(\d+) on, (\d+) total$/, (tr, a, b) => a + ' activas, ' + b + ' en total'],
     [/^Preset (\d+)$/, (tr, n) => 'Predefinido ' + n],
     [/^Profile "(.+)" created$/, (tr, n) => 'Perfil "' + n + '" creado'],
     [/^Profile "(.+)" deleted$/, (tr, n) => 'Perfil "' + n + '" eliminado'],
@@ -1644,9 +1509,6 @@ const I18N_ES = {
     [/^Open (.+) on Roblox$/, (tr, g) => 'Abrir ' + g + ' en Roblox'],
     [/^Custom font: (.+)$/, (tr, f) => 'Fuente personalizada: ' + f],
     [/^Play (Death|Jump|Landing|Footsteps|Falling|Getting up|Swimming|Splash|Explosion|Volume slider)$/, (tr, s) => 'Reproducir: ' + tr(s)],
-    [/^Builder settings saved to (.+)$/, (tr, p) => 'Ajustes del generador guardados en ' + p],
-    [/^Roblox refused (\d+) of this profile's flags when it last started\. They're marked below and have no effect\.$/, (tr, n) =>
-      'Roblox rechazó ' + n + ' de los flags de este perfil la última vez que se inició. Están marcados abajo y no tienen efecto.'],
     [/^(\d+) of (\d+) sent to (Crash reports|Commits|Suggestions)\.(.*)$/, (tr, a, b, ch, rest) =>
       a + ' de ' + b + ' enviados a ' + tr(ch) + '.' + rest.replace(' Last error: ', ' Último error: ')
         .replace(' Crash reports share the commits channel until crashWebhook is set in secrets.json.', ' Los informes de errores comparten el canal de commits hasta que se configure crashWebhook en secrets.json.')],
@@ -1659,16 +1521,6 @@ const I18N_ES = {
     [/^Rendering (.+) \((.+)\)…$/, (tr, n, side) => 'Renderizando ' + tr(n) + ' (' + side + ')…'],
     [/^Choose all six sky images, named so their side is at the end, like sky_bk, sky_dn, sky_ft, sky_lf, sky_rt and sky_up \(back, down, front, left, right and up also work\)\. Missing: (.+)\.$/, (tr, m) =>
       'Elige las seis imágenes del cielo, nombradas de modo que el lado vaya al final, como sky_bk, sky_dn, sky_ft, sky_lf, sky_rt y sky_up (también sirven back, down, front, left, right y up). Faltan: ' + m + '.'],
-    // flags
-    [/^No flags in (.+) yet\. Add one, or import a ClientAppSettings\.json\.$/, (tr, n) => n + ' aún no tiene flags. Añade una o importa un ClientAppSettings.json.'],
-    [/^Adds to (.+)\. Names start with FFlag, DFFlag, FInt, DFInt, FString, DFString, FLog or DFLog\.$/, (tr, n) => 'Se añade a ' + n + '. Los nombres empiezan por FFlag, DFFlag, FInt, DFInt, FString, DFString, FLog o DFLog.'],
-    [/^(.+) already has this flag\. Change its value in the list\.$/, (tr, n) => n + ' ya tiene esta flag. Cambia su valor en la lista.'],
-    [/^Paste a ClientAppSettings\.json\. Flags are added to (.+) and switched on; flags it already has get the new value\.$/, (tr, n) => 'Pega un ClientAppSettings.json. Las flags se añaden a ' + n + ' y se activan; las que ya tiene reciben el nuevo valor.'],
-    [/^Added (\S+) to (.+)$/, (tr, f, n) => 'Se añadió ' + f + ' a ' + n],
-    [/^Removed (\S+)$/, (tr, f) => 'Se quitó ' + f],
-    [/^(\d+) added, (\d+) updated(?:, (\d+) skipped)?$/, (tr, a, u, s) => a + ' añadidas, ' + u + ' actualizadas' + (s ? ', ' + s + ' omitidas' : '')],
-    [/^Copied (\d+) flags$/, (tr, n) => 'Se copiaron ' + n + ' flags'],
-    [/^(\w+): (Use .+)$/, (tr, f, m) => f + ': ' + tr(m)],
     // settings
     [/^(.+) in (.+)\\Versions\. Roblox downloads again on the next launch\.$/, (tr, size, dir) => size + ' en ' + dir + '\\Versions. Roblox se volverá a descargar en el próximo inicio.'],
     [/^Keystrap writes a log file for each day to (.+)\.$/, (tr, dir) => 'Keystrap escribe un archivo de registro cada día en ' + dir + '.'],
@@ -1753,7 +1605,6 @@ const I18N_ES = {
 
   const env = { refreshRate: 0, dataDir: '%LocalAppData%\\Keystrap', versionsBytes: null, installed: null, latest: null, statusError: null, checking: true };
   let state = null;
-  let flagsProfileId = null;
   let launching = false;
   let toastTimer, saveTimer;
 
@@ -1765,12 +1616,7 @@ const I18N_ES = {
       version: 1, activeProfile: id, lastSeenChangelog: null,
       settings: { unlockFps: true, multiInstance: false, closeAfterLaunch: false, menuCap60: false, menuCapFps: 60, cursorRing: true, uiSounds: false, uiSoundVolume: 100, linkWarning: true, handleLinks: true, discordRpc: true, discordAppId: '', crashReports: true, sky: 'default', language: 'en', accent: DEFAULT_ACCENT,
         crosshair: { style: 'default', color: '#ffffff', scale: 100, outline: true, image: null } },
-      profiles: [{ id, name: 'Main', color: 0, lastUsed: null, flags: [
-        { name: 'FFlagHandleAltEnterFullscreenManually', value: 'False', on: true },
-        { name: 'DFIntCSGLevelOfDetailSwitchingDistance', value: '0', on: true },
-        { name: 'FFlagDebugGraphicsPreferD3D11', value: 'True', on: true },
-        { name: 'DFIntConnectionMTUSize', value: '900', on: false }
-      ] }]
+      profiles: [{ id, name: 'Main', color: 0, lastUsed: null }]
     };
   }
   function normalize(s) {
@@ -1789,7 +1635,7 @@ const I18N_ES = {
     s.profiles.forEach(p => {
       p.id = p.id || uid(); p.name = String(p.name || 'Profile'); p.color = (p.color | 0) % COLORS.length;
       p.hex = normHex(p.hex);   // custom colour, or null to use the preset
-      p.flags = Array.isArray(p.flags) ? p.flags.filter(f => f && f.name).map(f => ({ name: String(f.name), value: String(f.value), on: f.on !== false })) : [];
+      delete p.flags;   // saved by versions that still had Flags
     });
     if (!s.profiles.some(p => p.id === s.activeProfile)) s.activeProfile = s.profiles[0].id;
     return s;
@@ -1816,7 +1662,6 @@ const I18N_ES = {
   }
   const profileById = id => state.profiles.find(p => p.id === id);
   const activeProfile = () => profileById(state.activeProfile);
-  const flagsProfile = () => profileById(flagsProfileId) || activeProfile();
 
   // ---------- helpers ----------
   function toast(msg) {
@@ -1858,13 +1703,6 @@ const I18N_ES = {
     while (luminance(text) < 0.3) text = mixRgb(text, [255, 255, 255], 0.12);
     return '--pc:' + rgbList(base) + ';--pc-text:' + rgbHex(text);
   }
-  function flagKind(name) { const m = /^(?:D|S)?F(Flag|Int|String|Log)/.exec(name); return m ? m[1] : null; }
-  function checkValue(kind, v) {
-    if (kind === 'Flag') return /^(true|false)$/i.test(v) ? null : 'Use True or False.';
-    if (kind === 'Int' || kind === 'Log') return /^-?\d+$/.test(v) ? null : 'Use a whole number.';
-    return null;
-  }
-  function cleanValue(kind, v) { v = String(v).trim(); return kind === 'Flag' ? (/^true$/i.test(v) ? 'True' : 'False') : v; }
   function armConfirm(btn, label, onConfirm) {
     if (btn.classList.contains('armed')) { onConfirm(); return; }
     const old = btn.innerHTML;
@@ -1919,7 +1757,6 @@ const I18N_ES = {
         break;
       case 'confirm-url': confirmLink(msg.url); break;
       case 'mods': env.mods = msg; if (state) renderMods(); break;
-      case 'flags-refused': env.refused = msg.names || []; if (state) renderFlags(); break;
       case 'mod-saved': modStatus('Saved. Roblox uses it the next time it starts.'); break;
       case 'mod-error': modStatus(msg.message, true); break;
       case 'crosshair-default':
@@ -2156,7 +1993,6 @@ const I18N_ES = {
       st.textContent = p.lastUsed ? 'Last launched with this profile ' + ago(p.lastUsed) : 'Not launched with this profile yet';
     }
     $('#statClient').textContent = env.installed ? (env.installed.version || env.installed.guid) : 'Not installed';
-    $('#flagCount').textContent = p.flags.filter(f => f.on).length;
     renderFps();
     $('#q-multi').checked = state.settings.multiInstance;
     renderRejoin();
@@ -2218,13 +2054,10 @@ const I18N_ES = {
       st.textContent = 'Roblox is still limiting requests. Try again in ' + cooldownLeft() + ' s.'; st.classList.add('err');
       return;
     }
-    const p = activeProfile();
     setLaunching(true);
     setProgress(typeof link === 'string' ? 'Joining from the Roblox website…' : 'Starting…', 0.02);
     if (!host) { simulateLaunch(); return; }
-    const flags = {};
-    p.flags.forEach(f => { if (f.on) flags[f.name] = f.value; });
-    host.postMessage({ type: 'launch', flags, unlockFps: state.settings.unlockFps, fpsTarget: 0, multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
+    host.postMessage({ type: 'launch', unlockFps: state.settings.unlockFps, fpsTarget: 0, multiInstance: state.settings.multiInstance, closeAfterLaunch: state.settings.closeAfterLaunch,
       menuCap: !!state.settings.menuCap60, menuFps: state.settings.menuCapFps || 60, link: typeof link === 'string' ? link : null,
       sky: skiesUnlocked() ? state.settings.sky : 'default' });   // locked: Roblox's own sky, even if one was picked before
   }
@@ -2244,7 +2077,7 @@ const I18N_ES = {
     renderProfiles();
   }
   function simulateLaunch() {
-    const steps = ['Checking for Roblox updates…', 'Applying flags…', 'Starting Roblox…'];
+    const steps = ['Checking for Roblox updates…', 'Starting Roblox…'];
     let i = 0;
     const tick = () => {
       if (i < steps.length) { setProgress(steps[i] + ' (preview)', (i + 1) / (steps.length + 1)); i++; setTimeout(tick, 600); }
@@ -2261,7 +2094,6 @@ const I18N_ES = {
     const wrap = $('#profiles');
     wrap.innerHTML = '';
     state.profiles.forEach(p => {
-      const on = p.flags.filter(f => f.on).length;
       const isActive = p.id === state.activeProfile;
       const card = document.createElement('button');
       card.className = 'card profile' + (isActive ? ' active' : '');
@@ -2270,9 +2102,7 @@ const I18N_ES = {
         '<div class="top"><div class="avatar" style="' + avatarStyle(p) + '">' + esc(p.name.charAt(0).toUpperCase() || '?') + '</div>' +
         '<div style="min-width:0"><div class="t" translate="no">' + esc(p.name) + '</div><div class="meta">' +
         (p.lastUsed ? 'Launched ' + ago(p.lastUsed) : 'Never launched') + '</div></div></div>' +
-        '<div class="chips">' + (isActive ? '<span class="chip on">Launches with this</span>' : '') +
-        '<span class="chip">' + on + (on === 1 ? ' flag on' : ' flags on') + '</span>' +
-        '<span class="chip">' + p.flags.length + ' total</span></div>';
+        '<div class="chips">' + (isActive ? '<span class="chip on">Launches with this</span>' : '') + '</div>';
       card.addEventListener('click', () => openProfileEditor(p.id));
       wrap.appendChild(card);
     });
@@ -2285,10 +2115,9 @@ const I18N_ES = {
 
   function openProfileEditor(id) {
     const isNew = !id;
-    const p = isNew ? { id: uid(), name: '', color: state.profiles.length % COLORS.length, hex: null, lastUsed: null, flags: [] } : profileById(id);
+    const p = isNew ? { id: uid(), name: '', color: state.profiles.length % COLORS.length, hex: null, lastUsed: null } : profileById(id);
     const isActive = p.id === state.activeProfile;
     const sel = { color: p.color, hex: p.hex || null };   // the colour being edited
-    const on = p.flags.filter(f => f.on).length;
     const m = openModal(
       '<h2>' + (isNew ? 'New profile' : 'Edit profile') + '</h2>' +
       '<div class="pe-head"><div class="avatar pe-avatar" id="pe-avatar" aria-hidden="true"></div>' +
@@ -2301,11 +2130,8 @@ const I18N_ES = {
           '<input class="input pe-hex" id="pe-hex" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#FFD9FC" aria-label="Profile colour hex code"></div></div>' +
         '<div class="err" id="pe-hex-err"></div><div id="pe-picker"></div></div>' +
       '<div class="modal-row"><div class="txt"><div class="t">Launch with this profile</div><div class="d">' +
-        (isActive ? 'This is the profile Keystrap launches with.' : 'Keystrap applies this profile\'s flags when you press Launch.') + '</div></div>' +
+        (isActive ? 'This is the profile Keystrap launches with.' : 'Keystrap uses this profile when you press Launch.') + '</div></div>' +
         (isActive ? '' : '<label class="switch"><input type="checkbox" id="pe-active" aria-label="Launch with this profile"><span></span></label>') + '</div>' +
-      (isNew ? '' :
-        '<div class="modal-row"><div class="txt"><div class="t">Flags</div><div class="d">' + on + ' on, ' + p.flags.length + ' total</div></div>' +
-        '<button class="btn" id="pe-flags">Edit flags</button></div>') +
       '<div class="modal-foot">' +
         (isNew ? '' : '<div class="left"><button class="btn" id="pe-dup">Duplicate</button><button class="btn danger" id="pe-del">Delete</button></div>') +
         '<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="pe-save">' + (isNew ? 'Create profile' : 'Save') + '</button>' +
@@ -2369,11 +2195,10 @@ const I18N_ES = {
       toast(isNew ? 'Profile "' + name + '" created' : 'Profile saved');
     });
     if (!isNew) {
-      $('#pe-flags', m).addEventListener('click', () => { closeModal(); flagsProfileId = p.id; renderFlags(); go('flags'); });
       $('#pe-dup', m).addEventListener('click', () => {
         let n = 2, name;
         do { name = p.name + ' ' + n++; } while (state.profiles.some(x => x.name.toLowerCase() === name.toLowerCase()));
-        state.profiles.push({ id: uid(), name, color: (p.color + 1) % COLORS.length, hex: null, lastUsed: null, flags: p.flags.map(f => Object.assign({}, f)) });
+        state.profiles.push({ id: uid(), name, color: (p.color + 1) % COLORS.length, hex: null, lastUsed: null });
         save(); closeModal(); renderAll(); toast('Duplicated as "' + name + '"');
       });
       $('#pe-del', m).addEventListener('click', e => {
@@ -2381,66 +2206,12 @@ const I18N_ES = {
         armConfirm(e.currentTarget, 'Click again to delete', () => {
           state.profiles = state.profiles.filter(x => x.id !== p.id);
           if (state.activeProfile === p.id) state.activeProfile = state.profiles[0].id;
-          if (flagsProfileId === p.id) flagsProfileId = null;
           save(); closeModal(); renderAll(); toast('Profile "' + p.name + '" deleted');
         });
       });
     }
   }
 
-  // ---------- flags ----------
-  function renderFlags() {
-    const p = flagsProfile();
-    flagsProfileId = p.id;
-    $('#flagProfileName').textContent = p.name;
-    $('#flagProfileMenu').innerHTML = state.profiles.map(x =>
-      '<button class="dd-opt" role="option" data-id="' + esc(x.id) + '" aria-selected="' + (x.id === p.id) + '">' +
-      '<span class="sw" style="' + avatarStyle(x) + '"></span><span class="nm" translate="no">' + esc(x.name) + '</span>' +
-      '<svg class="ico"><use href="#i-check"/></svg></button>').join('');
-    const note = $('#flagActiveNote');
-    note.textContent = p.id === state.activeProfile ? 'Launches with this' : 'Not the launch profile';
-    note.className = 'chip' + (p.id === state.activeProfile ? ' on' : '');
-    const refused = env.refused || [];
-    const refusedHere = p.flags.filter(f => f.on && refused.includes(f.name)).length;
-    $('#flagRefused').hidden = !refusedHere;
-    $('#flagRefused').textContent = refusedHere === 1
-      ? 'Roblox refused 1 of this profile\'s flags when it last started. It\'s marked below and has no effect.'
-      : 'Roblox refused ' + refusedHere + ' of this profile\'s flags when it last started. They\'re marked below and have no effect.';
-    renderFlagBuilder();
-    const q = $('#flagSearch').value.trim().toLowerCase();
-    const body = $('#flagBody');
-    body.innerHTML = '';
-    const list = p.flags.filter(f => !q || f.name.toLowerCase().includes(q));
-    if (!list.length) {
-      body.innerHTML = '<tr><td colspan="5" class="empty">' + (p.flags.length ? 'No flags match that search.' : 'No flags in ' + esc(p.name) + ' yet. Add one, or import a ClientAppSettings.json.') + '</td></tr>';
-    }
-    list.forEach(f => {
-      const kind = flagKind(f.name) || 'String';
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td><span class="kind ' + kind + '" translate="no">' + kind + '</span></td>' +
-        '<td class="name"><span class="nm" translate="no"></span></td>' +
-        '<td><input class="input val-input" aria-label="Value"></td>' +
-        '<td><label class="switch"><input type="checkbox" aria-label="Turn flag on"' + (f.on ? ' checked' : '') + '><span></span></label></td>' +
-        '<td><button class="btn ghost icon" aria-label="Remove flag" title="Remove flag"><svg class="ico"><use href="#i-x"/></svg></button></td>';
-      tr.querySelector('.nm').textContent = f.name;
-      if (refused.includes(f.name)) tr.children[1].insertAdjacentHTML('beforeend', '<span class="chip refused">Roblox refused this</span>');
-      const val = tr.querySelector('.val-input');
-      val.value = f.value;
-      val.addEventListener('keydown', e => { if (e.key === 'Enter') val.blur(); if (e.key === 'Escape') { val.value = f.value; val.blur(); } });
-      val.addEventListener('change', () => {
-        const err = checkValue(kind, val.value.trim());
-        if (err) { toast(f.name + ': ' + err); val.value = f.value; return; }
-        f.value = cleanValue(kind, val.value); val.value = f.value; save();
-      });
-      tr.querySelector('.switch input').addEventListener('change', e => { f.on = e.target.checked; save(); renderPlay(); });
-      tr.querySelector('.icon').addEventListener('click', () => {
-        p.flags = p.flags.filter(x => x !== f);
-        save(); renderFlags(); renderPlay(); toast('Removed ' + f.name);
-      });
-      body.appendChild(tr);
-    });
-  }
   // ---------- dropdowns and sliders ----------
   // Windows draws a <select>'s list itself, in light grey. Each <select> stays (it holds the value and fires
   // "change") but is hidden, and gets a button and list in Keystrap's style. Setting .value from code fires no
@@ -2507,142 +2278,6 @@ const I18N_ES = {
   document.addEventListener('input', e => { if (e.target.type === 'range') paintRange(e.target); });
   $$('input[type="range"]').forEach(paintRange);
 
-  // ---------- flag builder ----------
-  // Each choice is a set of flags. "auto" removes the group's flags, so Roblox decides.
-  const FB = {
-    fbApi: { auto: [], d3d11: [['FFlagDebugGraphicsPreferD3D11', 'True']], vulkan: [['FFlagDebugGraphicsPreferVulkan', 'True']], opengl: [['FFlagDebugGraphicsPreferOpenGL', 'True']] },
-    fbTex: { auto: [] },
-    fbAa: { auto: [] },
-    fbPost: { auto: [], off: [['FFlagDisablePostFx', 'True']] },
-    fbGrass: { auto: [], off: [['FIntFRMMinGrassDistance', '0'], ['FIntFRMMaxGrassDistance', '0'], ['FIntRenderGrassDetailStrands', '0']] },
-  };
-  [0, 1, 2, 3].forEach(q => FB.fbTex[q] = [['DFFlagTextureQualityOverrideEnabled', 'True'], ['DFIntTextureQualityOverride', String(q)]]);
-  [0, 2, 4, 8].forEach(n => FB.fbAa[n] = [['FIntDebugForceMSAASamples', String(n)]]);
-  const fbNames = group => [...new Set(Object.values(FB[group]).flat().map(f => f[0]))];
-
-  // The builder starts from what the profile already has turned on.
-  function renderFlagBuilder() {
-    const p = flagsProfile();
-    const value = name => { const f = p.flags.find(x => x.name === name && x.on); return f ? f.value : null; };
-    Object.keys(FB).forEach(group => {
-      const match = Object.keys(FB[group]).find(k => FB[group][k].length && FB[group][k].every(f => value(f[0]) === f[1]));
-      $('#' + group).value = match || 'auto';
-      refreshSelect($('#' + group));
-    });
-  }
-  $('#fbApply').addEventListener('click', () => {
-    const p = flagsProfile();
-    Object.keys(FB).forEach(group => {
-      const names = fbNames(group);
-      p.flags = p.flags.filter(f => !names.includes(f.name));
-      FB[group][$('#' + group).value].forEach(f => p.flags.push({ name: f[0], value: f[1], on: true }));
-    });
-    save(); renderFlags(); renderPlay();
-    toast('Builder settings saved to ' + p.name);
-  });
-
-  // profile dropdown
-  const ddBtn = $('#flagProfileBtn'), ddMenu = $('#flagProfileMenu');
-  function setDropdown(open) {
-    ddMenu.hidden = !open;
-    ddBtn.setAttribute('aria-expanded', String(open));
-    if (open) { const cur = ddMenu.querySelector('[aria-selected="true"]') || ddMenu.firstElementChild; if (cur) cur.focus(); }
-  }
-  ddBtn.addEventListener('click', () => setDropdown(ddMenu.hidden));
-  ddMenu.addEventListener('click', e => {
-    const opt = e.target.closest('.dd-opt');
-    if (!opt) return;
-    flagsProfileId = opt.dataset.id;
-    setDropdown(false); renderFlags(); ddBtn.focus();
-  });
-  ddMenu.addEventListener('keydown', e => {
-    const opts = $$('.dd-opt', ddMenu), i = opts.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      opts[(i + (e.key === 'ArrowDown' ? 1 : opts.length - 1)) % opts.length].focus();
-    } else if (e.key === 'Escape') { e.stopPropagation(); setDropdown(false); ddBtn.focus(); }
-  });
-  document.addEventListener('mousedown', e => { if (!ddMenu.hidden && !e.target.closest('#flagProfileDd')) setDropdown(false); });
-  $('#flagSearch').addEventListener('input', () => renderFlags());
-
-  $('#addFlag').addEventListener('click', () => {
-    const p = flagsProfile();
-    const m = openModal(
-      '<h2>Add flag</h2><p class="lead">Adds to ' + esc(p.name) + '. Names start with FFlag, DFFlag, FInt, DFInt, FString, DFString, FLog or DFLog.</p>' +
-      '<div class="field"><label for="af-name">Name</label><input class="input" id="af-name" placeholder="FFlagDebugGraphicsPreferVulkan" spellcheck="false" style="font-family:var(--f-mono)"></div>' +
-      '<div class="field"><label for="af-value">Value</label><input class="input" id="af-value" placeholder="True" spellcheck="false" style="font-family:var(--f-mono)"><div class="err" id="af-err"></div></div>' +
-      '<div class="modal-foot"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="af-add">Add flag</button></div>');
-    const nameEl = $('#af-name', m), valEl = $('#af-value', m), errEl = $('#af-err', m);
-    nameEl.focus();
-    nameEl.addEventListener('input', () => {
-      const k = flagKind(nameEl.value.trim());
-      valEl.placeholder = k === 'Flag' ? 'True' : k === 'Int' || k === 'Log' ? '0' : 'value';
-    });
-    [nameEl, valEl].forEach(el => {
-      el.addEventListener('input', () => { errEl.textContent = ''; el.classList.remove('bad'); });
-      el.addEventListener('keydown', e => { if (e.key === 'Enter') $('#af-add', m).click(); });
-    });
-    $('#af-add', m).addEventListener('click', () => {
-      const name = nameEl.value.trim(), value = valEl.value.trim(), kind = flagKind(name);
-      let err = null, bad = nameEl;
-      if (!/^[A-Za-z0-9_]+$/.test(name) || !kind) err = 'That isn\'t a flag name. It should start with FFlag, FInt, FString or FLog (optionally with D in front).';
-      else if (p.flags.some(f => f.name === name)) err = p.name + ' already has this flag. Change its value in the list.';
-      else if (!value) { err = 'Enter a value.'; bad = valEl; }
-      else if ((err = checkValue(kind, value))) bad = valEl;
-      if (err) { errEl.textContent = err; bad.classList.add('bad'); bad.focus(); return; }
-      p.flags.push({ name, value: cleanValue(kind, value), on: true });
-      save(); closeModal(); renderFlags(); renderPlay(); renderProfiles(); toast('Added ' + name + ' to ' + p.name);
-    });
-  });
-
-  $('#importFlags').addEventListener('click', () => {
-    const p = flagsProfile();
-    const m = openModal(
-      '<h2>Import flags</h2><p class="lead">Paste a ClientAppSettings.json. Flags are added to ' + esc(p.name) + ' and switched on; flags it already has get the new value.</p>' +
-      '<div class="field"><label for="im-json">JSON</label><textarea class="input" id="im-json" rows="9" spellcheck="false" placeholder=\'{\n  "FFlagDebugGraphicsPreferD3D11": "True",\n  "DFIntTaskSchedulerTargetFps": "144"\n}\'></textarea><div class="err" id="im-err"></div></div>' +
-      '<div class="modal-foot"><button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="im-go">Import</button></div>');
-    const ta = $('#im-json', m), errEl = $('#im-err', m);
-    ta.focus();
-    ta.addEventListener('input', () => { errEl.textContent = ''; ta.classList.remove('bad'); });
-    $('#im-go', m).addEventListener('click', () => {
-      let obj;
-      try { obj = JSON.parse(ta.value); } catch (e) { obj = undefined; }
-      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
-        errEl.textContent = 'That isn\'t a JSON object. It should look like { "FlagName": "value" }.'; ta.classList.add('bad'); return;
-      }
-      let added = 0, updated = 0, skipped = 0;
-      Object.keys(obj).forEach(name => {
-        const kind = flagKind(name);
-        let value = obj[name];
-        if (typeof value === 'boolean') value = value ? 'True' : 'False';
-        value = String(value);
-        if (!kind || !/^[A-Za-z0-9_]+$/.test(name) || checkValue(kind, value)) { skipped++; return; }
-        const existing = p.flags.find(f => f.name === name);
-        if (existing) { existing.value = cleanValue(kind, value); existing.on = true; updated++; }
-        else { p.flags.push({ name, value: cleanValue(kind, value), on: true }); added++; }
-      });
-      if (!added && !updated) { errEl.textContent = skipped ? 'None of those entries are valid flags.' : 'The JSON has no flags in it.'; return; }
-      save(); closeModal(); renderFlags(); renderPlay(); renderProfiles();
-      toast(added + ' added, ' + updated + ' updated' + (skipped ? ', ' + skipped + ' skipped' : ''));
-    });
-  });
-
-  $('#copyFlags').addEventListener('click', () => {
-    const p = flagsProfile(), obj = {};
-    p.flags.forEach(f => { if (f.on) obj[f.name] = f.value; });
-    const text = JSON.stringify(obj, null, 2);
-    const fallback = () => {
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.select();
-      let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
-      ta.remove();
-      toast(ok ? 'Copied ' + Object.keys(obj).length + ' flags' : 'Couldn\'t copy to the clipboard.');
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast('Copied ' + Object.keys(obj).length + ' flags'), fallback);
-    else fallback();
-  });
-
   // ---------- settings ----------
   function renderSettings() {
     renderDiscord();
@@ -2652,9 +2287,9 @@ const I18N_ES = {
     $('#s-ring').checked = state.settings.cursorRing !== false;
     $('#s-links').checked = state.settings.handleLinks;
     $('#linksDesc').textContent = !host
-      ? 'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.'
+      ? 'Play buttons on roblox.com start Roblox through Keystrap.'
       : state.settings.handleLinks
-        ? (env.linksRegistered === false ? 'Keystrap couldn\'t take over Roblox links. Details are in the log.' : 'Play buttons on roblox.com start Roblox through Keystrap, with your active profile\'s flags.')
+        ? (env.linksRegistered === false ? 'Keystrap couldn\'t take over Roblox links. Details are in the log.' : 'Play buttons on roblox.com start Roblox through Keystrap.')
         : 'Roblox links open with the Roblox app. Turn this on to launch them through Keystrap.';
     renderAccent();
     $('#versionsDesc').textContent = host
@@ -3634,7 +3269,7 @@ const I18N_ES = {
   });
 
   // ---------- boot ----------
-  function renderAll() { renderPlay(); renderProfiles(); renderFlags(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); renderCrosshairs(); renderMods(); }
+  function renderAll() { renderPlay(); renderProfiles(); renderSettings(); renderLanguages(); renderAbout(); renderStatus(); renderPlaytime(); renderSkies(); renderCrosshairs(); renderMods(); }
   function start() {
     $('#titleVer').textContent = APP_VERSION;
     let tab = '';

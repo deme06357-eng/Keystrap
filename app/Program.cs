@@ -1,6 +1,6 @@
 ﻿// Keystrap desktop app: a borderless WinForms window hosting keystrap.html in WebView2, plus the
 // backend the page drives through chrome.webview messages: saved state, the Roblox installer and
-// launcher, skies, crosshairs and mods, refused-flag checks, Discord presence, the Playtime tracker,
+// launcher, skies, crosshairs and mods, Discord presence, the Playtime tracker,
 // the Support page's suggestion box, crash reports and logs.
 using System;
 using System.Collections;
@@ -2162,18 +2162,17 @@ namespace Keystrap
             try { if (Directory.Exists(Paths.Downloads)) Directory.Delete(Paths.Downloads, true); } catch { }
         }
 
-        public static void WriteClientSettings(string dir, Dictionary<string, string> flags)
+        // Older versions of Keystrap wrote flags here, and Roblox would keep reading them until the file is gone.
+        public static void RemoveOldClientSettings(string dir)
         {
-            string folder = Path.Combine(dir, "ClientSettings");
-            Directory.CreateDirectory(folder);
-            File.WriteAllText(Path.Combine(folder, "ClientAppSettings.json"), new JavaScriptSerializer().Serialize(flags));
-            Log.Write("Wrote " + flags.Count + " flags to ClientAppSettings.json");
+            string file = Path.Combine(dir, "ClientSettings", "ClientAppSettings.json");
+            if (!File.Exists(file)) return;
+            File.Delete(file);
+            Log.Write("Removed the old ClientAppSettings.json");
         }
 
-        // Roblox's in-game Maximum Frame Rate, kept in its own settings file. Roblox only accepts allow-listed flags from
-        // ClientAppSettings.json and DFIntTaskSchedulerTargetFps isn't one ("Denied local configuration" in its log), so
-        // this is the setting that actually sets the frame rate. -1 ("not set") leaves Roblox on its 60 FPS default.
-        // Never throws; Roblox may be rewriting the file.
+        // Roblox's in-game Maximum Frame Rate, kept in its own settings file. -1 ("not set") leaves Roblox on its 60 FPS
+        // default. Never throws; Roblox may be rewriting the file.
         public static void SetFramerateCap(int fps)
         {
             try
@@ -2532,41 +2531,6 @@ namespace Keystrap
         static Dictionary<string, object> Field(string name, string value, bool inline)
         {
             return new Dictionary<string, object> { { "name", name }, { "value", value }, { "inline", inline } };
-        }
-    }
-
-    // Roblox only accepts flags on its allow list now, and logs each one it refuses at start
-    // ("Denied local configuration for: DFIntTaskSchedulerTargetFps"). The Flags page marks those.
-    static class RefusedFlags
-    {
-        static readonly Regex Denied = new Regex(@"Denied local configuration for: (\S+)", RegexOptions.Compiled);
-
-        // From the newest Roblox log that loaded flags. Empty when there's none, or nothing was refused.
-        public static List<string> Latest()
-        {
-            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox", "logs");
-            if (!Directory.Exists(dir)) return new List<string>();
-            var logs = new DirectoryInfo(dir).GetFiles("*_Player_*.log")
-                .Where(f => f.Name.IndexOf("CrashHandler", StringComparison.OrdinalIgnoreCase) < 0)
-                .OrderByDescending(f => f.LastWriteTimeUtc)
-                .Take(10);
-            foreach (FileInfo log in logs)
-            {
-                string head = Head(log.FullName, 1 << 20);   // flags are loaded in the first second; the start is enough
-                if (head.IndexOf("LoadClientSettingsFromLocal", StringComparison.Ordinal) < 0) continue;
-                return Denied.Matches(head).Cast<Match>().Select(m => m.Groups[1].Value).Distinct().ToList();
-            }
-            return new List<string>();
-        }
-
-        static string Head(string file, int max)
-        {
-            using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
-            {
-                var buf = new byte[(int)Math.Min(max, fs.Length)];
-                int n = fs.Read(buf, 0, buf.Length);
-                return Encoding.UTF8.GetString(buf, 0, n);
-            }
         }
     }
 
@@ -3478,7 +3442,6 @@ namespace Keystrap
             catch (Exception) { return 0; }
         }
 
-        const string FpsFlag = "DFIntTaskSchedulerTargetFps";
         const int UncappedFps = 9999;
         const int MenuFps = 60;
         const int DefaultFps = 60;   // where Roblox's Maximum Frame Rate goes back to when Unlock FPS is turned off
@@ -3874,20 +3837,6 @@ namespace Keystrap
             return true;
         }
 
-        // ---------- Refused flags ----------
-
-        // After a launch, Roblox needs a few seconds to start and log what it refused.
-        async void SendRefusedFlagsAsync(int delayMs)
-        {
-            try
-            {
-                if (delayMs > 0) await Task.Delay(delayMs);
-                var names = await Task.Run(() => RefusedFlags.Latest());
-                Post(new Dictionary<string, object> { { "type", "flags-refused" }, { "names", names } });
-            }
-            catch (Exception ex) { Log.Write("Reading the flags Roblox refused failed: " + ex.Message); }
-        }
-
         // ---------- Mods ----------
 
         async void SendModsAsync()
@@ -4036,7 +3985,6 @@ namespace Keystrap
             SendSkiesAsync();
             SendCrosshairDefaultAsync();
             SendModsAsync();
-            SendRefusedFlagsAsync(0);
             SendVersionsSizeAsync();
             CheckRobloxAsync();
         }
@@ -4332,17 +4280,14 @@ namespace Keystrap
             launching = true;
             try
             {
-                var flags = LaunchFlags(msg);
                 string link = msg.ContainsKey("link") ? msg["link"] as string : null;
                 bool toAppHome = !RobloxLink.IsLink(link);
-                ApplyFrameRate(msg, flags, toAppHome);
+                ApplyFrameRate(msg, toAppHome);
 
                 RobloxVersion version = await PickVersionAsync();
                 string dir = await Task.Run(() => Bootstrapper.InstallAsync(version, ReportProgress));
                 await ApplyCustomisationsAsync(dir, msg);
-
-                ReportProgress("Applying flags…", 0.96);
-                Bootstrapper.WriteClientSettings(dir, flags);
+                Bootstrapper.RemoveOldClientSettings(dir);
 
                 if (Bool(msg, "multiInstance") && !HoldRobloxSingleton())
                     Toast("Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.");
@@ -4351,7 +4296,6 @@ namespace Keystrap
                 Bootstrapper.Start(dir, toAppHome ? null : link);
 
                 Post(new Dictionary<string, object> { { "type", "launch-done" } });
-                SendRefusedFlagsAsync(20000);
                 Post(new Dictionary<string, object>
                 {
                     { "type", "versions-size" },
@@ -4380,22 +4324,9 @@ namespace Keystrap
             }
         }
 
-        // The profile's flags, as strings, ready for ClientAppSettings.json.
-        static Dictionary<string, string> LaunchFlags(Dictionary<string, object> msg)
-        {
-            var flags = new Dictionary<string, string>();
-            object raw;
-            if (msg.TryGetValue("flags", out raw) && raw is Dictionary<string, object>)
-                foreach (var kv in (Dictionary<string, object>)raw)
-                    flags[kv.Key] = Convert.ToString(kv.Value, CultureInfo.InvariantCulture);
-            return flags;
-        }
-
-        // The frame rate goes into Roblox's Maximum Frame Rate, the setting Roblox actually honours, and into the
-        // flag as well in case Roblox allows it again; the flag wins over the same one in a profile. Both are
-        // written before Roblox starts, since that's the only time it reads them. Nothing to set: Roblox keeps
-        // its own limit (ClientAppSettings.json is rewritten every launch).
-        void ApplyFrameRate(Dictionary<string, object> msg, Dictionary<string, string> flags, bool toAppHome)
+        // The frame rate goes into Roblox's Maximum Frame Rate, written before Roblox starts, since that's the only
+        // time it reads it.
+        void ApplyFrameRate(Dictionary<string, object> msg, bool toAppHome)
         {
             int fps = LaunchFps(msg, toAppHome);
             if (fps <= 0)
@@ -4407,11 +4338,6 @@ namespace Keystrap
                 Log.Write("Unlock FPS: off — Roblox's Maximum Frame Rate set back to " + DefaultFps);
                 return;
             }
-            string value = fps.ToString(CultureInfo.InvariantCulture);
-            string fromProfile;
-            if (flags.TryGetValue(FpsFlag, out fromProfile) && fromProfile != value)
-                Log.Write("Frame rate setting replaces the profile's " + FpsFlag + " (" + fromProfile + ")");
-            flags[FpsFlag] = value;
             Log.Write(toAppHome && Bool(msg, "menuCap") ? "Cap menu: opening the Roblox app home at " + fps + " FPS"
                 : fps == UncappedFps ? "Unlock FPS: uncapped" : "Unlock FPS: capped at " + fps);
             Bootstrapper.SetFramerateCap(fps);
