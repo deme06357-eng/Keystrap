@@ -1416,6 +1416,10 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Keystrap checks for updates when it opens.': 'Keystrap busca actualizaciones al abrirse.',
+    'Update available': 'Actualización disponible', 'Update now': 'Actualizar ahora', 'Later': 'Más tarde',
+    'Keystrap will close, update and open again.': 'Keystrap se cerrará, se actualizará y se abrirá de nuevo.',
+    'Couldn\'t start the updater.': 'No se pudo iniciar el actualizador.',
     'Fixed the FAQ button getting stuck.': 'Se arregló el botón de preguntas frecuentes atascado.',
     'Moved the version to the top right.': 'La versión se movió arriba a la derecha.',
     'Added an installer.': 'Se añadió un instalador.',
@@ -1683,7 +1687,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.3';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.4.4';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1695,6 +1699,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.4.4', notes: ['Keystrap checks for updates when it opens.'] },
     { v: 'v1.4.3', notes: ['Fixed the FAQ button getting stuck.'] },
     { v: 'v1.4.2', notes: ['Moved the version to the top right.'] },
     { v: 'v1.4.1', notes: ['Fixed the window buttons.'] },
@@ -1967,6 +1972,7 @@ const I18N_ES = {
       case 'toast': toast(msg.text); break;
       case 'webhook-test-done': devTestDone(msg); break;
       case 'faq-posted': faqPosted(msg); break;
+      case 'update-available': offerUpdate(msg.version); break;
       case 'suggest-done': suggestFinished(msg); break;
       case 'suggest-error': suggestFinished(null, msg.message || 'Your suggestion couldn\'t be sent.'); break;
     }
@@ -3252,6 +3258,23 @@ const I18N_ES = {
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
+
+  // ---------- updates ----------
+  // Asks once each time Keystrap opens. If another window is already up (like the Terms), it waits until next time.
+  function offerUpdate(version) {
+    if ($('#modalRoot').firstChild) return;
+    const m = openModal(
+      '<div class="link-badge"><svg class="ico"><use href="#i-sparkle"/></svg></div>' +
+      '<h2>Update available</h2>' +
+      '<p class="lead">Keystrap will close, update and open again.</p>' +
+      '<div class="link-target"><div class="host" translate="no"></div></div>' +
+      '<div class="modal-foot"><button class="btn ghost" data-close>Later</button><button class="btn primary" id="update-go">Update now</button></div>', 'link-modal');
+    $('.host', m).textContent = version;
+    $('#update-go', m).addEventListener('click', () => {
+      closeModal();
+      if (host) host.postMessage({ type: 'update-now' });
+    });
+  }
 
   // ---------- outside links ----------
   // Every link to a website asks first, showing where it goes, unless "Ask before opening websites" is off

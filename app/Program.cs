@@ -125,6 +125,7 @@ namespace Keystrap
     {
         // Keystrap.exe --dev: shows developer tools (Settings → Test notifications).
         public static bool DevMode;
+        public static string UpdateFeed;   // --update-feed <file>: check this saved release list instead of GitHub, for testing
 
         [STAThread]
         static void Main(string[] args)
@@ -139,6 +140,8 @@ namespace Keystrap
                 return;
             }
             DevMode = !Secrets.PublicBuild && args.Any(a => string.Equals(a, "--dev", StringComparison.OrdinalIgnoreCase));
+            int feedArg = Array.FindIndex(args, a => string.Equals(a, "--update-feed", StringComparison.OrdinalIgnoreCase));
+            if (feedArg >= 0 && feedArg + 1 < args.Length) UpdateFeed = args[feedArg + 1];
             // A Play button on roblox.com starts Keystrap.exe "roblox-player:1+launchmode:play+..." (see Protocol).
             string link = args.FirstOrDefault(RobloxLink.IsLink);
 
@@ -3102,6 +3105,59 @@ namespace Keystrap
         }
     }
 
+    // Asks GitHub whether a newer Keystrap is out. It uses the same rules as the updater: a version tag, not a draft or
+    // pre-release, with Keystrap.zip or Keystrap.exe attached. The updater does the actual download and install.
+    static class UpdateCheck
+    {
+        const string ReleasesUrl = "https://api.github.com/repos/deme06357-eng/Keystrap/releases?per_page=30";
+        static readonly Regex VersionTag = new Regex(@"^[vV]?\d+(\.\d+)+$");
+
+        // The newest release's tag if it's newer than this copy, otherwise null. feedFile: a saved copy of GitHub's answer, for testing.
+        public static async Task<string> NewerVersionAsync(string feedFile)
+        {
+            string text = feedFile != null ? File.ReadAllText(feedFile) : await DownloadReleasesAsync();
+            var releases = new JavaScriptSerializer { MaxJsonLength = int.MaxValue }.DeserializeObject(text) as object[];
+            if (releases == null) return null;
+
+            string newest = null;
+            Version best = Parse(AppInfo.Version);
+            foreach (var release in releases.OfType<Dictionary<string, object>>().Where(IsInstallable))
+            {
+                string tag = ((string)release["tag_name"]).Trim();
+                Version version = Parse(tag);
+                if (version > best) { best = version; newest = tag; }
+            }
+            return newest;
+        }
+
+        static async Task<string> DownloadReleasesAsync()
+        {
+            using (var http = new HttpClient())
+            {
+                http.Timeout = TimeSpan.FromSeconds(10);
+                http.DefaultRequestHeaders.UserAgent.ParseAdd(WebhookService.UserAgent());
+                return await http.GetStringAsync(ReleasesUrl);
+            }
+        }
+
+        static bool IsInstallable(Dictionary<string, object> release)
+        {
+            string tag = release.ContainsKey("tag_name") ? release["tag_name"] as string : null;
+            if (tag == null || !VersionTag.IsMatch(tag.Trim())) return false;
+            if (true.Equals(release.ContainsKey("draft") ? release["draft"] : null)) return false;
+            if (true.Equals(release.ContainsKey("prerelease") ? release["prerelease"] : null)) return false;
+            var assets = release.ContainsKey("assets") ? release["assets"] as object[] : null;
+            return assets != null && assets.OfType<Dictionary<string, object>>().Any(a =>
+            {
+                string name = a.ContainsKey("name") ? a["name"] as string : null;
+                return string.Equals(name, "Keystrap.zip", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(name, "Keystrap.exe", StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        static Version Parse(string tag) { return new Version(tag.Trim().TrimStart('v', 'V')); }
+    }
+
     class MainForm : Form
     {
         const int WM_NCLBUTTONDOWN = 0xA1;
@@ -3472,6 +3528,9 @@ namespace Keystrap
                 case "webhook-test":
                     if (Program.DevMode)
                         SendTestNotificationsAsync(msg.ContainsKey("target") ? msg["target"] as string : "crash", Int(msg, "count"));
+                    break;
+                case "update-now":
+                    StartUpdater();
                     break;
                 case "post-faq":
                     if (Program.DevMode)
@@ -3970,7 +4029,9 @@ namespace Keystrap
             LoadingStatus("Ready");
             await Task.Delay(120);   // a couple of frames for the page to draw what init just gave it
             HideLoading();
+            bool openedByLink = pendingLink != null;
             if (pendingLink != null) { Post(new Dictionary<string, object> { { "type", "launch-link" }, { "link", pendingLink } }); pendingLink = null; }
+            if (!openedByLink) CheckForUpdateAsync();   // someone joining a game shouldn't get interrupted
             if (playtimeReady) Post(playtime.Snapshot());
             SendSkiesAsync();
             SendCrosshairDefaultAsync();
@@ -3978,6 +4039,35 @@ namespace Keystrap
             SendRefusedFlagsAsync(0);
             SendVersionsSizeAsync();
             CheckRobloxAsync();
+        }
+
+        // Tells the page when a newer release is out. A dev build skips this, so it never offers to replace itself with
+        // a public one. A failed check only gets logged; it can try again next time Keystrap opens.
+        async void CheckForUpdateAsync()
+        {
+            if (Program.DevMode) return;
+            try
+            {
+                string version = await UpdateCheck.NewerVersionAsync(Program.UpdateFeed);
+                Log.Write(version == null ? "Keystrap is up to date" : "Update available: " + version);
+                if (version != null) Post(new Dictionary<string, object> { { "type", "update-available" }, { "version", version } });
+            }
+            catch (Exception ex) { Log.Write("Update check failed: " + ex.Message); }
+        }
+
+        // The updater closes Keystrap itself, installs the release and opens Keystrap again.
+        void StartUpdater()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(Application.ExecutablePath);
+                Process.Start(new ProcessStartInfo(Path.Combine(dir, "Keystrap.Updater.exe")) { UseShellExecute = true, WorkingDirectory = dir });
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Couldn't start the updater: " + ex.Message);
+                Toast("Couldn't start the updater.");
+            }
         }
 
         // Developer mode: 1 to 3 test messages to one channel, in that channel's real format, spaced out so
