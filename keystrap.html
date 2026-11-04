@@ -552,35 +552,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 1px 4px 
 .pt-empty { grid-column: 1 / -1; color: var(--fg-2); line-height: 1.55; display: flex; gap: 12px; align-items: flex-start; }
 .pt-empty .ico { color: var(--fg-3); margin-top: 1px; }
 
-/* support: suggestion box */
-.suggest { display: flex; flex-direction: column; gap: 14px; }
-.suggest textarea.input { font-family: var(--f-ui); font-size: 13.5px; line-height: 1.55; min-height: 170px; padding: 10px 12px; }
-.sg-meta { display: flex; justify-content: space-between; gap: 12px; }
-.sg-count { font: 11px var(--f-mono); color: var(--fg-3); flex: none; }
-.sg-count.near { color: var(--warn); }
-.sg-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.sg-note { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-3); }
-.sg-note .ico { width: 14px; height: 14px; }
-.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(var(--on-accent-rgb),.25); border-top-color: var(--on-accent); animation: spin .7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.modal.sg-done { align-items: center; text-align: center; }
-.sg-done .modal-foot { justify-content: center; align-self: stretch; }
-.sg-badge {
-  width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin-top: 4px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent);
-  box-shadow: 0 0 0 8px var(--accent-soft), 0 10px 30px -8px rgba(var(--accent-2-rgb),.45);
-  animation: pop .34s cubic-bezier(.3,1.4,.5,1) both;
-}
-.sg-badge .ico { width: 28px; height: 28px; stroke-width: 2.4; }
-@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.sg-preview {
-  align-self: stretch; text-align: left; background: var(--card); border: 1px solid var(--stroke); border-radius: var(--r-card);
-  padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; line-height: 1.55;
-}
-.sg-preview .k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--fg-3); margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
-.sg-preview p { margin: 0; color: var(--fg-2); white-space: pre-wrap; overflow-wrap: anywhere; }
-.sg-preview .sum { color: var(--fg); font-weight: 600; }
-
 /* about */
 .about-head { display: flex; gap: 18px; align-items: center; }
 .about-head svg { width: 60px; height: 60px; flex: none; }
@@ -728,7 +699,6 @@ html.native.shown .window { opacity: 1; }
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
-    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4Z"/></symbol>
     <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
   </defs>
 </svg>
@@ -1001,7 +971,7 @@ html.native.shown .window { opacity: 1; }
               <div class="d" id="devWebhookDesc">Sends test messages to one of the developers' Discord channels, in that channel's real format, to check it's set up.</div>
               <div class="dev-test-controls">
                 <label class="fb-field"><span>Channel</span>
-                  <select id="devWebhookTarget"><option value="crash">Crash reports</option><option value="commits">Commits</option><option value="suggestions">Suggestions</option></select></label>
+                  <select id="devWebhookTarget"><option value="crash">Crash reports</option><option value="commits">Commits</option></select></label>
                 <div class="fb-field"><span id="devWebhookCountLabel">How many</span>
                   <div class="fps-opts" id="devWebhookCount" role="radiogroup" aria-labelledby="devWebhookCountLabel">
                     <button class="seg" role="radio" data-count="1" aria-checked="true">1</button>
@@ -1044,23 +1014,6 @@ html.native.shown .window { opacity: 1; }
           <p>A crash report, if Keystrap crashes: the error and its technical details, the Keystrap version, your active profile's name, your Windows version and the time. Your Windows user name and folder paths are removed first. You can turn crash reports off in Settings.</p>
           <h4>5. No warranty</h4>
           <p>Keystrap is provided as is, without warranty of any kind.</p>
-        </div>
-      </section>
-
-      <!-- SUPPORT -->
-      <section class="page" id="page-support">
-        <h1>Support</h1>
-        <p class="sub">Have an idea, or found something broken? Tell the developers. Keystrap fixes spelling and grammar and lays your message out clearly before sending it.</p>
-        <div class="card suggest">
-          <div class="field">
-            <label for="sg-text">Your suggestion or feedback</label>
-            <textarea class="input" id="sg-text" rows="8" maxlength="1000" placeholder="e.g. it would be cool if keystrap could remember the last server i joined"></textarea>
-            <div class="sg-meta"><span class="err" id="sg-err" role="alert"></span><span class="sg-count" id="sg-count">0 / 1000</span></div>
-          </div>
-          <div class="sg-foot">
-            <span class="sg-note"><svg class="ico"><use href="#i-info"/></svg>Sent with your Windows user name and the Keystrap version.</span>
-            <button class="btn primary" id="sg-send"><svg class="ico"><use href="#i-send"/></svg>Submit Suggestion</button>
-          </div>
         </div>
       </section>
 
@@ -1109,7 +1062,7 @@ const I18N_ES = {
     // sidebar
     'Roblox launcher': 'Launcher de Roblox',
     'Play': 'Jugar', 'Profiles': 'Perfiles', 'Playtime': 'Tiempo de juego', 'Custom Skies': 'Cielos personalizados',
-    'Settings': 'Ajustes', 'Language': 'Idioma', 'Beta': 'Beta', 'ToS': 'Términos', 'Support': 'Soporte', 'About': 'Acerca de',
+    'Settings': 'Ajustes', 'Language': 'Idioma', 'Beta': 'Beta', 'ToS': 'Términos',  'About': 'Acerca de',
     'Checking for Roblox updates…': 'Buscando actualizaciones de Roblox…',
     'Preview · Roblox status shows in the app': 'Vista previa · el estado de Roblox se muestra en la app',
     'Couldn\'t reach Roblox': 'No se pudo conectar con Roblox',
@@ -1355,23 +1308,7 @@ const I18N_ES = {
     '5. No warranty': '5. Sin garantía',
     'Keystrap is provided as is, without warranty of any kind.': 'Keystrap se ofrece tal cual, sin garantía de ningún tipo.',
 
-    // support
-    'Have an idea, or found something broken? Tell the developers. Keystrap fixes spelling and grammar and lays your message out clearly before sending it.': '¿Tienes una idea o encontraste algo que no funciona? Cuéntaselo a los desarrolladores. Keystrap corrige la ortografía y la gramática y ordena tu mensaje antes de enviarlo.',
-    'Your suggestion or feedback': 'Tu sugerencia o comentario',
-    'e.g. it would be cool if keystrap could remember the last server i joined': 'p. ej. estaría genial que keystrap recordara el último servidor al que entré',
-    'Sent with your Windows user name and the Keystrap version.': 'Se envía con tu nombre de usuario de Windows y la versión de Keystrap.',
-    'Submit Suggestion': 'Enviar sugerencia', 'Polishing and sending…': 'Puliendo y enviando…',
-    'Write a little more so the developers know what you mean.': 'Escribe un poco más para que los desarrolladores entiendan lo que quieres decir.',
-    'You just sent a suggestion. Wait a minute before sending another.': 'Acabas de enviar una sugerencia. Espera un minuto antes de enviar otra.',
-    'The suggestion box isn\'t set up in this build of Keystrap.': 'El buzón de sugerencias no está configurado en esta versión de Keystrap.',
-    'The suggestion box is busy right now. Wait a minute and try again.': 'El buzón de sugerencias está ocupado. Espera un minuto y vuelve a intentarlo.',
-    'Couldn\'t reach the suggestion box. Check your internet connection and try again.': 'No se pudo conectar con el buzón de sugerencias. Revisa tu conexión a internet y vuelve a intentarlo.',
-    'Keystrap couldn\'t send your suggestion. Details are in the log.': 'Keystrap no pudo enviar tu sugerencia. Los detalles están en el registro.',
-    'Your suggestion couldn\'t be sent.': 'No se pudo enviar tu sugerencia.',
-    'Suggestion sent': 'Sugerencia enviada',
-    'Your suggestion was polished and sent to the developers. Thanks for helping make Keystrap better.': 'Tu sugerencia se pulió y se envió a los desarrolladores. Gracias por ayudar a mejorar Keystrap.',
-    'Summary': 'Resumen', 'Polished suggestion': 'Sugerencia pulida', 'Why it helps': 'Por qué ayuda', 'Done': 'Listo',
-    'Feedback': 'Comentario', 'Bug report': 'Informe de error', 'Feature request': 'Petición de función', 'General feedback': 'Comentario general',
+    'Done': 'Listo',
 
     // about + what's new
     'Data folder': 'Carpeta de datos', 'License': 'Licencia', 'What\'s new': 'Novedades',
@@ -1425,7 +1362,7 @@ const I18N_ES = {
     'Keystrap couldn\'t open your browser.': 'Keystrap no pudo abrir tu navegador.',
     'Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.':
       'La multiinstancia empieza a funcionar cuando cierras todas las ventanas de Roblox y vuelves a iniciar desde Keystrap.',
-    'How many': 'Cuántos','Crash reports': 'Informes de errores', 'Commits': 'Commits', 'Suggestions': 'Sugerencias', 'Send': 'Enviar',
+    'How many': 'Cuántos','Crash reports': 'Informes de errores', 'Commits': 'Commits',  'Send': 'Enviar',
     'Pick a custom crosshair color':'Elige un color personalizado para la mira', 'Crosshair color hex code': 'Código hex del color de la mira',
     'White': 'Blanco', 'Cyan': 'Cian', 'Pink': 'Rosa', 'Yellow': 'Amarillo',
     'Size': 'Tamaño', 'Crosshair size': 'Tamaño de la mira', 'Compact': 'Compacta', 'Oversized': 'Enorme',
@@ -1483,7 +1420,7 @@ const I18N_ES = {
     [/^Open (.+) on Roblox$/, (tr, g) => 'Abrir ' + g + ' en Roblox'],
     [/^Custom font: (.+)$/, (tr, f) => 'Fuente personalizada: ' + f],
     [/^Play (Death|Jump|Landing|Footsteps|Falling|Getting up|Swimming|Splash|Explosion|Volume slider)$/, (tr, s) => 'Reproducir: ' + tr(s)],
-    [/^(\d+) of (\d+) sent to (Crash reports|Commits|Suggestions)\.(.*)$/, (tr, a, b, ch, rest) =>
+    [/^(\d+) of (\d+) sent to (Crash reports|Commits)\.(.*)$/, (tr, a, b, ch, rest) =>
       a + ' de ' + b + ' enviados a ' + tr(ch) + '.' + rest.replace(' Last error: ', ' Último error: ')
         .replace(' Crash reports share the commits channel until crashWebhook is set in secrets.json.', ' Los informes de errores comparten el canal de commits hasta que se configure crashWebhook en secrets.json.')],
     [/^Server in (.+)\. Press Shift\+F3 in Roblox for live ping\.$/, (tr, where) => 'Servidor en ' + where + '. Pulsa Shift+F3 en Roblox para ver el ping en vivo.'],
@@ -1504,8 +1441,7 @@ const I18N_ES = {
     [/^(\d+) of (\d+) test notifications sent(?: \(last error: (.+)\))?\.$/, (tr, a, b, e) => a + ' de ' + b + ' notificaciones de prueba enviadas' + (e ? ' (último error: ' + e + ')' : '') + '.'],
     [/^(\w+) \(default\)$/, (tr, n) => tr(n) + ' (predeterminado)'],
     [/^Custom color (#[0-9a-f]{6})$/, (tr, h) => 'Color personalizado ' + h],
-    // support, about
-    [/^The suggestion box didn't accept the message \(error (\d+)\)\. Try again later\.$/, (tr, n) => 'El buzón de sugerencias no aceptó el mensaje (error ' + n + '). Inténtalo más tarde.'],
+    // about
     [/^(v[\d.]+) · build (.+)$/, (tr, v, b) => v + ' · compilación ' + b],
     [/^What's new in (.+)$/, (tr, v) => 'Novedades de ' + v]
   ]
@@ -1789,8 +1725,6 @@ const I18N_ES = {
       case 'webhook-test-done': devTestDone(msg); break;
       case 'faq-posted': faqPosted(msg); break;
       case 'update-available': offerUpdate(msg.version); break;
-      case 'suggest-done': suggestFinished(msg); break;
-      case 'suggest-error': suggestFinished(null, msg.message || 'Your suggestion couldn\'t be sent.'); break;
     }
   }
 
@@ -2323,7 +2257,7 @@ const I18N_ES = {
 
   // ---------- developer tools ----------
   // Developer mode only: test messages to one channel, 1 to 3 at a time.
-  const DEV_CHANNELS = { crash: 'Crash reports', commits: 'Commits', suggestions: 'Suggestions' };
+  const DEV_CHANNELS = { crash: 'Crash reports', commits: 'Commits' };
   let devTestCount = 1;
   $('#devWebhookCount').addEventListener('click', e => {
     const b = e.target.closest('[data-count]');
@@ -2708,47 +2642,6 @@ const I18N_ES = {
     document.documentElement.lang = lang;
     trTree(document.body);   // in English this puts back the original text
   }
-
-  // ---------- support: suggestion box ----------
-  const sgText = $('#sg-text'), sgSend = $('#sg-send'), sgErr = $('#sg-err');
-  let sendingSuggestion = false;
-  function renderSuggestCount() {
-    const n = sgText.value.length, c = $('#sg-count');
-    c.textContent = n + ' / 1000';
-    c.classList.toggle('near', n > 900);
-  }
-  function setSendingSuggestion(on) {
-    sendingSuggestion = on;
-    sgSend.disabled = on; sgText.readOnly = on;
-    sgSend.innerHTML = on ? '<span class="spin"></span>Polishing and sending…' : '<svg class="ico"><use href="#i-send"/></svg>Submit Suggestion';
-  }
-  sgText.addEventListener('input', () => { sgErr.textContent = ''; sgText.classList.remove('bad'); renderSuggestCount(); });
-  sgText.addEventListener('keydown', e => { if (e.key === 'Enter' && e.ctrlKey) sgSend.click(); });
-  sgSend.addEventListener('click', () => {
-    if (sendingSuggestion) return;
-    const text = sgText.value.trim();
-    if (text.length < 10) { sgErr.textContent = 'Write a little more so the developers know what you mean.'; sgText.classList.add('bad'); sgText.focus(); return; }
-    if (!host) { toast('Available in the Keystrap app'); return; }
-    sgErr.textContent = '';
-    setSendingSuggestion(true);
-    host.postMessage({ type: 'suggest', text });
-  });
-  function suggestFinished(msg, error) {
-    setSendingSuggestion(false);
-    if (error) { sgErr.textContent = error; return; }
-    sgText.value = ''; renderSuggestCount();
-    openModal(
-      '<div class="sg-badge"><svg class="ico"><use href="#i-check"/></svg></div>' +
-      '<h2>Suggestion sent</h2>' +
-      '<p class="lead">Your suggestion was polished and sent to the developers. Thanks for helping make Keystrap better.</p>' +
-      '<div class="sg-preview">' +
-        '<div><div class="k">Summary <span class="chip on">' + esc(msg.category || 'Feedback') + '</span></div><p class="sum">' + esc(msg.summary || '') + '</p></div>' +
-        '<div><div class="k">Polished suggestion</div><p>' + esc(msg.details || '') + '</p></div>' +
-        (msg.benefit ? '<div><div class="k">Why it helps</div><p>' + esc(msg.benefit) + '</p></div>' : '') +
-      '</div>' +
-      '<div class="modal-foot"><button class="btn primary" data-close>Done</button></div>', 'wide sg-done');
-  }
-  renderSuggestCount();
 
   // ---------- about + changelog ----------
   function renderAbout() {

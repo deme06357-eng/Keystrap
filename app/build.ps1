@@ -68,7 +68,6 @@ namespace Keystrap
     static class Secrets
     {
         public const string NotificationsWebhook = $(Lit $(if ($secrets) { $secrets.notificationsWebhook }));
-        public const string FeedbackWebhook = $(Lit $(if ($secrets) { $secrets.feedbackWebhook }));
         public const string CrashWebhook = $(Lit $(if ($secrets) { $secrets.crashWebhook }));   // optional; empty sends crashes to NotificationsWebhook
         public const string FaqWebhook = $(Lit $(if ($secrets -and -not $Public) { $secrets.faqWebhook }));   // optional; the "Post FAQ" button in Dev/Testing posts here
         public const bool PublicBuild = $(if ($Public) { 'true' } else { 'false' });

@@ -1,7 +1,6 @@
-﻿// Keystrap desktop app: a borderless WinForms window hosting keystrap.html in WebView2, plus the
+// Keystrap desktop app: a borderless WinForms window hosting keystrap.html in WebView2, plus the
 // backend the page drives through chrome.webview messages: saved state, the Roblox installer and
-// launcher, skies, crosshairs and mods, Discord presence, the Playtime tracker,
-// the Support page's suggestion box, crash reports and logs.
+// launcher, skies, crosshairs and mods, Discord presence, the Playtime tracker, crash reports and logs.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,7 +25,6 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 [assembly: AssemblyTitle("Keystrap")]
 [assembly: AssemblyProduct("Keystrap")]
@@ -36,7 +34,7 @@ namespace Keystrap
 {
     static class AppInfo
     {
-        // The release name used everywhere: logs, the suggestion box, web requests and the data files. Set it in
+        // The release name used everywhere: logs, web requests and the data files. Set it in
         // version.txt; the build carries it here and into APP_VERSION in keystrap.html.
         public const string Version = Release.Version;
         public const string UserAgent = "Keystrap/" + Version;
@@ -2207,337 +2205,6 @@ namespace Keystrap
         }
     }
 
-    // Wraps the Windows spell checker (Windows 8+, ISpellCheckerFactory), so corrections need no download or API key.
-    static class SpellCheck
-    {
-        [ComImport, Guid("8E018A9D-2415-4677-BF08-794EA61F94BB"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        interface ISpellCheckerFactory
-        {
-            ComTypes.IEnumString SupportedLanguages();
-            int IsSupported([MarshalAs(UnmanagedType.LPWStr)] string languageTag);
-            ISpellChecker CreateSpellChecker([MarshalAs(UnmanagedType.LPWStr)] string languageTag);
-        }
-
-        // Only the first vtable slots are declared; the rest of ISpellChecker isn't used.
-        [ComImport, Guid("B6FD0B71-E2BC-4653-8D05-F197E412770B"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        interface ISpellChecker
-        {
-            [return: MarshalAs(UnmanagedType.LPWStr)] string LanguageTag();
-            IEnumSpellingError Check([MarshalAs(UnmanagedType.LPWStr)] string text);
-            ComTypes.IEnumString Suggest([MarshalAs(UnmanagedType.LPWStr)] string word);
-        }
-
-        [ComImport, Guid("803E3BD4-2828-4410-8290-418D1D73C762"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        interface IEnumSpellingError
-        {
-            [PreserveSig] int Next(out ISpellingError value);
-        }
-
-        [ComImport, Guid("B7C82D61-FBE8-4B47-9B27-6C0D2E0DE0A3"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        interface ISpellingError
-        {
-            uint StartIndex();
-            uint Length();
-            int CorrectiveAction();   // 1 = get suggestions, 2 = replace, 3 = delete (repeated word)
-            [return: MarshalAs(UnmanagedType.LPWStr)] string Replacement();
-        }
-
-        [ComImport, Guid("7AB36653-1796-484B-BDFA-E74F1DB7C1DC")]
-        class SpellCheckerFactoryClass { }
-
-        // Words the dictionary doesn't know but shouldn't "correct".
-        static readonly HashSet<string> KnownTerms = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "Keystrap", "Bloxstrap", "Fishstrap", "Roblox", "Robux", "FFlag", "FFlags", "FastFlag", "FastFlags",
-            "Discord", "FPS", "RAM", "GPU", "CPU", "UI", "Vulkan", "OpenGL", "DirectX", "D3D11", "skybox", "multi-instance",
-        };
-
-        static ISpellChecker Create()
-        {
-            try
-            {
-                var factory = (ISpellCheckerFactory)new SpellCheckerFactoryClass();
-                foreach (string tag in new[] { "en-US", "en-GB" })
-                    if (factory.IsSupported(tag) != 0) return factory.CreateSpellChecker(tag);
-                Log.Write("Windows spell checker has no English dictionary");
-            }
-            catch (Exception ex) { Log.Write("Windows spell checker unavailable: " + ex.Message); }
-            return null;
-        }
-
-        public static string Correct(string text)
-        {
-            ISpellChecker checker = Create();
-            if (checker == null) return text;
-            var fixes = new List<Tuple<int, int, string>>();
-            try
-            {
-                IEnumSpellingError errors = checker.Check(text);
-                ISpellingError e;
-                while (errors.Next(out e) == 0 && e != null)
-                {
-                    int start = (int)e.StartIndex(), len = (int)e.Length();
-                    if (start < 0 || len <= 0 || start + len > text.Length) continue;
-                    string word = text.Substring(start, len);
-                    if (KnownTerms.Contains(word)) continue;
-                    string replacement = null;
-                    switch (e.CorrectiveAction())
-                    {
-                        case 1: replacement = BestSuggestion(checker, word); break;
-                        case 2: replacement = e.Replacement(); break;
-                        case 3: replacement = ""; break;
-                    }
-                    if (replacement != null) fixes.Add(Tuple.Create(start, len, replacement));
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Spell check failed: " + ex.Message);
-                return text;
-            }
-            // Apply from the end so earlier offsets stay valid.
-            foreach (var f in fixes.OrderByDescending(f => f.Item1))
-                text = text.Remove(f.Item1, f.Item2).Insert(f.Item1, f.Item3);
-            return Regex.Replace(text, " {2,}", " ");
-        }
-
-        // Windows ranks suggestions loosely ("rember" -> "ember"), so pick from its top few: same first letter,
-        // no apostrophe the user didn't type, then the fewest edits, then Windows' order.
-        static string BestSuggestion(ISpellChecker checker, string word)
-        {
-            var list = new List<string>();
-            ComTypes.IEnumString e = checker.Suggest(word);
-            var one = new string[1];
-            while (list.Count < 6 && e.Next(1, one, IntPtr.Zero) == 0) list.Add(one[0]);
-            if (list.Count == 0) return null;
-            char first = char.ToLowerInvariant(word[0]);
-            bool apostrophe = word.Contains("'");
-            return list
-                .Select((s, i) => new { s, i })
-                .OrderBy(x => char.ToLowerInvariant(x.s[0]) == first ? 0 : 1)
-                .ThenBy(x => !apostrophe && x.s.Contains("'") ? 1 : 0)
-                .ThenBy(x => EditDistance(word.ToLowerInvariant(), x.s.ToLowerInvariant()))
-                .ThenBy(x => x.i)
-                .First().s;
-        }
-
-        // Optimal string alignment distance: insertions, deletions, substitutions and adjacent swaps.
-        static int EditDistance(string a, string b)
-        {
-            var d = new int[a.Length + 1, b.Length + 1];
-            for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
-            for (int j = 0; j <= b.Length; j++) d[0, j] = j;
-            for (int i = 1; i <= a.Length; i++)
-                for (int j = 1; j <= b.Length; j++)
-                {
-                    int cost = a[i - 1] == b[j - 1] ? 0 : 1;
-                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
-                    if (i > 1 && j > 1 && a[i - 1] == b[j - 2] && a[i - 2] == b[j - 1]) d[i, j] = Math.Min(d[i, j], d[i - 2, j - 2] + 1);
-                }
-            return d[a.Length, b.Length];
-        }
-    }
-
-    class Suggestion
-    {
-        public string Category;   // Bug report, Feature request or General feedback
-        public string Summary;    // first sentence, shortened
-        public string Details;    // the corrected text
-        public string Benefit;
-        public string NextStep;
-    }
-
-    // The Support page's suggestion box: tidy up what the user wrote, then post it to the developers' Discord.
-    static class Feedback
-    {
-        const string WebhookUrl = Secrets.FeedbackWebhook;   // from secrets.json, see build.ps1
-        const string AppVersion = AppInfo.Version;
-        public const int MinLength = 10;
-        public const int MaxLength = 1000;
-        static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(60);
-        static DateTime lastSentUtc = DateTime.MinValue;
-        static readonly HttpClient http = CreateClient();
-
-        static HttpClient CreateClient()
-        {
-            var client = new HttpClient();
-            client.Timeout = TimeSpan.FromSeconds(20);
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(AppInfo.UserAgent);
-            return client;
-        }
-
-        // Chat shorthand and missing apostrophes, matched as whole words.
-        static readonly Dictionary<string, string> Shorthand = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "i", "I" }, { "im", "I'm" }, { "ive", "I've" }, { "dont", "don't" }, { "cant", "can't" }, { "wont", "won't" },
-            { "isnt", "isn't" }, { "doesnt", "doesn't" }, { "didnt", "didn't" }, { "wasnt", "wasn't" }, { "arent", "aren't" },
-            { "couldnt", "couldn't" }, { "shouldnt", "shouldn't" }, { "wouldnt", "wouldn't" }, { "havent", "haven't" },
-            { "thats", "that's" }, { "whats", "what's" }, { "theres", "there's" }, { "u", "you" }, { "ur", "your" },
-            { "pls", "please" }, { "plz", "please" }, { "thx", "thanks" }, { "alot", "a lot" }, { "idk", "I don't know" },
-            { "imo", "in my opinion" }, { "btw", "by the way" }, { "cuz", "because" }, { "bc", "because" },
-            { "gonna", "going to" }, { "wanna", "want to" }, { "ppl", "people" }, { "rn", "right now" },
-            { "kinda", "kind of" }, { "sorta", "sort of" }, { "ui", "UI" }, { "fps", "FPS" },
-            // Typos the spell checker tends to "fix" into the wrong word.
-            { "relly", "really" }, { "realy", "really" }, { "rember", "remember" }, { "remeber", "remember" },
-            { "lanch", "launch" }, { "luanch", "launch" }, { "lauch", "launch" }, { "crashs", "crashes" },
-            { "anoying", "annoying" }, { "definately", "definitely" }, { "recieve", "receive" }, { "seperate", "separate" },
-            { "untill", "until" }, { "wierd", "weird" }, { "becuase", "because" }, { "becasue", "because" },
-            { "settigns", "settings" }, { "shoud", "should" }, { "woud", "would" }, { "coud", "could" },
-        };
-
-        public static Suggestion Polish(string raw)
-        {
-            string text = Tidy(raw);
-            text = Regex.Replace(text, @"\b[A-Za-z]+\b", m =>
-            {
-                string r;
-                if (!Shorthand.TryGetValue(m.Value, out r)) return m.Value;
-                return char.IsUpper(m.Value[0]) ? char.ToUpperInvariant(r[0]) + r.Substring(1) : r;
-            });
-            text = SpellCheck.Correct(text);
-            text = Regex.Replace(text, @"\b([Aa]) (?=[aeioAEIO])", "$1n ");   // "a option" -> "an option"
-            text = Regex.Replace(text, @"\b([Ii])ts (?=(a|an|the|not|so|very|really|too|been|going|just|kind of|hard|annoying|impossible|broken|fine|ok|okay)\b)", "$1t's ");
-            text = Punctuate(text);
-
-            var s = new Suggestion();
-            s.Details = text;
-            s.Category = Categorize(text);
-            s.Summary = Summarize(text);
-            switch (s.Category)
-            {
-                case "Bug report":
-                    s.Benefit = "Fixing this would make Keystrap more reliable and keep the problem from interrupting play for anyone else who runs into it.";
-                    s.NextStep = "Try to reproduce the issue on " + AppVersion + " and check the user's Keystrap logs (%LocalAppData%\\Keystrap\\Logs) for related errors.";
-                    break;
-                case "Feature request":
-                    s.Benefit = "This would give players more control over how Keystrap works and save them time on something they can't do today, or have to do by hand.";
-                    s.NextStep = "Gauge how many users would benefit, then consider adding it as an option in an upcoming release.";
-                    break;
-                default:
-                    s.Benefit = "Acting on this feedback would improve the overall Keystrap experience.";
-                    s.NextStep = "Review the feedback and decide whether it calls for a change in an upcoming release.";
-                    break;
-            }
-            return s;
-        }
-
-        static string Tidy(string raw)
-        {
-            var lines = raw.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n').Select(l => Regex.Replace(l, @"\s+", " ").Trim());
-            return Regex.Replace(string.Join("\n", lines), @"\n{3,}", "\n\n").Trim();
-        }
-
-        static string Punctuate(string text)
-        {
-            text = Regex.Replace(text, @"([!?])\1+", "$1");                      // "!!!" -> "!"
-            text = Regex.Replace(text, @"[ \t]+([,.!?;:])", "$1");               // "word ," -> "word,"
-            text = Regex.Replace(text, @"([,;!?])(?=[A-Za-z])", "$1 ");          // "a,b" -> "a, b"
-            text = Regex.Replace(text, @"(?<=[a-z]{2})\.(?=[A-Z][a-z])", ". ");  // "game.Please" -> "game. Please"
-            // Capital letter at the start of every sentence and line.
-            text = Regex.Replace(text, @"(^|[.!?]\s+|\n)([a-z])", m => m.Groups[1].Value + m.Groups[2].Value.ToUpperInvariant());
-            // Every line ends with punctuation.
-            return string.Join("\n", text.Split('\n').Select(l => Regex.IsMatch(l, @"[A-Za-z0-9)""']$") ? l + "." : l));
-        }
-
-        static string Categorize(string text)
-        {
-            string l = text.ToLowerInvariant();
-            if (Regex.IsMatch(l, @"\b(crash\w*|bugs?|bugged|broken|errors?|freez\w*|not working|doesn't work|does not work|fails?|failed|glitch\w*|stuck|lags?|laggy)\b"))
-                return "Bug report";
-            if (Regex.IsMatch(l, @"\b(add|adding|feature|option|setting|support for|would be (nice|cool|great|awesome)|could you|can you|please|wish|allow|let us|ability|make it)\b"))
-                return "Feature request";
-            return "General feedback";
-        }
-
-        static string Summarize(string text)
-        {
-            Match m = Regex.Match(text, @"^.+?[.!?](?=\s|$)");
-            string first = m.Success ? m.Value : text.Split('\n')[0];
-            if (first.Length <= 90) return first;
-            int cut = first.LastIndexOf(' ', 87);
-            return first.Substring(0, cut > 40 ? cut : 87).TrimEnd(',', ';', ':') + "…";
-        }
-
-        static string Clip(string s, int max)
-        {
-            return s.Length <= max ? s : s.Substring(0, max - 1) + "…";
-        }
-
-        public static async Task SendAsync(string raw, Suggestion s, string user)
-        {
-            DateTime now = DateTime.UtcNow;
-            if (now - lastSentUtc < Cooldown)
-                throw new InvalidOperationException("You just sent a suggestion. Wait a minute before sending another.");
-
-            await PostAsync(Payload(raw, s, user, now));
-            lastSentUtc = now;
-        }
-
-        // Developer mode's test: a made-up suggestion in the real format, without the one-minute cooldown.
-        public static Task SendTestAsync(int number)
-        {
-            var s = new Suggestion
-            {
-                Category = "Test",
-                Summary = "Test suggestion " + number + " from developer mode.",
-                Details = "This is a test from Settings → Test notifications, to check the suggestion box's channel and format.",
-                Benefit = "Nothing; it's only a test.",
-                NextStep = "Delete this message.",
-            };
-            return PostAsync(Payload("test suggestion " + number, s, "Developer test", DateTime.UtcNow));
-        }
-
-        static Dictionary<string, object> Payload(string raw, Suggestion s, string user, DateTime now)
-        {
-            long unix = (long)(now - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-            string polished = "**" + s.Summary + "**\n\n" + s.Details +
-                "\n\n**Why it helps**\n" + s.Benefit + "\n\n**Suggested next step**\n" + s.NextStep;
-            var embed = new Dictionary<string, object>
-            {
-                { "title", Clip("New suggestion · " + s.Category, 256) },
-                { "color", 0xFFFBA6 },
-                { "description", Clip(polished, 4000) },
-                { "fields", new object[]
-                    {
-                        Field("App Version", AppVersion, true),
-                        Field("User", Clip(user, 100), true),
-                        Field("Submitted", "<t:" + unix + ":F>", true),
-                        Field("Original suggestion", "```\n" + Clip(raw.Replace("```", "'''"), 1000) + "\n```", false),
-                    }
-                },
-                { "footer", new Dictionary<string, object> { { "text", "Keystrap suggestion box · polished automatically" } } },
-                { "timestamp", now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") },
-            };
-            return new Dictionary<string, object>
-            {
-                { "username", "Keystrap Suggestions" },
-                { "allowed_mentions", new Dictionary<string, object> { { "parse", new string[0] } } }, // no @everyone from user text
-                { "embeds", new object[] { embed } },
-            };
-        }
-
-        static async Task PostAsync(Dictionary<string, object> payload)
-        {
-            if (WebhookUrl.Length == 0) throw new InvalidOperationException("The suggestion box isn't set up in this build of Keystrap.");
-            var body = new StringContent(new JavaScriptSerializer().Serialize(payload), Encoding.UTF8, "application/json");
-            using (HttpResponseMessage resp = await http.PostAsync(WebhookUrl, body))
-            {
-                if ((int)resp.StatusCode == 429)
-                    throw new InvalidOperationException("The suggestion box is busy right now. Wait a minute and try again.");
-                if (!resp.IsSuccessStatusCode)
-                {
-                    Log.Write("Discord webhook returned " + (int)resp.StatusCode + ": " + await resp.Content.ReadAsStringAsync());
-                    throw new InvalidOperationException("The suggestion box didn't accept the message (error " + (int)resp.StatusCode + "). Try again later.");
-                }
-            }
-        }
-
-        static Dictionary<string, object> Field(string name, string value, bool inline)
-        {
-            return new Dictionary<string, object> { { "name", name }, { "value", value }, { "inline", inline } };
-        }
-    }
-
     // Playtime: follows Roblox's own log files (%LocalAppData%\Roblox\logs) the way Bloxstrap's activity watcher
     // does. A "Joining game" line opens a session; a disconnect line, the next join (teleport) or Roblox closing
     // ends it. Sessions are stored in playtime.json and combined per experience (universe ID) for the page.
@@ -3143,7 +2810,6 @@ namespace Keystrap
         readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
         bool launching;
         bool skyBusy;
-        bool sendingSuggestion;
         bool playtimeReady;
         readonly DiscordPresence discord = new DiscordPresence();
         readonly DateTime startedUtc = DateTime.UtcNow;
@@ -3568,9 +3234,6 @@ namespace Keystrap
                 case "protocol":
                     SetProtocol(Bool(msg, "on"));
                     break;
-                case "suggest":
-                    SuggestAsync(msg.ContainsKey("text") ? msg["text"] as string : null);
-                    break;
             }
         }
 
@@ -3913,45 +3576,6 @@ namespace Keystrap
             Post(new Dictionary<string, object> { { "type", "protocol-status" }, { "registered", registered } });
         }
 
-        async void SuggestAsync(string text)
-        {
-            if (sendingSuggestion) return;
-            sendingSuggestion = true;
-            try
-            {
-                string raw = (text ?? "").Trim();
-                if (raw.Length < Feedback.MinLength)
-                    throw new InvalidOperationException("Write a little more so the developers know what you mean.");
-                if (raw.Length > Feedback.MaxLength) raw = raw.Substring(0, Feedback.MaxLength);
-
-                Suggestion s = Feedback.Polish(raw);
-                await Feedback.SendAsync(raw, s, Environment.UserName);
-                Log.Write("Sent a suggestion (" + s.Category + ")");
-                Post(new Dictionary<string, object>
-                {
-                    { "type", "suggest-done" },
-                    { "category", s.Category },
-                    { "summary", s.Summary },
-                    { "details", s.Details },
-                    { "benefit", s.Benefit },
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Sending suggestion failed: " + ex);
-                string message = ex is HttpRequestException || ex is TaskCanceledException
-                    ? "Couldn't reach the suggestion box. Check your internet connection and try again."
-                    : ex is InvalidOperationException
-                        ? ex.Message
-                        : "Keystrap couldn't send your suggestion. Details are in the log.";
-                Post(new Dictionary<string, object> { { "type", "suggest-error" }, { "message", message } });
-            }
-            finally
-            {
-                sendingSuggestion = false;
-            }
-        }
-
         // The page has loaded: read settings, the refresh rate and the Roblox install on a background thread,
         // so the UI thread is free to draw, then hand everything to the page in one message.
         async void OnPageReadyAsync()
@@ -4021,7 +3645,7 @@ namespace Keystrap
         }
 
         // Developer mode: 1 to 3 test messages to one channel, in that channel's real format, spaced out so
-        // Discord's webhook rate limit (5 per 2 s) isn't hit. target: "crash", "commits" or "suggestions".
+        // Discord's webhook rate limit (5 per 2 s) isn't hit. target: "crash" or "commits".
         // Posts the About page's FAQ to the FAQ webhook (Dev/Testing only). The id of the message it posts is kept in
         // faq-message.txt, so the next press edits that same message ("refresh") instead of posting a new one; if the
         // message was deleted (404), it posts a fresh one. The page always gets a result, which is what resets its button.
@@ -4129,8 +3753,7 @@ namespace Keystrap
             {
                 try
                 {
-                    if (target == "suggestions") await Feedback.SendTestAsync(i);
-                    else if (!await WebhookService.SendAsync(TestNotification(target, i))) throw new InvalidOperationException(WebhookService.LastError);
+                    if (!await WebhookService.SendAsync(TestNotification(target, i))) throw new InvalidOperationException(WebhookService.LastError);
                     sent++;
                 }
                 catch (Exception ex)
