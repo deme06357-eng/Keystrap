@@ -90,7 +90,7 @@ button { font: inherit; color: inherit; }
   user-select: none;
 }
 .titlebar .name { font-size: 12px; color: var(--fg-2); }
-.titlebar .ver { font: 11px var(--f-mono); color: var(--fg-3); }
+.titlebar .ver { font: 11px var(--f-mono); color: var(--fg-3); margin-right: 6px; }   /* sits just left of the window buttons */
 .titlebar .spacer { flex: 1; }
 /* Caption buttons: rounded hover pills inset in the bar (like the rest of Keystrap's controls) rather than
    full-height blocks, which looked heavy in the slim 32px bar. */
@@ -793,8 +793,8 @@ html.native.shown .window { opacity: 1; }
   <div class="titlebar">
     <svg width="16" height="16" aria-hidden="true"><use href="#logo"/></svg>
     <span class="name">Keystrap</span>
-    <span class="ver" id="titleVer">v1</span>
     <span class="spacer"></span>
+    <span class="ver" id="titleVer">v1</span>
     <div class="winctl" aria-hidden="true">
       <button tabindex="-1" data-act="min"><svg viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor"/></svg></button>
       <button tabindex="-1" data-act="max"><svg viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></button>
@@ -1416,6 +1416,7 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Moved the version to the top right.': 'La versión se movió arriba a la derecha.',
     'Added an installer.': 'Se añadió un instalador.',
     'Fixed a crash on close.': 'Se arregló un fallo al cerrar.',
     'Added a dev FAQ button.': 'Se añadió un botón de FAQ para desarrolladores.',
@@ -1681,7 +1682,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.1';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.4.2';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1693,6 +1694,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.4.2', notes: ['Moved the version to the top right.'] },
     { v: 'v1.4.1', notes: ['Fixed the window buttons.'] },
     { v: 'v1.4.0', notes: ['Added an installer.'] },
     { v: 'v1.3.10', notes: ['Fixed a crash on close.'] },
