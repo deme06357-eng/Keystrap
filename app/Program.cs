@@ -131,6 +131,13 @@ namespace Keystrap
         {
             EmbeddedLibs.Install();   // first, before anything touches WebView2
             WebhookService.Source = "Keystrap " + AppInfo.Version;
+            // The uninstaller runs "Keystrap.exe --unregister": hand roblox.com's Play links back to Roblox, then quit,
+            // so they don't point at an exe that's about to be deleted.
+            if (args.Any(a => string.Equals(a, "--unregister", StringComparison.OrdinalIgnoreCase)))
+            {
+                try { Protocol.Unregister(); } catch (Exception ex) { Log.Write("Unregister failed: " + ex.Message); }
+                return;
+            }
             DevMode = args.Any(a => string.Equals(a, "--dev", StringComparison.OrdinalIgnoreCase));
             // A Play button on roblox.com starts Keystrap.exe "roblox-player:1+launchmode:play+..." (see Protocol).
             string link = args.FirstOrDefault(RobloxLink.IsLink);
