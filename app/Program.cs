@@ -2231,7 +2231,6 @@ namespace Keystrap
         static readonly string StoreFile = Path.Combine(Paths.Data, "playtime.json");
         static readonly TimeSpan MinSession = TimeSpan.FromSeconds(10);
         static readonly TimeSpan CatchUp = TimeSpan.FromMinutes(30);   // logs this recent are read in full at startup
-        static readonly TimeSpan StaleSession = TimeSpan.FromMinutes(3);   // an open session whose log went this quiet is over
         static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         static readonly Regex Stamp = new Regex(@"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)", RegexOptions.Compiled);
@@ -2312,12 +2311,14 @@ namespace Keystrap
                         st = new LogState();
                         logs[fi.FullName] = st;
                     }
+                    // A folder listing can show a log's size and time minutes out of date while Roblox has it open.
+                    fi.Refresh();
+                    if (!fi.Exists) continue;
                     if (fi.Length < st.Pos) st.Pos = 0;   // log was replaced
                     if (fi.Length > st.Pos) any |= ReadNew(fi.FullName, st);
-                    // An instance that crashed or was force-closed stops writing to its log without a leave line. If its
-                    // session is still open but the log has gone quiet, end it — so one dead window doesn't stay in
-                    // "Playing now" while other multi-instance windows keep Roblox running.
-                    if (st.Open != null && fi.LastWriteTimeUtc < DateTime.UtcNow - StaleSession)
+                    // A window that crashed or was force-closed leaves no leave line, but it does let go of its log. End
+                    // its session then, so one dead window doesn't stay in "Playing now" while others keep Roblox running.
+                    if (st.Open != null && !IsHeldOpen(fi.FullName))
                         any |= Close(st, st.LastStamp);
                 }
             }
@@ -2341,6 +2342,15 @@ namespace Keystrap
                 wasPlaying = playing;
                 changed();
             }
+        }
+
+        // Roblox keeps its log open for writing as long as that window runs, and Windows refuses to open a file while
+        // denying writes if someone is writing to it.
+        static bool IsHeldOpen(string path)
+        {
+            try { using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)) return false; }
+            catch (FileNotFoundException) { return false; }
+            catch (IOException) { return true; }
         }
 
         bool ReadNew(string path, LogState st)
