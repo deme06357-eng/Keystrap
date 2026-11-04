@@ -2225,6 +2225,7 @@ namespace Keystrap
             public long Pos;            // bytes of the log already read
             public Session Open;        // game this Roblox window is in right now
             public DateTime LastStamp;  // newest timestamp seen in this log
+            public bool Live;           // this window was seen running (log held open) during this Keystrap run
         }
 
         static readonly string RobloxLogs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox", "logs");
@@ -2237,7 +2238,19 @@ namespace Keystrap
         static readonly Regex JoinLine = new Regex(@"\[FLog::Output\] ! Joining game '([0-9a-fA-F\-]+)' place (\d+)", RegexOptions.Compiled);
         static readonly Regex UniverseLine = new Regex(@"\[FLog::GameJoinLoadTime\] Report game_join_loadtime: placeid:(\d+).*?universeid:(\d+)", RegexOptions.Compiled);
         static readonly Regex ServerLine = new Regex(@"\[FLog::Network\] UDMUX Address = (\d{1,3}(?:\.\d{1,3}){3})", RegexOptions.Compiled);
-        static readonly Regex LeaveLine = new Regex(@"\[FLog::Network\] Time to disconnect replication data|\[FLog::SingleSurfaceApp\] leaveUGCGameInternal|\[FLog::Network\] Connection lost", RegexOptions.Compiled);
+        // Lines Roblox writes when a game ends: a normal leave to the home screen, a UGC leave, or a lost connection.
+        static readonly string[] LeaveMarkers =
+        {
+            "[FLog::Network] Time to disconnect replication data",
+            "[FLog::SingleSurfaceApp] leaveUGCGameInternal",
+            "[FLog::Network] Connection lost",
+        };
+        static bool IsLeaveLine(string line)
+        {
+            foreach (string marker in LeaveMarkers)
+                if (line.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
 
         // Title cleanup: bracketed tags like "[UPDATE 5]" or "(NEW!)", emoji and symbols, then stray punctuation at the ends.
         static readonly Regex TitleBrackets = new Regex(@"[\[(【〔「『{<（［][^\]\)】〕」』}>）］]{0,40}[\])】〕」』}>）］]", RegexOptions.Compiled);
@@ -2318,15 +2331,18 @@ namespace Keystrap
                     if (fi.Length > st.Pos) any |= ReadNew(fi.FullName, st);
                     // A window that crashed or was force-closed leaves no leave line, but it does let go of its log. End
                     // its session then, so one dead window doesn't stay in "Playing now" while others keep Roblox running.
-                    if (st.Open != null && !IsHeldOpen(fi.FullName))
-                        any |= Close(st, st.LastStamp);
+                    if (st.Open != null)
+                    {
+                        if (IsHeldOpen(fi.FullName)) st.Live = true;
+                        else any |= Close(st, EndTime(fi.FullName, st));
+                    }
                 }
             }
 
             // Roblox fully closed (or crashed): end any session still open, without waiting out the stale timeout.
             if (!running)
-                foreach (LogState st in logs.Values)
-                    if (st.Open != null) any |= Close(st, st.LastStamp);
+                foreach (var kv in logs)
+                    if (kv.Value.Open != null) any |= Close(kv.Value, EndTime(kv.Key, kv.Value));
 
             // Retry names that couldn't be looked up (offline, Roblox API hiccup) once a minute.
             if (DateTime.UtcNow - lastTitleRetry > TimeSpan.FromMinutes(1))
@@ -2350,7 +2366,23 @@ namespace Keystrap
         {
             try { using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)) return false; }
             catch (FileNotFoundException) { return false; }
+            catch (UnauthorizedAccessException) { return true; }   // pending delete, or a scanner has it: treat as still held, don't end the session
             catch (IOException) { return true; }
+        }
+
+        // When a session ended without a leave line, the time it really stopped. A window that was running this session
+        // (Live) ended within a poll of now; a log we only caught up on at startup ended when it was last written.
+        // Never earlier than the last line we read.
+        static DateTime EndTime(string path, LogState st)
+        {
+            DateTime end = st.Live ? DateTime.UtcNow : LastWrite(path);
+            return end > st.LastStamp ? end : st.LastStamp;
+        }
+
+        static DateTime LastWrite(string path)
+        {
+            try { return File.GetLastWriteTimeUtc(path); }
+            catch (Exception) { return DateTime.MinValue; }
         }
 
         bool ReadNew(string path, LogState st)
@@ -2418,7 +2450,7 @@ namespace Keystrap
                     any = true;
                     continue;
                 }
-                if (st.Open != null && LeaveLine.IsMatch(line)) any |= Close(st, when);
+                if (st.Open != null && IsLeaveLine(line)) any |= Close(st, when);
             }
             return any;
         }
@@ -2781,6 +2813,7 @@ namespace Keystrap
         {
             List<string> oldIds = ReadIds(idFile);
             var ids = new List<string>();
+            bool edited = false;
             try
             {
                 using (var http = new HttpClient())
@@ -2792,7 +2825,9 @@ namespace Keystrap
                     {
                         if (i > 0) await Task.Delay(SpacingMs);
                         string existing = i < oldIds.Count ? oldIds[i] : null;
-                        ids.Add(await PostItemAsync(http, webhook, existing, Payload(items[i])));
+                        string id = await PostItemAsync(http, webhook, existing, Payload(items[i]));
+                        if (existing != null && id == existing) edited = true;   // an existing message was edited, not a new post
+                        ids.Add(id);
                     }
                     // The FAQ got shorter: remove the messages it no longer needs.
                     while (oldIds.Count > ids.Count)
@@ -2810,7 +2845,7 @@ namespace Keystrap
             {
                 File.WriteAllLines(idFile, ids.Concat(oldIds.Skip(ids.Count)));
             }
-            return oldIds.Count > 0;
+            return edited;
         }
 
         // Returns the message's id. A message that was deleted in Discord (404) gets posted again.
@@ -3028,6 +3063,8 @@ namespace Keystrap
             catch (Exception ex) { Log.Write("Loading playtime failed: " + ex.Message); }
             playtime.ResolveMissingTitles();
             playtimeReady = true;
+            try { playtime.Poll(); }   // catch a game already in progress now, instead of only after the first 3s tick
+            catch (Exception ex) { Log.Write("Playtime poll failed: " + ex.Message); }
             playtimeTimer.Start();
             if (pageReady) Post(playtime.Snapshot());
         }
@@ -4007,7 +4044,7 @@ namespace Keystrap
                     Toast("Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.");
 
                 ReportProgress("Starting Roblox…", 0.99);
-                Bootstrapper.Start(dir, toAppHome ? null : link);
+                using (Bootstrapper.Start(dir, toAppHome ? null : link)) { }   // release the process handle; Roblox keeps running
 
                 Post(new Dictionary<string, object> { { "type", "launch-done" } });
                 Post(new Dictionary<string, object>

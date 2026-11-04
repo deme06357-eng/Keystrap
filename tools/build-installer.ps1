@@ -31,8 +31,12 @@ function Find-Iscc {
     throw 'Inno Setup 6 is not installed. Get it from https://jrsoftware.org/isdl.php (or: winget install JRSoftware.InnoSetup).'
 }
 
-# A running Keystrap locks its exe, but Windows still lets it be renamed out of the way.
+# A running Keystrap locks its exe, but Windows still lets it be renamed out of the way. Old renamed copies from earlier
+# builds pile up in dist, so clear the unlocked ones first; a copy still in use stays locked and is skipped.
 function Move-RunningExe {
+    Get-ChildItem $dist -Filter '*.old' -File -ErrorAction SilentlyContinue | ForEach-Object {
+        try { Remove-Item $_.FullName -Force -ErrorAction Stop } catch { }
+    }
     $exe = Join-Path $dist 'Keystrap.exe'
     if (Test-Path $exe) { Rename-Item $exe ('Keystrap.exe.running' + (Get-Date -Format 'HHmmss') + '.old') }
 }
