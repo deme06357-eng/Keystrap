@@ -3379,6 +3379,13 @@ namespace Keystrap
 
         void Post(object message)
         {
+            // WebView2 only works on the UI thread. From any other thread the read below throws and the message would be lost.
+            if (InvokeRequired)
+            {
+                try { BeginInvoke((Action)(() => Post(message))); } catch (InvalidOperationException) { }
+                return;
+            }
+
             // Reading CoreWebView2 can throw — the control is already gone while the window is closing, or the OS doesn't
             // really support WebView2 (its COM controller doesn't offer the interface, as on Windows 8). Either way there
             // is nothing to deliver to, so drop the message instead of letting a background Post crash Keystrap.
@@ -3977,10 +3984,28 @@ namespace Keystrap
         // Discord's webhook rate limit (5 per 2 s) isn't hit. target: "crash", "commits" or "suggestions".
         // Posts the About page's FAQ to the FAQ webhook (Dev/Testing only). The id of the message it posts is kept in
         // faq-message.txt, so the next press edits that same message ("refresh") instead of posting a new one; if the
-        // message was deleted (404), it posts a fresh one. Every network call is wrapped so a hiccup can't crash Keystrap.
+        // message was deleted (404), it posts a fresh one. The page always gets a result, which is what resets its button.
         async void PostFaqAsync(object rawItems)
         {
-            if (Secrets.FaqWebhook.Length == 0) { Post(FaqResult(false, "No FAQ webhook is set up (secrets.json).")); return; }
+            Dictionary<string, object> result = null;
+            try
+            {
+                result = await SendFaqAsync(rawItems);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Posting the FAQ failed: " + ex.Message);
+                result = FaqResult(false, "Couldn't reach Discord. Check your internet connection and try again.");
+            }
+            finally
+            {
+                Post(result ?? FaqResult(false, "Couldn't reach Discord. Check your internet connection and try again."));
+            }
+        }
+
+        async Task<Dictionary<string, object>> SendFaqAsync(object rawItems)
+        {
+            if (Secrets.FaqWebhook.Length == 0) return FaqResult(false, "No FAQ webhook is set up (secrets.json).");
 
             var fields = new List<object>();
             var items = rawItems as ArrayList;
@@ -3994,7 +4019,7 @@ namespace Keystrap
                     if (q.Length == 0) continue;
                     fields.Add(new Dictionary<string, object> { { "name", WebhookService.Clip(q, 256) }, { "value", WebhookService.Clip(a, 1024) }, { "inline", false } });
                 }
-            if (fields.Count == 0) { Post(FaqResult(false, "There are no FAQ entries to post.")); return; }
+            if (fields.Count == 0) return FaqResult(false, "There are no FAQ entries to post.");
 
             var embed = new Dictionary<string, object>
             {
@@ -4015,46 +4040,38 @@ namespace Keystrap
             string existingId = null;
             try { if (File.Exists(idFile)) existingId = File.ReadAllText(idFile).Trim(); } catch (Exception) { }
 
-            try
+            using (var http = new HttpClient())
             {
-                using (var http = new HttpClient())
+                http.Timeout = TimeSpan.FromSeconds(15);
+                http.DefaultRequestHeaders.UserAgent.ParseAdd(WebhookService.UserAgent());
+
+                if (!string.IsNullOrEmpty(existingId))
                 {
-                    http.Timeout = TimeSpan.FromSeconds(15);
-                    http.DefaultRequestHeaders.UserAgent.ParseAdd(WebhookService.UserAgent());
-
-                    if (!string.IsNullOrEmpty(existingId))
+                    var patch = new HttpRequestMessage(new HttpMethod("PATCH"), Secrets.FaqWebhook + "/messages/" + existingId)
+                        { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+                    using (HttpResponseMessage resp = await http.SendAsync(patch))
                     {
-                        var patch = new HttpRequestMessage(new HttpMethod("PATCH"), Secrets.FaqWebhook + "/messages/" + existingId)
-                            { Content = new StringContent(body, Encoding.UTF8, "application/json") };
-                        using (HttpResponseMessage resp = await http.SendAsync(patch).ConfigureAwait(false))
-                        {
-                            if (resp.IsSuccessStatusCode) { Post(FaqResult(true, "Refreshed the FAQ message in Discord.")); return; }
-                            if ((int)resp.StatusCode != 404) { Post(FaqResult(false, "Discord didn't accept the update (HTTP " + (int)resp.StatusCode + ").")); return; }
-                            // 404: the old message is gone, so post a fresh one below.
-                        }
-                    }
-
-                    using (HttpResponseMessage resp = await http.PostAsync(Secrets.FaqWebhook + "?wait=true",
-                        new StringContent(body, Encoding.UTF8, "application/json")).ConfigureAwait(false))
-                    {
-                        if (!resp.IsSuccessStatusCode) { Post(FaqResult(false, "Discord didn't accept the FAQ (HTTP " + (int)resp.StatusCode + ").")); return; }
-                        string json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        try
-                        {
-                            var sent = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(json);
-                            object id;
-                            if (sent != null && sent.TryGetValue("id", out id) && id != null)
-                                File.WriteAllText(idFile, Convert.ToString(id, CultureInfo.InvariantCulture));
-                        }
-                        catch (Exception) { }
-                        Post(FaqResult(true, "Posted the FAQ to Discord."));
+                        if (resp.IsSuccessStatusCode) return FaqResult(true, "Refreshed the FAQ message in Discord.");
+                        if ((int)resp.StatusCode != 404) return FaqResult(false, "Discord didn't accept the update (HTTP " + (int)resp.StatusCode + ").");
+                        // 404: the old message is gone, so post a fresh one below.
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Posting the FAQ failed: " + ex.Message);
-                Post(FaqResult(false, "Couldn't reach Discord. Check your internet connection and try again."));
+
+                using (HttpResponseMessage resp = await http.PostAsync(Secrets.FaqWebhook + "?wait=true",
+                    new StringContent(body, Encoding.UTF8, "application/json")))
+                {
+                    if (!resp.IsSuccessStatusCode) return FaqResult(false, "Discord didn't accept the FAQ (HTTP " + (int)resp.StatusCode + ").");
+                    string json = await resp.Content.ReadAsStringAsync();
+                    try
+                    {
+                        var sent = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(json);
+                        object id;
+                        if (sent != null && sent.TryGetValue("id", out id) && id != null)
+                            File.WriteAllText(idFile, Convert.ToString(id, CultureInfo.InvariantCulture));
+                    }
+                    catch (Exception) { }
+                    return FaqResult(true, "Posted the FAQ to Discord.");
+                }
             }
         }
 
