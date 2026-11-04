@@ -159,6 +159,22 @@ namespace Keystrap.Updater
         }
     }
 
+    // Backups an earlier update couldn't delete because they were still running, like Keystrap.Updater.exe.old.
+    static class OldFiles
+    {
+        public static void Clean(string dir)
+        {
+            try
+            {
+                if (!File.Exists(System.IO.Path.Combine(dir, "Keystrap.exe"))) return;   // not a Keystrap folder
+                foreach (string pattern in new[] { "*.old", "*.old-*" })
+                    foreach (string file in Directory.GetFiles(dir, pattern))
+                        try { File.Delete(file); } catch (Exception) { }   // still in use: next time
+            }
+            catch (Exception ex) { Log.Write("Couldn't clean up old files: " + ex.Message); }
+        }
+    }
+
     static class Program
     {
         [STAThread]
@@ -167,6 +183,7 @@ namespace Keystrap.Updater
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             var options = Options.Parse(args);
             Log.Write("Updater " + Config.Version + " starting for " + options.Dir);
+            OldFiles.Clean(options.Dir);
             WebhookService.Source = "Keystrap Updater " + Config.Version;
             var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
             app.DispatcherUnhandledException += (s, e) =>

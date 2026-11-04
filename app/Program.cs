@@ -2740,6 +2740,128 @@ namespace Keystrap
         }
     }
 
+    class FaqRejectedException : Exception
+    {
+        public FaqRejectedException(string message) : base(message) { }
+    }
+
+    // Posts each FAQ item as its own Discord message, spaced out to stay under the webhook rate limit (5 per 2 s). The
+    // message ids are kept in a file, one per line, so the next run edits those messages instead of posting new ones.
+    static class FaqPoster
+    {
+        const int SpacingMs = 600;
+
+        public static List<KeyValuePair<string, string>> ReadItems(object rawItems)
+        {
+            var items = new List<KeyValuePair<string, string>>();
+            var list = rawItems as ArrayList;
+            if (list == null) return items;
+            foreach (var item in list.OfType<Dictionary<string, object>>())
+            {
+                string q = (item.ContainsKey("q") ? item["q"] as string : null) ?? "";
+                string a = (item.ContainsKey("a") ? item["a"] as string : null) ?? "";
+                if (q.Length > 0) items.Add(new KeyValuePair<string, string>(q, a));
+            }
+            return items;
+        }
+
+        // True when it updated earlier messages, false when they were all new. Throws FaqRejectedException if Discord
+        // refuses one. The ids are saved even then, so the next run carries on from the messages that exist.
+        public static async Task<bool> PostAsync(string webhook, List<KeyValuePair<string, string>> items, string idFile)
+        {
+            List<string> oldIds = ReadIds(idFile);
+            var ids = new List<string>();
+            try
+            {
+                using (var http = new HttpClient())
+                {
+                    http.Timeout = TimeSpan.FromSeconds(15);
+                    http.DefaultRequestHeaders.UserAgent.ParseAdd(WebhookService.UserAgent());
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        if (i > 0) await Task.Delay(SpacingMs);
+                        string existing = i < oldIds.Count ? oldIds[i] : null;
+                        ids.Add(await PostItemAsync(http, webhook, existing, Payload(items[i])));
+                    }
+                    // The FAQ got shorter: remove the messages it no longer needs.
+                    while (oldIds.Count > ids.Count)
+                    {
+                        await Task.Delay(SpacingMs);
+                        string extra = oldIds[oldIds.Count - 1];
+                        using (HttpResponseMessage resp = await SendAsync(http, HttpMethod.Delete, webhook + "/messages/" + extra, null))
+                            if (!resp.IsSuccessStatusCode && (int)resp.StatusCode != 404)
+                                throw new FaqRejectedException("Discord didn't accept the update (HTTP " + (int)resp.StatusCode + ").");
+                        oldIds.RemoveAt(oldIds.Count - 1);
+                    }
+                }
+            }
+            finally
+            {
+                File.WriteAllLines(idFile, ids.Concat(oldIds.Skip(ids.Count)));
+            }
+            return oldIds.Count > 0;
+        }
+
+        // Returns the message's id. A message that was deleted in Discord (404) gets posted again.
+        static async Task<string> PostItemAsync(HttpClient http, string webhook, string existingId, string body)
+        {
+            if (existingId != null)
+                using (HttpResponseMessage resp = await SendAsync(http, new HttpMethod("PATCH"), webhook + "/messages/" + existingId, body))
+                {
+                    if (resp.IsSuccessStatusCode) return existingId;
+                    if ((int)resp.StatusCode != 404) throw new FaqRejectedException("Discord didn't accept the update (HTTP " + (int)resp.StatusCode + ").");
+                }
+
+            using (HttpResponseMessage resp = await SendAsync(http, HttpMethod.Post, webhook + "?wait=true", body))
+            {
+                if (!resp.IsSuccessStatusCode) throw new FaqRejectedException("Discord didn't accept the FAQ (HTTP " + (int)resp.StatusCode + ").");
+                var sent = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(await resp.Content.ReadAsStringAsync());
+                return Convert.ToString(sent["id"], CultureInfo.InvariantCulture);
+            }
+        }
+
+        // If Discord still says 429, waits as long as it asks and tries once more.
+        static async Task<HttpResponseMessage> SendAsync(HttpClient http, HttpMethod method, string url, string body)
+        {
+            HttpResponseMessage resp = await http.SendAsync(Request(method, url, body));
+            if ((int)resp.StatusCode != 429) return resp;
+            TimeSpan wait = resp.Headers.RetryAfter != null && resp.Headers.RetryAfter.Delta.HasValue ? resp.Headers.RetryAfter.Delta.Value : TimeSpan.FromSeconds(2);
+            resp.Dispose();
+            await Task.Delay(wait);
+            return await http.SendAsync(Request(method, url, body));
+        }
+
+        static HttpRequestMessage Request(HttpMethod method, string url, string body)
+        {
+            var request = new HttpRequestMessage(method, url);
+            if (body != null) request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+            return request;
+        }
+
+        static string Payload(KeyValuePair<string, string> item)
+        {
+            var embed = new Dictionary<string, object>
+            {
+                { "title", WebhookService.Clip(item.Key, 256) },
+                { "description", WebhookService.Clip(item.Value, 4000) },
+                { "color", 0xFDE68A },
+            };
+            return new JavaScriptSerializer().Serialize(new Dictionary<string, object>
+            {
+                { "username", "Keystrap" },
+                { "allowed_mentions", new Dictionary<string, object> { { "parse", new string[0] } } },
+                { "embeds", new object[] { embed } },
+            });
+        }
+
+        static List<string> ReadIds(string idFile)
+        {
+            try { return File.ReadAllLines(idFile).Select(l => l.Trim()).Where(l => l.Length > 0).ToList(); }
+            catch (IOException) { return new List<string>(); }
+        }
+    }
+
     // Asks GitHub whether a newer Keystrap is out. It uses the same rules as the updater: a version tag, not a draft or
     // pre-release, with Keystrap.zip or Keystrap.exe attached. The updater does the actual download and install.
     static class UpdateCheck
@@ -3163,6 +3285,9 @@ namespace Keystrap
                 case "update-now":
                     StartUpdater();
                     break;
+                case "multi-instance":
+                    if (!Bool(msg, "on")) ReleaseRobloxSingleton();
+                    break;
                 case "post-faq":
                     if (Program.DevMode)
                         PostFaqAsync(msg.ContainsKey("items") ? msg["items"] : null);
@@ -3502,6 +3627,17 @@ namespace Keystrap
             return true;
         }
 
+        // Windows already open keep running; the next Roblox started takes the lock itself, so it's one window again.
+        void ReleaseRobloxSingleton()
+        {
+            if (robloxSingleton == null) return;
+            try { robloxSingleton.ReleaseMutex(); }
+            catch (ApplicationException ex) { Log.Write("Multi-instance: couldn't release Roblox's window lock: " + ex.Message); }
+            robloxSingleton.Dispose();
+            robloxSingleton = null;
+            Log.Write("Multi-instance: released Roblox's window lock");
+        }
+
         // ---------- Mods ----------
 
         async void SendModsAsync()
@@ -3644,17 +3780,31 @@ namespace Keystrap
             }
         }
 
-        // Developer mode: 1 to 3 test messages to one channel, in that channel's real format, spaced out so
-        // Discord's webhook rate limit (5 per 2 s) isn't hit. target: "crash" or "commits".
-        // Posts the About page's FAQ to the FAQ webhook (Dev/Testing only). The id of the message it posts is kept in
-        // faq-message.txt, so the next press edits that same message ("refresh") instead of posting a new one; if the
-        // message was deleted (404), it posts a fresh one. The page always gets a result, which is what resets its button.
+        // Posts the About page's FAQ to the FAQ webhook (Dev/Testing only). The page always gets a result, which is
+        // what resets its button.
         async void PostFaqAsync(object rawItems)
         {
             Dictionary<string, object> result = null;
             try
             {
-                result = await SendFaqAsync(rawItems);
+                if (Secrets.FaqWebhook.Length == 0)
+                    result = FaqResult(false, "No FAQ webhook is set up (secrets.json).");
+                else
+                {
+                    var items = FaqPoster.ReadItems(rawItems);
+                    if (items.Count == 0)
+                        result = FaqResult(false, "There are no FAQ entries to post.");
+                    else
+                    {
+                        bool refreshed = await FaqPoster.PostAsync(Secrets.FaqWebhook, items, Path.Combine(Paths.Data, "faq-message.txt"));
+                        result = FaqResult(true, refreshed ? "Refreshed the FAQ messages in Discord." : "Posted the FAQ to Discord.");
+                    }
+                }
+            }
+            catch (FaqRejectedException ex)
+            {
+                Log.Write("Posting the FAQ failed: " + ex.Message);
+                result = FaqResult(false, ex.Message);
             }
             catch (Exception ex)
             {
@@ -3664,78 +3814,6 @@ namespace Keystrap
             finally
             {
                 Post(result ?? FaqResult(false, "Couldn't reach Discord. Check your internet connection and try again."));
-            }
-        }
-
-        async Task<Dictionary<string, object>> SendFaqAsync(object rawItems)
-        {
-            if (Secrets.FaqWebhook.Length == 0) return FaqResult(false, "No FAQ webhook is set up (secrets.json).");
-
-            var fields = new List<object>();
-            var items = rawItems as ArrayList;
-            if (items != null)
-                foreach (object it in items)
-                {
-                    var d = it as Dictionary<string, object>;
-                    if (d == null) continue;
-                    string q = (d.ContainsKey("q") ? d["q"] as string : null) ?? "";
-                    string a = (d.ContainsKey("a") ? d["a"] as string : null) ?? "";
-                    if (q.Length == 0) continue;
-                    fields.Add(new Dictionary<string, object> { { "name", WebhookService.Clip(q, 256) }, { "value", WebhookService.Clip(a, 1024) }, { "inline", false } });
-                }
-            if (fields.Count == 0) return FaqResult(false, "There are no FAQ entries to post.");
-
-            var embed = new Dictionary<string, object>
-            {
-                { "title", "Keystrap — FAQ" },
-                { "color", 0xFDE68A },
-                { "fields", fields.ToArray() },
-                { "footer", new Dictionary<string, object> { { "text", "Keystrap FAQ · updated " + DateTime.UtcNow.ToString("MM/dd/yy, hh:mm tt", CultureInfo.InvariantCulture) + " UTC" } } },
-            };
-            var payload = new Dictionary<string, object>
-            {
-                { "username", "Keystrap" },
-                { "allowed_mentions", new Dictionary<string, object> { { "parse", new string[0] } } },
-                { "embeds", new object[] { embed } },
-            };
-            string body = new JavaScriptSerializer { MaxJsonLength = int.MaxValue }.Serialize(payload);
-
-            string idFile = Path.Combine(Paths.Data, "faq-message.txt");
-            string existingId = null;
-            try { if (File.Exists(idFile)) existingId = File.ReadAllText(idFile).Trim(); } catch (Exception) { }
-
-            using (var http = new HttpClient())
-            {
-                http.Timeout = TimeSpan.FromSeconds(15);
-                http.DefaultRequestHeaders.UserAgent.ParseAdd(WebhookService.UserAgent());
-
-                if (!string.IsNullOrEmpty(existingId))
-                {
-                    var patch = new HttpRequestMessage(new HttpMethod("PATCH"), Secrets.FaqWebhook + "/messages/" + existingId)
-                        { Content = new StringContent(body, Encoding.UTF8, "application/json") };
-                    using (HttpResponseMessage resp = await http.SendAsync(patch))
-                    {
-                        if (resp.IsSuccessStatusCode) return FaqResult(true, "Refreshed the FAQ message in Discord.");
-                        if ((int)resp.StatusCode != 404) return FaqResult(false, "Discord didn't accept the update (HTTP " + (int)resp.StatusCode + ").");
-                        // 404: the old message is gone, so post a fresh one below.
-                    }
-                }
-
-                using (HttpResponseMessage resp = await http.PostAsync(Secrets.FaqWebhook + "?wait=true",
-                    new StringContent(body, Encoding.UTF8, "application/json")))
-                {
-                    if (!resp.IsSuccessStatusCode) return FaqResult(false, "Discord didn't accept the FAQ (HTTP " + (int)resp.StatusCode + ").");
-                    string json = await resp.Content.ReadAsStringAsync();
-                    try
-                    {
-                        var sent = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(json);
-                        object id;
-                        if (sent != null && sent.TryGetValue("id", out id) && id != null)
-                            File.WriteAllText(idFile, Convert.ToString(id, CultureInfo.InvariantCulture));
-                    }
-                    catch (Exception) { }
-                    return FaqResult(true, "Posted the FAQ to Discord.");
-                }
             }
         }
 
@@ -3914,7 +3992,8 @@ namespace Keystrap
                 await ApplyCustomisationsAsync(dir, msg);
                 Bootstrapper.RemoveOldClientSettings(dir);
 
-                if (Bool(msg, "multiInstance") && !HoldRobloxSingleton())
+                if (!Bool(msg, "multiInstance")) ReleaseRobloxSingleton();
+                else if (!HoldRobloxSingleton())
                     Toast("Multi-instance starts working once every Roblox window is closed and you launch again from Keystrap.");
 
                 ReportProgress("Starting Roblox…", 0.99);

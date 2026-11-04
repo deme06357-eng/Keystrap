@@ -217,9 +217,10 @@ h2.sec { font-size: 12px; font-weight: 600; color: var(--fg-2); margin: 8px 0 -6
 .btn.danger { color: var(--bad); }
 .btn.danger.armed { background: rgba(255,122,122,.14); border-color: rgba(255,122,122,.4); }
 .btn.icon { padding: 6px; }
-.stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-.stat .k { font-size: 11.5px; color: var(--fg-3); }
-.stat .v { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { min-width: 0; }
+.stat .k { font-size: 11.5px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat .v { font-size: 15px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stat .v.mono { font-family: var(--f-mono); font-size: 12.5px; }
 .progress { height: 4px; background: var(--card-hi); border-radius: 4px; overflow: hidden; margin-top: 12px; }
 .progress > i { display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: transform .25s linear; }
@@ -534,21 +535,21 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 1px 4px 
 .pt-now .txt { flex: 1; min-width: 0; }
 .pt-now .k { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--good); font-weight: 600; }
 .pt-now .t { font-weight: 600; font-size: 15px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pt-now .d { color: var(--fg-3); font-size: 12px; margin-top: 2px; }
+.pt-now .d { color: var(--fg-3); font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pt-now .pt-server { color: var(--fg-2); }
 .pt-live { width: 10px; height: 10px; border-radius: 50%; background: var(--good); flex: none; box-shadow: 0 0 0 4px rgba(76,195,138,.18); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(76,195,138,.05); } }
-.pt-clock { font: 600 20px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--fg); }
-.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.pt-clock { flex: none; font: 600 20px var(--f-mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+.pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 10px; }
 .pt-card { display: flex; flex-direction: column; gap: 8px; color: inherit; text-decoration: none; transition: background .12s, border-color .12s; min-width: 0; }
 .pt-card:hover { background: var(--card-hi); border-color: #45454d; }
 .pt-card .top { display: flex; align-items: baseline; gap: 8px; }
 .pt-rank { font: 500 11px var(--f-mono); color: var(--fg-3); flex: none; }
 .pt-title { font-weight: 600; line-height: 1.3; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.pt-time { font-family: var(--f-display); font-size: 24px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; margin-top: auto; }
+.pt-time { font-family: var(--f-display); font-size: 24px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; margin-top: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pt-bar { height: 4px; border-radius: 4px; background: var(--card-hi); overflow: hidden; }
 .pt-bar > i { display: block; height: 100%; width: 100%; transform-origin: left; background: var(--accent); }
-.pt-meta { font-size: 12px; color: var(--fg-3); }
+.pt-meta { font-size: 12px; color: var(--fg-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pt-empty { grid-column: 1 / -1; color: var(--fg-2); line-height: 1.55; display: flex; gap: 12px; align-items: flex-start; }
 .pt-empty .ico { color: var(--fg-3); margin-top: 1px; }
 
@@ -613,7 +614,6 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 1px 4px 
   .nav-item[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--accent); }
   .content { padding: 20px 16px 24px; }
   .hero { grid-template-columns: 1fr; }
-  .stats { grid-template-columns: 1fr 1fr; }
   .titlebar .ver { display: none; }
 }
 /* ---------- tooltips: one shared bubble for every [title] (see "tooltips" in the script) ---------- */
@@ -986,7 +986,7 @@ html.native.shown .window { opacity: 1; }
         </div>
         <h2 class="sec">FAQ</h2>
         <div class="rows">
-          <div class="row"><div class="txt"><div class="t">Post the FAQ to Discord</div><div class="d" id="faqPostDesc">Posts the About page's FAQ to its Discord channel. Press it again to update that same message instead of posting a new one.</div></div>
+          <div class="row"><div class="txt"><div class="t">Post the FAQ to Discord</div><div class="d" id="faqPostDesc">Posts each question in the About page's FAQ to its Discord channel, in English. Press it again to update those messages instead of posting new ones.</div></div>
             <button class="btn" id="faqPost">Post</button></div>
         </div>
       </section>
@@ -1210,10 +1210,10 @@ const I18N_ES = {
     // About FAQ + cursor ring move
     'FAQ': 'Preguntas frecuentes',
     'Post the FAQ to Discord': 'Publicar las preguntas frecuentes en Discord', 'Post': 'Publicar', 'Posting…': 'Publicando…',
-    'Posts the About page\'s FAQ to its Discord channel. Press it again to update that same message instead of posting a new one.':
-      'Publica las preguntas frecuentes de la página Acerca de en su canal de Discord. Pulsa de nuevo para actualizar ese mismo mensaje en vez de publicar uno nuevo.',
+    'Posts each question in the About page\'s FAQ to its Discord channel, in English. Press it again to update those messages instead of posting new ones.':
+      'Publica cada pregunta frecuente de la página Acerca de en su canal de Discord, en inglés. Pulsa de nuevo para actualizar esos mensajes en vez de publicar otros nuevos.',
     'Posted the FAQ to Discord.': 'Se publicaron las preguntas frecuentes en Discord.',
-    'Refreshed the FAQ message in Discord.': 'Se actualizó el mensaje de preguntas frecuentes en Discord.',
+    'Refreshed the FAQ messages in Discord.': 'Se actualizaron los mensajes de preguntas frecuentes en Discord.',
     'No FAQ webhook is set up (secrets.json).': 'No hay un webhook de preguntas frecuentes configurado (secrets.json).',
     'There are no FAQ entries to post.': 'No hay preguntas frecuentes para publicar.',
     'Couldn\'t reach Discord. Check your internet connection and try again.': 'No se pudo conectar con Discord. Revisa tu conexión a internet y vuelve a intentarlo.',
@@ -1228,6 +1228,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Fixed Playtime text getting cut off.': 'Se arregló el texto cortado en Tiempo de juego.', 'Update prompt shows before What\'s new.': 'El aviso de actualización aparece antes de Novedades.',
+    'Fixed the font preview.': 'Se arregló la vista previa de la fuente.', 'Fixed Multi-instance not turning off.': 'Se arregló que la multiinstancia no se apagara.',
     'Removed Flags.': 'Se quitó Flags.', 'Removed interface sounds.': 'Se quitaron los sonidos de la interfaz.', 'Crosshairs is out of beta.': 'Miras salió de la beta.',
     'Moved the cursor ring to Play.': 'El anillo del cursor se movió a Jugar.',
     'Keystrap checks for updates when it opens.': 'Keystrap busca actualizaciones al abrirse.',
@@ -1451,7 +1453,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.6';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.4.7';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1463,6 +1465,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.4.7', notes: ['Fixed Playtime text getting cut off.', 'Update prompt shows before What\'s new.', 'Fixed the font preview.', 'Fixed Multi-instance not turning off.'] },
     { v: 'v1.4.6', notes: ['Removed Flags.', 'Removed interface sounds.', 'Crosshairs is out of beta.'] },
     { v: 'v1.4.5', notes: ['Moved the cursor ring to Play.'] },
     { v: 'v1.4.4', notes: ['Keystrap checks for updates when it opens.'] },
@@ -1997,7 +2000,12 @@ const I18N_ES = {
   }
   $('#launchBtn').addEventListener('click', startLaunch);
   $('#officialBtn').addEventListener('click', () => { if (host) host.postMessage({ type: 'launch-official' }); });
-  $('#q-multi').addEventListener('change', e => { state.settings.multiInstance = e.target.checked; save(); toast('Multi-instance ' + (e.target.checked ? 'on' : 'off')); });
+  $('#q-multi').addEventListener('change', e => {
+    state.settings.multiInstance = e.target.checked;
+    save();
+    if (host) host.postMessage({ type: 'multi-instance', on: e.target.checked });
+    toast('Multi-instance ' + (e.target.checked ? 'on' : 'off'));
+  });
 
   // ---------- profiles ----------
   function renderProfiles() {
@@ -2279,13 +2287,17 @@ const I18N_ES = {
     $('#devWebhookDesc').textContent = text;
   }
   // Post the About page's FAQ to its Discord channel (dev only). The questions and answers are read straight from the
-  // About page, so the message always matches what the app shows.
+  // About page, so the messages always match what the app shows, in English whatever language the app is showing.
+  function englishText(el) {
+    if (!el) return '';
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let text = '';
+    for (let n; (n = walker.nextNode());) text += textOut.get(n) === n.data ? textEn.get(n) : n.data;
+    return text.trim();
+  }
   $('#faqPost').addEventListener('click', () => {
     if (!host) return;
-    const items = $$('#page-about .faq-item').map(f => ({
-      q: $('summary', f) ? $('summary', f).textContent.trim() : '',
-      a: $('p', f) ? $('p', f).textContent.trim() : '',
-    })).filter(x => x.q);
+    const items = $$('#page-about .faq-item').map(f => ({ q: englishText($('summary', f)), a: englishText($('p', f)) })).filter(x => x.q);
     $('#faqPost').disabled = true;
     $('#faqPostDesc').textContent = 'Posting…';
     host.postMessage({ type: 'post-faq', items });
@@ -2677,7 +2689,7 @@ const I18N_ES = {
   let lastFocus = null;
   let modalCleanup = null;   // set by a dialog that needs to undo something when it closes
   function openModal(html, cls) {
-    closeModal();
+    clearModal();
     lastFocus = document.activeElement;
     const bd = document.createElement('div');
     bd.className = 'modal-backdrop';
@@ -2689,19 +2701,33 @@ const I18N_ES = {
     if (first && !bd.querySelector('input, textarea')) first.focus();
     return bd.querySelector('.modal');
   }
-  function closeModal() {
+  function clearModal() {
     const root = $('#modalRoot');
     if (!root.firstChild) return;
     root.innerHTML = '';
     if (modalCleanup) { const undo = modalCleanup; modalCleanup = null; undo(); }
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
+  function closeModal() {
+    clearModal();
+    if (waitingUpdate && !$('#modalRoot').firstChild) {   // an update held back while another dialog was open
+      const version = waitingUpdate;
+      waitingUpdate = null;
+      showUpdatePrompt(version, false);
+    }
+  }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
 
   // ---------- updates ----------
-  // Asks once each time Keystrap opens. If another window is already up (like the Terms), it waits until next time.
+  // Asks once each time Keystrap opens. The prompt goes in front of What's new, which comes back after "Later". Any
+  // other dialog is something the user is in the middle of, so the prompt waits until that closes.
+  let waitingUpdate = null;
   function offerUpdate(version) {
-    if ($('#modalRoot').firstChild) return;
+    if (!$('#modalRoot').firstChild) showUpdatePrompt(version, false);
+    else if ($('#modalRoot .cl-modal')) showUpdatePrompt(version, true);
+    else waitingUpdate = version;
+  }
+  function showUpdatePrompt(version, reopenChangelog) {
     const m = openModal(
       '<div class="link-badge"><svg class="ico"><use href="#i-sparkle"/></svg></div>' +
       '<h2>Update available</h2>' +
@@ -2709,7 +2735,9 @@ const I18N_ES = {
       '<div class="link-target"><div class="host" translate="no"></div></div>' +
       '<div class="modal-foot"><button class="btn ghost" data-close>Later</button><button class="btn primary" id="update-go">Update now</button></div>', 'link-modal');
     $('.host', m).textContent = version;
+    if (reopenChangelog) modalCleanup = openChangelog;
     $('#update-go', m).addEventListener('click', () => {
+      modalCleanup = null;
       closeModal();
       if (host) host.postMessage({ type: 'update-now' });
     });
@@ -3022,19 +3050,27 @@ const I18N_ES = {
   // ---------- mods ----------
   // The app keeps the custom font and sounds and puts them into Roblox when it starts; the page shows what's set,
   // previews the font and plays each sound.
-  let modFontLoaded = null, modAudio = null;
+  let modFontLoaded = null, modFontFace = null, modAudio = null;
+  // Only one preview font at a time: two faces with the same name would leave the browser choosing between them.
+  function setModFontFace(face) {
+    if (modFontFace) document.fonts.delete(modFontFace);
+    modFontFace = face;
+    if (face) document.fonts.add(face);
+  }
   function renderMods() {
     const m = env.mods || { font: null, sounds: [] };
     $('#modFontName').textContent = m.font ? 'Custom font: ' + m.font.name : 'Roblox\'s own fonts';
     $('#modFontReset').hidden = !m.font;
     const sample = $('#modSample');
-    if (m.font && m.font.data && modFontLoaded !== m.font.data) {
-      modFontLoaded = m.font.data;
-      new FontFace('KeystrapModFont', 'url(' + m.font.data + ')').load()
-        .then(face => { document.fonts.add(face); sample.style.fontFamily = 'KeystrapModFont, ' + getComputedStyle(document.body).fontFamily; })
-        .catch(() => { sample.style.fontFamily = ''; });
+    const fontData = m.font ? m.font.data : null;   // null too when the font is too big to preview
+    if (fontData !== modFontLoaded) {
+      modFontLoaded = fontData;
+      const showFont = (face, family) => { setModFontFace(face); sample.style.fontFamily = family; };
+      if (!fontData) showFont(null, '');
+      else new FontFace('KeystrapModFont', 'url(' + fontData + ')').load()
+        .then(face => { if (modFontLoaded === fontData) showFont(face, 'KeystrapModFont, ' + getComputedStyle(document.body).fontFamily); })
+        .catch(() => { if (modFontLoaded === fontData) showFont(null, ''); });
     }
-    if (!m.font) { modFontLoaded = null; sample.style.fontFamily = ''; }
     $('#modSounds').innerHTML = m.sounds.map(s =>
       '<div class="row">' +
         '<button class="btn mod-play" data-play="' + esc(s.id) + '" aria-label="Play ' + esc(s.name) + '" title="Play sound"' + (s.preview ? '' : ' disabled') + '><svg class="ico"><use href="#i-play"/></svg></button>' +
