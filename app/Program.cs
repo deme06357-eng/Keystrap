@@ -2167,8 +2167,12 @@ namespace Keystrap
         {
             string file = Path.Combine(dir, "ClientSettings", "ClientAppSettings.json");
             if (!File.Exists(file)) return;
-            File.Delete(file);
-            Log.Write("Removed the old ClientAppSettings.json");
+            try
+            {
+                File.Delete(file);
+                Log.Write("Removed the old ClientAppSettings.json");
+            }
+            catch (Exception ex) { Log.Write("Couldn't remove the old ClientAppSettings.json: " + ex.Message); }
         }
 
         // Roblox's in-game Maximum Frame Rate, kept in its own settings file. -1 ("not set") leaves Roblox on its 60 FPS
@@ -3452,9 +3456,7 @@ namespace Keystrap
         static int LaunchFps(Dictionary<string, object> msg, bool toAppHome)
         {
             if (toAppHome && Bool(msg, "menuCap")) { int m = Int(msg, "menuFps"); return m >= 10 && m <= 240 ? m : MenuFps; }
-            if (!Bool(msg, "unlockFps")) return 0;
-            int target = Int(msg, "fpsTarget");   // 0 means uncapped; otherwise the cap the user picked
-            return target > 0 ? target : UncappedFps;
+            return Bool(msg, "unlockFps") ? UncappedFps : 0;
         }
 
         void OnWebMessage(object sender, CoreWebView2WebMessageReceivedEventArgs e)
