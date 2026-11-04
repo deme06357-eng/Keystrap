@@ -1,7 +1,8 @@
 # Builds dist\Keystrap.exe with the .NET Framework compiler that ships with Windows.
 # Usage: powershell -ExecutionPolicy Bypass -File app\build.ps1 -WebView2Dir <extracted Microsoft.Web.WebView2 package>
 #        [-RuntimeCab <Microsoft.WebView2.FixedVersionRuntime.*.x64.cab>]   bundles the runtime as dist\WebView2Runtime
-param([Parameter(Mandatory = $true)][string]$WebView2Dir, [string]$RuntimeCab)
+#        [-Public]   for a release people download: no FAQ webhook, and --dev does nothing
+param([Parameter(Mandatory = $true)][string]$WebView2Dir, [string]$RuntimeCab, [switch]$Public)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
@@ -69,7 +70,8 @@ namespace Keystrap
         public const string NotificationsWebhook = $(Lit $(if ($secrets) { $secrets.notificationsWebhook }));
         public const string FeedbackWebhook = $(Lit $(if ($secrets) { $secrets.feedbackWebhook }));
         public const string CrashWebhook = $(Lit $(if ($secrets) { $secrets.crashWebhook }));   // optional; empty sends crashes to NotificationsWebhook
-        public const string FaqWebhook = $(Lit $(if ($secrets) { $secrets.faqWebhook }));   // optional; the "Post FAQ" button in Dev/Testing posts here
+        public const string FaqWebhook = $(Lit $(if ($secrets -and -not $Public) { $secrets.faqWebhook }));   // optional; the "Post FAQ" button in Dev/Testing posts here
+        public const bool PublicBuild = $(if ($Public) { 'true' } else { 'false' });
     }
 }
 "@ | Set-Content $secretsCs -Encoding UTF8

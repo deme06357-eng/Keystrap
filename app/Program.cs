@@ -138,7 +138,7 @@ namespace Keystrap
                 try { Protocol.Unregister(); } catch (Exception ex) { Log.Write("Unregister failed: " + ex.Message); }
                 return;
             }
-            DevMode = args.Any(a => string.Equals(a, "--dev", StringComparison.OrdinalIgnoreCase));
+            DevMode = !Secrets.PublicBuild && args.Any(a => string.Equals(a, "--dev", StringComparison.OrdinalIgnoreCase));
             // A Play button on roblox.com starts Keystrap.exe "roblox-player:1+launchmode:play+..." (see Protocol).
             string link = args.FirstOrDefault(RobloxLink.IsLink);
 
