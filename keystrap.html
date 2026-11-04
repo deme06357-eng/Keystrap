@@ -92,13 +92,17 @@ button { font: inherit; color: inherit; }
 .titlebar .name { font-size: 12px; color: var(--fg-2); }
 .titlebar .ver { font: 11px var(--f-mono); color: var(--fg-3); }
 .titlebar .spacer { flex: 1; }
-.winctl { display: flex; height: 100%; }
+/* Caption buttons: rounded hover pills inset in the bar (like the rest of Keystrap's controls) rather than
+   full-height blocks, which looked heavy in the slim 32px bar. */
+.winctl { display: flex; align-items: center; gap: 2px; height: 100%; padding-right: 4px; }
 .winctl button {
-  width: 46px; height: 100%; border: 0; background: transparent; color: var(--fg-2);
-  display: grid; place-items: center; cursor: default; transition: background .12s, color .12s;
+  width: 38px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--fg-2);
+  display: grid; place-items: center; cursor: default; transition: background .15s, color .15s;
 }
-.winctl button:hover { background: rgba(255,255,255,.09); color: var(--white); }   /* Windows 11: faint white on min/max */
-.winctl button.close:hover { background: #e81123; color: #fff; }                   /* Windows 11: standard close red */
+.winctl button:hover { background: rgba(255,255,255,.08); color: var(--white); }
+.winctl button:active { background: rgba(255,255,255,.05); }
+.winctl button.close:hover { background: #c42b1c; color: #fff; }   /* Windows 11's close red, softer than Windows 10's */
+.winctl button.close:active { background: #a3261a; }
 .winctl svg { width: 10px; height: 10px; }
 
 .body { display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
@@ -1412,6 +1416,8 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Nicer minimize, maximize and close buttons: rounded highlights that match the rest of Keystrap, and a softer red on close.':
+      'Botones de minimizar, maximizar y cerrar más bonitos: resaltes redondeados a juego con el resto de Keystrap y un rojo más suave al cerrar.',
     'Keystrap has an installer: it adds a desktop shortcut and a Start menu entry, and shows up in Installed apps so you can uninstall it cleanly.':
       'Keystrap tiene un instalador: añade un acceso directo en el escritorio y una entrada en el menú Inicio, y aparece en Aplicaciones instaladas para que puedas desinstalarlo sin problemas.',
     'Fixed a crash that could happen as Keystrap closed, or on older Windows that doesn\'t support WebView2.':
@@ -1692,7 +1698,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.0';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.4.1';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1704,6 +1710,9 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.4.1', notes: [
+      'Nicer minimize, maximize and close buttons: rounded highlights that match the rest of Keystrap, and a softer red on close.'
+    ] },
     { v: 'v1.4.0', notes: [
       'Keystrap has an installer: it adds a desktop shortcut and a Start menu entry, and shows up in Installed apps so you can uninstall it cleanly.'
     ] },
