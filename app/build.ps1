@@ -127,7 +127,11 @@ $wpf = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\WPF'
     "$PSScriptRoot\Updater.cs" "$PSScriptRoot\WebhookService.cs" $secretsCs $versionCs
 if ($LASTEXITCODE -ne 0) { throw "csc failed for the updater ($LASTEXITCODE)" }
 
-Copy-Item "$lib\Microsoft.Web.WebView2.Core.dll", "$lib\Microsoft.Web.WebView2.WinForms.dll", $native $dist -Force
+# A running Keystrap locks these, so only copy the ones that actually changed.
+foreach ($dll in "$lib\Microsoft.Web.WebView2.Core.dll", "$lib\Microsoft.Web.WebView2.WinForms.dll", $native) {
+    $dest = Join-Path $dist (Split-Path $dll -Leaf)
+    if (-not (Test-Path $dest) -or (Get-FileHash $dll).Hash -ne (Get-FileHash $dest).Hash) { Copy-Item $dll $dest -Force }
+}
 
 # --- optional: bundle a Fixed Version runtime next to the exe ---
 if ($RuntimeCab) {
