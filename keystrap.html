@@ -1416,6 +1416,7 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Cursor ring centers on the Play tab.': 'El anillo del cursor se centra en la pestaña Jugar.',
     'Keystrap checks for updates when it opens.': 'Keystrap busca actualizaciones al abrirse.',
     'Update available': 'Actualización disponible', 'Update now': 'Actualizar ahora', 'Later': 'Más tarde',
     'Keystrap will close, update and open again.': 'Keystrap se cerrará, se actualizará y se abrirá de nuevo.',
@@ -1687,7 +1688,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.4';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.4.5';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1699,6 +1700,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.4.5', notes: ['Cursor ring centers on the Play tab.'] },
     { v: 'v1.4.4', notes: ['Keystrap checks for updates when it opens.'] },
     { v: 'v1.4.3', notes: ['Fixed the FAQ button getting stuck.'] },
     { v: 'v1.4.2', notes: ['Moved the version to the top right.'] },
@@ -2677,7 +2679,13 @@ const I18N_ES = {
     document.body.appendChild(el);
     const reduce = matchMedia('(prefers-reduced-motion: reduce)'), mouse = matchMedia('(pointer: fine)');
     const CLICKABLE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="option"], [role="radio"], [role="slider"], [tabindex]';
-    let mx = 0, my = 0, rx = 0, ry = 0, shown = false, frame = 0, last = 0;
+    const SNAP_TO = '.nav-item[data-page="play"]';   // over the Play tab, the ring centres on the tab instead of the mouse
+    let mx = 0, my = 0, rx = 0, ry = 0, shown = false, frame = 0, last = 0, snapped = null;
+    function aimAtSnapped() {
+      const box = snapped.getBoundingClientRect();
+      mx = box.left + box.width / 2;
+      my = box.top + box.height / 2;
+    }
     const enabled = () => !!state && state.settings.cursorRing !== false && mouse.matches;
     function place() { el.style.transform = 'translate3d(' + rx + 'px,' + ry + 'px,0)'; }
     function step(t) {
@@ -2696,12 +2704,19 @@ const I18N_ES = {
     document.addEventListener('pointermove', e => {
       if (e.pointerType !== 'mouse' || !enabled()) return;
       mx = e.clientX; my = e.clientY;
+      snapped = e.target.closest ? e.target.closest(SNAP_TO) : null;
+      if (snapped) aimAtSnapped();
       if (!shown) { rx = mx; ry = my; place(); show(true); }   // appear where the mouse is, not glide in from a corner
       el.classList.toggle('hover', !!(e.target.closest && e.target.closest(CLICKABLE)));
       if (!frame) frame = requestAnimationFrame(step);
     });
     document.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') el.classList.add('down'); });
     document.addEventListener('pointerup', () => el.classList.remove('down'));
+    window.addEventListener('resize', () => {   // the tab changes width with the window, so its centre moves
+      if (!snapped || !shown) return;
+      aimAtSnapped();
+      if (!frame) frame = requestAnimationFrame(step);
+    });
     document.documentElement.addEventListener('mouseleave', () => show(false));
     window.addEventListener('blur', () => show(false));
     return { update() { if (!enabled()) show(false); } };
