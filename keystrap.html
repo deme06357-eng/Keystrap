@@ -1454,7 +1454,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.7';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.4.8';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1466,7 +1466,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
-    { v: 'v1.4.7', notes: ['Fixed Playtime ending while you\'re still playing.', 'Fixed Playtime text getting cut off.', 'Update prompt shows before What\'s new.', 'Fixed the font preview.', 'Fixed Multi-instance not turning off.'] },
+    { v: 'v1.4.8', notes: ['Fixed Playtime ending while you\'re still playing.', 'Fixed Playtime text getting cut off.', 'Update prompt shows before What\'s new.', 'Fixed the font preview.', 'Fixed Multi-instance not turning off.'] },
     { v: 'v1.4.6', notes: ['Removed Flags.', 'Removed interface sounds.', 'Crosshairs is out of beta.'] },
     { v: 'v1.4.5', notes: ['Moved the cursor ring to Play.'] },
     { v: 'v1.4.4', notes: ['Keystrap checks for updates when it opens.'] },
