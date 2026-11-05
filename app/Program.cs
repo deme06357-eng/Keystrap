@@ -2194,6 +2194,48 @@ namespace Keystrap
             catch (Exception ex) { Log.Write("Couldn't set Roblox's Maximum Frame Rate: " + ex.Message); }
         }
 
+        // Clears any bugged experimental A/B channels (like zadprewarmallplatformscontrol) and ensures
+        // UI navigation (virtual gamepad cursor) stays disabled so mouse and Esc work as expected.
+        public static void EnforceCleanEnvironment()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\ROBLOX Corporation\Environments\RobloxPlayer\Channel", true))
+                {
+                    if (key != null && key.GetValue("www.roblox.com") != null)
+                    {
+                        string ch = Convert.ToString(key.GetValue("www.roblox.com"));
+                        if (!string.IsNullOrEmpty(ch) && (ch.IndexOf("zadprewarm", StringComparison.OrdinalIgnoreCase) >= 0 || ch.IndexOf("control", StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            key.DeleteValue("www.roblox.com", false);
+                            Log.Write("Removed experimental Roblox channel: " + ch);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Write("Channel check failed: " + ex.Message); }
+
+            try
+            {
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Roblox");
+                if (Directory.Exists(folder))
+                {
+                    foreach (string file in Directory.GetFiles(folder, "GlobalBasicSettings_*.xml"))
+                    {
+                        string xml = File.ReadAllText(file);
+                        if (xml.IndexOf("<bool name=\"UiNavigationKeyBindEnabled\">true</bool>", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            string updated = Regex.Replace(xml, @"<bool name=""UiNavigationKeyBindEnabled"">true</bool>",
+                                "<bool name=\"UiNavigationKeyBindEnabled\">false</bool>", RegexOptions.IgnoreCase);
+                            File.WriteAllText(file, updated);
+                            Log.Write("Disabled UiNavigationKeyBindEnabled in " + Path.GetFileName(file));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { Log.Write("UI navigation check failed: " + ex.Message); }
+        }
+
         // link: the website's roblox-player:/roblox: link, passed through unchanged; null opens the Roblox app home.
         public static Process Start(string dir, string link)
         {
@@ -4068,6 +4110,7 @@ namespace Keystrap
                 string dir = await Task.Run(() => Bootstrapper.InstallAsync(version, ReportProgress));
                 await ApplyCustomisationsAsync(dir, msg);
                 Bootstrapper.RemoveOldClientSettings(dir);
+                Bootstrapper.EnforceCleanEnvironment();
 
                 if (!Bool(msg, "multiInstance")) ReleaseRobloxSingleton();
                 else if (!HoldRobloxSingleton())

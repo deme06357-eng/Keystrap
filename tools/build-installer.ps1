@@ -58,9 +58,27 @@ try {
     New-Item -ItemType Directory $stage | Out-Null
     try {
         $packaged | ForEach-Object { Copy-Item (Join-Path $dist $_) $stage }
-        Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force
+        # A virus scanner often locks a freshly-built exe while it scans it. Wait until every staged file opens for
+        # reading, then zip; retry for a while before giving up with a clear message.
+        $zipped = $false
+        for ($i = 0; $i -lt 20 -and -not $zipped; $i++) {
+            try {
+                foreach ($f in $packaged) { $h = [IO.File]::Open((Join-Path $stage $f), 'Open', 'Read', 'ReadWrite'); $h.Close() }
+                if (Test-Path $zip) { Remove-Item $zip -Force }
+                Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -Force -ErrorAction Stop
+                $zipped = $true
+            }
+            catch { Start-Sleep -Milliseconds 800 }
+        }
+        if (-not $zipped) { throw "Couldn't read the new files to zip - a virus scanner is probably locking Keystrap.exe. Add an exclusion for the Keystrap folder, or try again." }
     }
-    finally { Remove-Item -Recurse -Force $stage }
+    finally {
+        # Never fail the build over a leftover temp folder (a scanner may still hold a file in it).
+        for ($i = 0; $i -lt 6 -and (Test-Path $stage); $i++) {
+            try { Remove-Item -Recurse -Force $stage -ErrorAction Stop }
+            catch { Start-Sleep -Milliseconds 400 }
+        }
+    }
 
     & $iscc /Q "/DAppVersion=$version" (Join-Path $root 'installer\keystrap.iss')
     if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed ($LASTEXITCODE)" }
