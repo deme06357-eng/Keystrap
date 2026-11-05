@@ -3329,9 +3329,6 @@ namespace Keystrap
                     if (Program.DevMode)
                         SendTestNotificationsAsync(msg.ContainsKey("target") ? msg["target"] as string : "crash", Int(msg, "count"));
                     break;
-                case "update-now":
-                    StartUpdater();
-                    break;
                 case "multi-instance":
                     if (!Bool(msg, "on")) ReleaseRobloxSingleton();
                     break;
@@ -3798,16 +3795,19 @@ namespace Keystrap
             CheckRobloxAsync();
         }
 
-        // Tells the page when a newer release is out. A dev build skips this, so it never offers to replace itself with
-        // a public one. A failed check only gets logged; it can try again next time Keystrap opens.
+        // Updates Keystrap automatically when a newer release is out. This runs only on a normal open — not when a Roblox
+        // link started Keystrap (see OnPageReadyAsync), and not in a dev build — so it never interrupts joining a game or
+        // replaces the dev build with a public one. A failed check only gets logged; it tries again next time.
         async void CheckForUpdateAsync()
         {
             if (Program.DevMode) return;
             try
             {
                 string version = await UpdateCheck.NewerVersionAsync(Program.UpdateFeed);
-                Log.Write(version == null ? "Keystrap is up to date" : "Update available: " + version);
-                if (version != null) Post(new Dictionary<string, object> { { "type", "update-available" }, { "version", version } });
+                if (version == null) { Log.Write("Keystrap is up to date"); return; }
+                Log.Write("Update available: " + version + " - updating automatically");
+                Toast("Updating Keystrap to " + version + "…");
+                StartUpdater();
             }
             catch (Exception ex) { Log.Write("Update check failed: " + ex.Message); }
         }

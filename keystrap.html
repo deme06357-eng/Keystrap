@@ -1235,6 +1235,7 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Keystrap updates itself automatically when it opens.': 'Keystrap se actualiza automáticamente al abrirse.',
     'Text no longer highlights when you drag over it.': 'El texto ya no se resalta al arrastrar sobre él.',
     'Fixed Playtime losing time when you close Roblox with X.': 'Se arregló la pérdida de tiempo en Tiempo de juego al cerrar Roblox con la X.',
     'Fixed Playtime ending while you\'re still playing.': 'Se arregló que Tiempo de juego terminara mientras sigues jugando.',
@@ -1243,8 +1244,6 @@ const I18N_ES = {
     'Removed Flags.': 'Se quitó Flags.', 'Removed interface sounds.': 'Se quitaron los sonidos de la interfaz.', 'Crosshairs is out of beta.': 'Miras salió de la beta.',
     'Moved the cursor ring to Play.': 'El anillo del cursor se movió a Jugar.',
     'Keystrap checks for updates when it opens.': 'Keystrap busca actualizaciones al abrirse.',
-    'Update available': 'Actualización disponible', 'Update now': 'Actualizar ahora', 'Later': 'Más tarde',
-    'Keystrap will close, update and open again.': 'Keystrap se cerrará, se actualizará y se abrirá de nuevo.',
     'Couldn\'t start the updater.': 'No se pudo iniciar el actualizador.',
     'Fixed the FAQ button getting stuck.': 'Se arregló el botón de preguntas frecuentes atascado.',
     'Moved the version to the top right.': 'La versión se movió arriba a la derecha.',
@@ -1417,6 +1416,7 @@ const I18N_ES = {
     [/^(Unlock FPS|Multi-instance|Close after launch|Menu FPS cap|Cursor ring|Crash reports|Discord Rich Presence) (on|off)$/, (tr, what, on) =>
       ({ 'Unlock FPS': 'Desbloquear FPS', 'Multi-instance': 'Multiinstancia', 'Close after launch': 'Cerrar tras iniciar', 'Menu FPS cap': 'Límite de FPS en el menú', 'Cursor ring': 'Anillo del cursor', 'Crash reports': 'Informes de errores', 'Discord Rich Presence': 'Rich Presence de Discord' })[what] +
       ': ' + (on === 'on' ? 'activado' : 'desactivado')],
+    [/^Updating Keystrap to (.+)…$/, (tr, v) => 'Actualizando Keystrap a ' + v + '…'],
     [/^(.+) \(preview\)$/, (tr, t) => tr(t) + ' (vista previa)'],
     [/^Downloading Roblox \((.+)\)…$/, (tr, p) => 'Descargando Roblox (' + p + ')…'],
     [/^Extracting (.+)…$/, (tr, p) => 'Extrayendo ' + p + '…'],
@@ -1463,7 +1463,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.5.0';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.5.1';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1475,6 +1475,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.5.1', notes: ['Keystrap updates itself automatically when it opens.'] },
     { v: 'v1.5.0', notes: ['Text no longer highlights when you drag over it.'] },
     { v: 'v1.4.9', notes: ['Fixed Playtime losing time when you close Roblox with X.'] },
     { v: 'v1.4.8', notes: ['Fixed Playtime ending while you\'re still playing.', 'Fixed Playtime text getting cut off.', 'Update prompt shows before What\'s new.', 'Fixed the font preview.', 'Fixed Multi-instance not turning off.'] },
@@ -1739,7 +1740,6 @@ const I18N_ES = {
       case 'toast': toast(msg.text); break;
       case 'webhook-test-done': devTestDone(msg); break;
       case 'faq-posted': faqPosted(msg); break;
-      case 'update-available': offerUpdate(msg.version); break;
     }
   }
 
@@ -2701,7 +2701,7 @@ const I18N_ES = {
   let lastFocus = null;
   let modalCleanup = null;   // set by a dialog that needs to undo something when it closes
   function openModal(html, cls) {
-    clearModal();
+    closeModal();
     lastFocus = document.activeElement;
     const bd = document.createElement('div');
     bd.className = 'modal-backdrop';
@@ -2713,47 +2713,17 @@ const I18N_ES = {
     if (first && !bd.querySelector('input, textarea')) first.focus();
     return bd.querySelector('.modal');
   }
-  function clearModal() {
+  function closeModal() {
     const root = $('#modalRoot');
     if (!root.firstChild) return;
     root.innerHTML = '';
     if (modalCleanup) { const undo = modalCleanup; modalCleanup = null; undo(); }
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
-  function closeModal() {
-    clearModal();
-    if (waitingUpdate && !$('#modalRoot').firstChild) {   // an update held back while another dialog was open
-      const version = waitingUpdate;
-      waitingUpdate = null;
-      showUpdatePrompt(version, false);
-    }
-  }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').firstChild) closeModal(); });
 
-  // ---------- updates ----------
-  // Asks once each time Keystrap opens. The prompt goes in front of What's new, which comes back after "Later". Any
-  // other dialog is something the user is in the middle of, so the prompt waits until that closes.
-  let waitingUpdate = null;
-  function offerUpdate(version) {
-    if (!$('#modalRoot').firstChild) showUpdatePrompt(version, false);
-    else if ($('#modalRoot .cl-modal')) showUpdatePrompt(version, true);
-    else waitingUpdate = version;
-  }
-  function showUpdatePrompt(version, reopenChangelog) {
-    const m = openModal(
-      '<div class="link-badge"><svg class="ico"><use href="#i-sparkle"/></svg></div>' +
-      '<h2>Update available</h2>' +
-      '<p class="lead">Keystrap will close, update and open again.</p>' +
-      '<div class="link-target"><div class="host" translate="no"></div></div>' +
-      '<div class="modal-foot"><button class="btn ghost" data-close>Later</button><button class="btn primary" id="update-go">Update now</button></div>', 'link-modal');
-    $('.host', m).textContent = version;
-    if (reopenChangelog) modalCleanup = openChangelog;
-    $('#update-go', m).addEventListener('click', () => {
-      modalCleanup = null;
-      closeModal();
-      if (host) host.postMessage({ type: 'update-now' });
-    });
-  }
+  // Updates are handled by the app now: when Keystrap opens and a newer release is out, it updates itself
+  // automatically (see CheckForUpdateAsync in Program.cs). No in-page prompt.
 
   // ---------- outside links ----------
   // Every link to a website asks first, showing where it goes, unless "Ask before opening websites" is off
