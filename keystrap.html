@@ -841,7 +841,7 @@ html.native.shown .window { opacity: 1; }
 
       <!-- CROSSHAIRS -->
       <section class="page" id="page-crosshairs">
-        <h1>Crosshairs <span class="badge beta">Beta</span></h1>
+        <h1>Crosshairs</h1>
         <p class="sub">Use your crosshair for every Roblox mouse cursor: over the game, over buttons, in text boxes, while dragging, and in Shift Lock and first person. It's applied to Keystrap's copy of Roblox on every launch. Games that set their own cursor keep theirs.</p>
         <div class="xh-layout">
           <div class="card xh-stage">
@@ -1235,6 +1235,7 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Removed the leftover Crosshairs beta tag.': 'Se quitó la etiqueta beta que quedaba en Miras.',
     'Keystrap updates itself automatically when it opens.': 'Keystrap se actualiza automáticamente al abrirse.',
     'Text no longer highlights when you drag over it.': 'El texto ya no se resalta al arrastrar sobre él.',
     'Fixed Playtime losing time when you close Roblox with X.': 'Se arregló la pérdida de tiempo en Tiempo de juego al cerrar Roblox con la X.',
@@ -1463,7 +1464,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.5.1';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.5.2';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1475,6 +1476,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.5.2', notes: ['Removed the leftover Crosshairs beta tag.'] },
     { v: 'v1.5.1', notes: ['Keystrap updates itself automatically when it opens.'] },
     { v: 'v1.5.0', notes: ['Text no longer highlights when you drag over it.'] },
     { v: 'v1.4.9', notes: ['Fixed Playtime losing time when you close Roblox with X.'] },
