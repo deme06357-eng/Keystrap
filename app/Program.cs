@@ -3112,8 +3112,7 @@ namespace Keystrap
                 Exception bundledFailure = null;
                 try
                 {
-                    var env = await CoreWebView2Environment.CreateAsync(fixedRuntime, Path.Combine(Paths.Data, "WebView2"), options);
-                    await web.EnsureCoreWebView2Async(env);
+                    await StartWebViewAsync(fixedRuntime, options);
                 }
                 catch (Exception ex)
                 {
@@ -3125,14 +3124,8 @@ namespace Keystrap
                     // A bundled runtime that won't start (damaged, or unreadable to WebView2's sandbox): use the one
                     // installed with Windows. A WebView2 control can't be initialised twice, so swap in a fresh one.
                     Log.Write("The bundled WebView2 runtime at " + fixedRuntime + " failed (" + bundledFailure.Message + "); trying the system runtime.");
-                    var fresh = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = BackColor };
-                    Controls.Remove(web);
-                    web.Dispose();
-                    web = fresh;
-                    Controls.Add(web);
-                    if (loading != null) loading.BringToFront();
-                    var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Paths.Data, "WebView2"), options);
-                    await web.EnsureCoreWebView2Async(env);
+                    SwapWebControl();
+                    await StartWebViewAsync(null, options);
                 }
             }
             catch (Exception ex)
@@ -3191,6 +3184,43 @@ namespace Keystrap
             // If the page never reports in (a script error, say), don't leave the spinner up forever.
             await Task.Delay(20000);
             if (loading != null) { Log.Write("The page didn't report ready within 20 s; showing it anyway."); HideLoading(); }
+        }
+
+        // Starts WebView2 on the current control. The one-per-user mutex (see Main) keeps a second Keystrap from getting
+        // this far, but its WebView2 browser processes still hold the user-data folder for a moment after it closes —
+        // most often right after an auto-update restart. Creating the environment then fails with 0x800700AA
+        // (ERROR_BUSY); wait for the folder to free up and try again, with a fresh control each time, rather than failing.
+        async Task StartWebViewAsync(string runtime, CoreWebView2EnvironmentOptions options)
+        {
+            const int ResourceInUse = unchecked((int)0x800700AA);
+            string folder = Path.Combine(Paths.Data, "WebView2");
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    var env = await CoreWebView2Environment.CreateAsync(runtime, folder, options);
+                    await web.EnsureCoreWebView2Async(env);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.HResult != ResourceInUse || attempt >= 24) throw;   // only the "folder in use" error, for ~6 s
+                    if (attempt == 1) Log.Write("WebView2's folder is in use by a closing Keystrap; waiting for it to free up.");
+                }
+                await Task.Delay(250);
+                SwapWebControl();   // a control whose EnsureCoreWebView2Async already threw can't be reused
+            }
+        }
+
+        // Replaces the WebView2 control with a fresh one (an initialised or half-initialised control can't be reused).
+        void SwapWebControl()
+        {
+            var fresh = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = BackColor };
+            Controls.Remove(web);
+            web.Dispose();
+            web = fresh;
+            Controls.Add(web);
+            if (loading != null) loading.BringToFront();
         }
 
         // A Fixed Version WebView2 runtime, if one is shipped next to the exe (WebView2Runtime\)
