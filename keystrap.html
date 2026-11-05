@@ -53,6 +53,13 @@ body {
 }
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+
+/* App-like selection: dragging across headings, labels and buttons shouldn't highlight them, as in a desktop app.
+   Still selectable: what you type into, and text worth copying (paths, versions, Terms, FAQ, What's new, errors). */
+body { -webkit-user-select: none; user-select: none; }
+input, textarea, [contenteditable="true"], .mono, .prose, .faq-item, .cl-notes, .launch-status {
+  -webkit-user-select: text; user-select: text;
+}
 button { font: inherit; color: inherit; }
 /* Keyboard focus: no outline ring. Focused controls get the same quiet highlight as hover plus a faint 1px edge,
    so Tab still shows where you are without a bright border. */
@@ -1228,6 +1235,7 @@ const I18N_ES = {
     'A ring in your accent color that follows the mouse around the Keystrap window. This is in Keystrap itself, not in Roblox.':
       'Un anillo de tu color de acento que sigue el ratón por la ventana de Keystrap. Esto es en Keystrap, no en Roblox.',
     // What's new version notes
+    'Text no longer highlights when you drag over it.': 'El texto ya no se resalta al arrastrar sobre él.',
     'Fixed Playtime losing time when you close Roblox with X.': 'Se arregló la pérdida de tiempo en Tiempo de juego al cerrar Roblox con la X.',
     'Fixed Playtime ending while you\'re still playing.': 'Se arregló que Tiempo de juego terminara mientras sigues jugando.',
     'Fixed Playtime text getting cut off.': 'Se arregló el texto cortado en Tiempo de juego.', 'Update prompt shows before What\'s new.': 'El aviso de actualización aparece antes de Novedades.',
@@ -1455,7 +1463,7 @@ const I18N_ES = {
 <script>
 (function () {
   'use strict';
-  const APP_VERSION = 'v1.4.9';   // set from version.txt by app/build.ps1; change it there
+  const APP_VERSION = 'v1.5.0';   // set from version.txt by app/build.ps1; change it there
   const host = window.chrome && window.chrome.webview ? window.chrome.webview : null;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1467,6 +1475,7 @@ const I18N_ES = {
   // it opens on the newest once after an update. For a new version, add an entry at the top (and its notes' Spanish
   // in I18N_ES.strings). HISTORY[0].v should match APP_VERSION.
   const HISTORY = [
+    { v: 'v1.5.0', notes: ['Text no longer highlights when you drag over it.'] },
     { v: 'v1.4.9', notes: ['Fixed Playtime losing time when you close Roblox with X.'] },
     { v: 'v1.4.8', notes: ['Fixed Playtime ending while you\'re still playing.', 'Fixed Playtime text getting cut off.', 'Update prompt shows before What\'s new.', 'Fixed the font preview.', 'Fixed Multi-instance not turning off.'] },
     { v: 'v1.4.6', notes: ['Removed Flags.', 'Removed interface sounds.', 'Crosshairs is out of beta.'] },
